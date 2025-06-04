@@ -1,3 +1,7 @@
+## Faire du multi-stage
+## User dédié
+## Analyse trivy de l'image pour nettoyer les vulnérabilités
+
 # Image de base pour l'exécution
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
