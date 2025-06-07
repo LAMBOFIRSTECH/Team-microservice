@@ -10,3 +10,4 @@ public class GetTeamQuery : IRequest<TeamDto>
         Id = identifier;
     }
 }
+

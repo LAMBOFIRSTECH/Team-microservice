@@ -1,4 +1,4 @@
-namespace Teams.Core.Layer.BusinessExceptions;
+namespace Teams.CORE.Layer.BusinessExceptions;
 public class TeamNotFoundException : Exception
 {
     public TeamNotFoundException(Guid identifier)
