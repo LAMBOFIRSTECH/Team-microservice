@@ -1,6 +1,7 @@
 using MediatR;
+using Teams.API.Layer.DTOs;
 namespace Teams.APP.Layer.CQRS.Commands;
-public class UpdateTeamCommand : IRequest
+public class UpdateTeamCommand : IRequest<TeamDto>
 {
     public Guid Id { get; }
     public string? Name { get; }

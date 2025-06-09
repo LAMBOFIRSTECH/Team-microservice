@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.OpenApi.Models;
 using Teams.API.Layer.Middlewares;
+using Teams.API.Layer.Mappings;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Teams.CORE.Layer.Interfaces;
@@ -8,6 +9,7 @@ using Teams.INFRA.Layer.Persistence.Repositories;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using Teams.APP.Layer.Interfaces;
+using Teams.APP.Layer.CQRS.Validators;
 using Teams.INFRA.Layer.Services;
 using Teams.INFRA.Layer.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -61,7 +63,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
        // 📜 Charge le certificat serveur pour HTTPS
        if (string.IsNullOrEmpty(certificateFile) || string.IsNullOrEmpty(certificatePassword) || !File.Exists(certificateFile))
            throw new InvalidOperationException("Le certificat serveur est requis pour HTTPS.");
-   
+
        var serverCertificate = new X509Certificate2(certificateFile, certificatePassword);
        httpsOptions.ServerCertificate = serverCertificate;
        // 🔐 Active le mode de certificat client
@@ -95,17 +97,23 @@ builder.Services.AddRouting();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
-
+builder.Logging.AddConsole();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
 builder.Services.AddScoped<IHashicorpVaultService, HashicorpVaultService>();
 
-builder.Services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters(); // Nécessaire pour la validation des commandes du CQRS
-builder.Services.AddValidatorsFromAssemblyContaining<Teams.APP.Layer.CQRS.Commands.CreateTeamCommand>();
+builder.Services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters(); // Nécessaire pour la validation des données dans le CQRS
+builder.Services.AddValidatorsFromAssemblyContaining<CreateTeamCommandValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateTeamCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddAutoMapper(typeof(TeamProfile).Assembly);
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
 });
+// builder.Services.AddAutoMapper(cfg =>
+// {
+//     cfg.AddProfile<TeamProfile>();
+// }, AppDomain.CurrentDomain.GetAssemblies()); //protéger l'assemblage de mappage pour lever les exceptions de mappage
 
 // Configuration de OpenTelemetry pour la traçabilité
 builder.Services.AddOpenTelemetry()
@@ -124,33 +132,21 @@ builder.Services.AddOpenTelemetry()
     });
 
 var app = builder.Build();
-// Configure the HTTP request pipeline.
-app.UseMiddleware<ContextPathMiddleware>("/team-management");
-if (app.Environment.IsDevelopment())
+app.Map("/team-management", teamApp =>
 {
-    app.UseExceptionHandler("/Debug");
-    app.UseHsts();
-    app.UseSwagger();
-    app.UseSwaggerUI(con =>
-    {
-        con.SwaggerEndpoint("/team-management/swagger/v1.0/swagger.yml", "Gestion des équipes");
+    teamApp.UseRouting();
+    teamApp.UseAuthorization();
+    teamApp.UseMiddleware<ExceptionMiddleware>();
 
-        con.RoutePrefix = string.Empty;
-    });
-}
-
-app.UseHttpsRedirection();
-app.UseRouting();
-app.UseAuthorization();
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapControllers();
-    endpoints.MapHealthChecks("/health");
-    endpoints.MapGet("/version", async context =>
+    teamApp.UseEndpoints(endpoints =>
     {
-        var version = app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
-        await context.Response.WriteAsync(version);
+        endpoints.MapControllers();
+        endpoints.MapHealthChecks("/health");
+        endpoints.MapGet("/version", async context =>
+        {
+            var version = app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
+            await context.Response.WriteAsync(version);
+        });
     });
 });
-
 await app.RunAsync();

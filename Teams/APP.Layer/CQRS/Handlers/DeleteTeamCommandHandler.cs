@@ -1,6 +1,7 @@
 using MediatR;
 using Teams.CORE.Layer.Interfaces;
 using Teams.APP.Layer.CQRS.Commands;
+using Teams.API.Layer.DTOs;
 namespace Teams.APP.Layer.CQRS.Handlers;
 
 public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand>
@@ -11,8 +12,12 @@ public class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand>
         this.teamRepository = teamRepository;
     }
 
-    public Task Handle(DeleteTeamCommand request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteTeamCommand request, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var team = await teamRepository.GetTeamByIdAsync(request.Id)!;
+        if (team == null)
+            throw new KeyNotFoundException($"Team with ID {request.Id} not found.");
+
+        await teamRepository.DeleteTeamAsync(request.Id);
     }
 }

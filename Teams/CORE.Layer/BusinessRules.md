@@ -1,6 +1,6 @@
 # Les règles métier pour l'entité Equipe
 
-1. Règles de validation de données
+1. Règles de validation de données (Fluent validation)
 ---------------------------------------------------------------------------------------------------
 | Règle                                           | Exemple                                       |
 | ----------------------------------------------- | --------------------------------------------- |

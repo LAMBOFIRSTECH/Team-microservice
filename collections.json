@@ -1,0 +1,63 @@
+[
+  {
+    "Id": "680e6360-a07f-436f-9391-295834ef8d48",
+    "Name": "Equipe de dveloppement (Dev Team)",
+    "TeamManagerId": "0ecd0b77-d5ca-4a55-9488-cd1ff86620f3",
+    "MemberId": [
+      "f4096e32-6c8f-4357-a642-1f037cd38f7c",
+      "81bc3acb-fce6-4fb5-b416-1544033033f9",
+      "e51c1fc2-90e6-4fdb-9551-02bca4832159"
+    ]
+  },
+  {
+    "Id": "62063ec5-e385-4702-a3c8-599221c4ebf2",
+    "Name": "Equipe de gestion de projet (PMO - Project Management Office)",
+    "TeamManagerId": "ca30bc5f-1952-45ca-a3d6-e3332b28a047",
+    "MemberId": [
+      "8ac0e699-0247-4be4-9a00-7ecd6027e772",
+      "a62d2c29-408e-4311-a434-bac730781fea",
+      "680158a3-dded-42f3-acb7-4562bc41f777"
+    ]
+  },
+  {
+    "Id": "90429a44-6a58-4926-ac4f-b09c7b531563",
+    "Name": "Equipe d'Infrastructure  Systèmes (SysAdmin)",
+    "TeamManagerId": "bf09d614-7c13-4cee-9c4c-11b5dcc32819",
+    "MemberId": [
+      "0625f034-635f-4fb7-be52-5effeeb55182",
+      "d080cb0e-cfc4-44dd-b8bb-032cfd13154a",
+      "dacf2117-da17-449e-bf00-038d7965b8ea"
+    ]
+  },
+  {
+    "Id": "e62333b2-eebf-4237-b68c-6a9b9dba4667",
+    "Name": "Equipe de scurité (Security Team)",
+    "TeamManagerId": "c3622972-3339-43bd-b1c6-c640056b732e",
+    "MemberId": [
+      "5900e97a-558e-4f1a-928e-d380ce1a4316",
+      "c6237602-6eef-4c41-8c10-30cd78469e3a",
+      "2f315127-b949-44d3-83b0-1af6ba56c1f0"
+    ]
+  },
+  {
+    "Id": "a52b994e-26ec-49a7-8c0a-735c58c24a45",
+    "Name": "Equipe de support technique (Tech Support Team)",
+    "TeamManagerId": "a22b89a7-01ab-40d8-8904-b5f1ceadbd90",
+    "MemberId": [
+      "7d0dc962-b4bf-4922-9fdc-bff33004e007",
+      "a22b89a7-01ab-40d8-8904-b5f1ceadbd90",
+      "c6237602-6eef-4c41-8c10-30cd78469e3a"
+    ]
+  },
+    {
+        "Id": "b1c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+        "Name": "Equipe de recherche et d'innovation (R&D Team)",
+        "TeamManagerId": "a22b89a7-01ab-40d8-8904-b5f1ceadbd90",
+        "MemberId": [
+        "12345678-90ab-cdef-1234-567890abcdef",
+        "23456789-0abc-def1-2345-67890abcdef1",
+        "34567890-abcd-ef12-3456-7890abcdef12",
+        "a22b89a7-01ab-40d8-8904-b5f1ceadbd90"
+        ]
+    }
+]

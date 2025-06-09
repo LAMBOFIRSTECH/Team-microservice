@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
+using Newtonsoft.Json;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
@@ -11,46 +12,42 @@ public class TeamRepository : ITeamRepository
     {
         this.teamDbContext = teamDbContext;
     }
-    public async Task<List<Team>> GetAllTeams()
+    public async Task<Team>? GetTeamByIdAsync(Guid teamId)
     {
-        return await teamDbContext.Teams.ToListAsync();
+        var teams = await teamDbContext.Teams!.ToListAsync();
+        return teams
+        .Where(t => t.Id == teamId)
+        .FirstOrDefault()!;
     }
-    public async Task<Team>? GetTeamById(Guid teamId)
+    public async Task<List<Team>> GetAllTeamsAsync()
     {
-        var teams = await GetAllTeams();
-        return teams.Where(t => t.Id == teamId).First();
+        return await teamDbContext.Teams!.ToListAsync();
     }
-
-    public Task<Team> CreateTeamAsync(Team team)
+    public async Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId)
     {
-        throw new NotImplementedException();
+        var teams = await teamDbContext.Teams!
+                                            .Where(m => m.TeamManagerId == managerId)
+                                            .ToListAsync();
+        return teams;
     }
-    public Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId)
+    public async Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId)
     {
-        throw new NotImplementedException();
+        var listOfteams = await teamDbContext.Teams!.ToListAsync();
+        var teams = listOfteams.Where(m => m.MemberId.Contains(memberId)).ToList();
+        return teams;
+    }
+    public async Task<Team> CreateTeamAsync(Team team)
+    {
+        team.MemberIdSerialized = JsonConvert.SerializeObject(team.MemberId);
+        await teamDbContext.Teams!.AddAsync(team);
+        await teamDbContext.SaveChangesAsync();
+        return team;
     }
 
     public Task<bool> DeleteTeamAsync(Guid teamId)
     {
         throw new NotImplementedException();
     }
-
-
-    public Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<Team>> GetTeamsByNameAsync(string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<List<Team>> GetTeamsByUserIdAsync(Guid userId)
-    {
-        throw new NotImplementedException();
-    }
-
     public Task<Team> UpdateTeamAsync(Team team)
     {
         throw new NotImplementedException();

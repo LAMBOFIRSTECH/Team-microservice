@@ -14,11 +14,13 @@ public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<Te
 
     public async Task<List<TeamDto>> Handle(GetAllTeamsQuery request, CancellationToken cancellationToken)
     {
-        var teams = await teamRepository.GetAllTeams();
+        
+        var teams = await teamRepository.GetAllTeamsAsync();
         var teamDtos = teams.Select(team => new TeamDto
         {
-            Id = team.Id,
-            Name = team.Name
+            Name = team.Name,
+            TeamManagerId= team.TeamManagerId,
+            MemberId = team.MemberId
         }).ToList();
         return teamDtos;
     }

@@ -1,12 +1,17 @@
 using System.ComponentModel.DataAnnotations;
+using Newtonsoft.Json;
 
 namespace Teams.CORE.Layer.Entities;
 public class Team
 {
-    [Required]
     [Key]
     public Guid Id { get; set; }
-    public string? Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     public Guid TeamManagerId { get; set; }
-    public List<Guid> MemberId { get; set; } = new();
+    public string? MemberIdSerialized { get; set; } = string.Empty;
+    public List<Guid> MemberId
+    {
+        get => string.IsNullOrEmpty(MemberIdSerialized) ? new List<Guid>() : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
+        set => MemberIdSerialized = JsonConvert.SerializeObject(value);
+    }
 }
