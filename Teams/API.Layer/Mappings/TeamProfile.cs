@@ -9,6 +9,9 @@ public class TeamProfile : Profile
     {
         CreateMap<Team, TeamDto>();
         CreateMap<TeamDto, Team>();
+        CreateMap<Team, TeamRequestDto>();
+        CreateMap<TeamRequestDto, Team>();
         CreateMap<CreateTeamCommand, Team>();
+        CreateMap<UpdateTeamCommand, Team>();
     }
 }

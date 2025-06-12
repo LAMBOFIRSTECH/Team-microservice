@@ -7,15 +7,8 @@ using Teams.CORE.Layer.Interfaces;
 using AutoMapper;
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, TeamDto>
+public class CreateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper) : IRequestHandler<CreateTeamCommand, TeamDto>
 {
-    private readonly ITeamRepository teamRepository;
-    private readonly IMapper mapper;
-    public CreateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper)
-    {
-        this.teamRepository = teamRepository;
-        this.mapper = mapper;
-    }
     public async Task<TeamDto> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
     {
         var listOfTeams = await teamRepository.GetAllTeamsAsync();

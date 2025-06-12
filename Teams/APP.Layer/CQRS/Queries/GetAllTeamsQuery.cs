@@ -10,19 +10,22 @@ public class GetAllTeamsQuery : IRequest<List<TeamDto>>
     /// This constructor is parameterless and is used for deserialization purposes.
     /// It allows the MediatR library to create instances of this query without requiring any parameters.
     /// </remarks>
+    public Guid Id { get; }
     public Guid TeamManagerId { get; }
     public string Name { get; set; } = string.Empty;
     public List<Guid> MemberId { get; set; }
     public GetAllTeamsQuery()
     {
+        Id =
         TeamManagerId = Guid.Empty;
         MemberId = new List<Guid>();
         Name = string.Empty;
     }
-    public GetAllTeamsQuery(Guid TeamManagerId, List<Guid> MemberId, string Name = "")
+    public GetAllTeamsQuery(Guid identifier, Guid teamManagerId, List<Guid> memberId, string name = "")
     {
-        this.TeamManagerId = TeamManagerId;
-        this.MemberId = MemberId;
-        this.Name = Name;
+        this.Id = identifier;
+        this.TeamManagerId = teamManagerId;
+        this.MemberId = memberId;
+        this.Name = name;
     }
 }

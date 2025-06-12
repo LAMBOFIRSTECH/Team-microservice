@@ -1,26 +1,39 @@
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+
+using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Teams.API.Layer.Middlewares;
-using Teams.API.Layer.Mappings;
+
+using FluentValidation;
+using FluentValidation.AspNetCore;
+
+using Newtonsoft.Json.Serialization;
+
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Teams.CORE.Layer.Interfaces;
-using Teams.INFRA.Layer.Persistence.Repositories;
-using FluentValidation.AspNetCore;
-using FluentValidation;
-using Teams.APP.Layer.Interfaces;
+
+using Teams.API.Layer.Mappings;
+using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Validators;
-using Teams.INFRA.Layer.Services;
+using Teams.CORE.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
-using System.Security.Cryptography.X509Certificates;
+using Teams.INFRA.Layer.Persistence.Repositories;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using JwtAuthLibrary;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+.AddNewtonsoftJson(options =>
+            {
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            })
+;
+    
 builder.Services.AddEndpointsApiExplorer();
 builder.Configuration
     .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
@@ -99,12 +112,13 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 builder.Logging.AddConsole();
 builder.Services.AddScoped<ITeamRepository, TeamRepository>();
-builder.Services.AddScoped<IHashicorpVaultService, HashicorpVaultService>();
 
-builder.Services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters(); // Nécessaire pour la validation des données dans le CQRS
+builder.Services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTeamCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateTeamCommandValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+
 builder.Services.AddAutoMapper(typeof(TeamProfile).Assembly);
 builder.Services.AddMediatR(cfg =>
 {
@@ -114,6 +128,35 @@ builder.Services.AddMediatR(cfg =>
 // {
 //     cfg.AddProfile<TeamProfile>();
 // }, AppDomain.CurrentDomain.GetAssemblies()); //protéger l'assemblage de mappage pour lever les exceptions de mappage
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication("JwtAuthorization")
+    .AddScheme<JwtBearerOptions, JwtBearerAuthenticationMiddleware>("JwtAuthorization", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            RequireExpirationTime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+ {
+     options.AddPolicy("AdminPolicy", policy =>
+         policy.RequireRole(nameof(Rule.Privilege.Administrateur))
+               .RequireAuthenticatedUser()
+               .AddAuthenticationSchemes("JwtAuthorization"));
+
+     options.AddPolicy("ManagerPolicy", policy =>
+        policy.RequireRole(nameof(Rule.Privilege.Manager))
+               .RequireAuthenticatedUser()
+               .AddAuthenticationSchemes("JwtAuthorization"));
+ });
 
 // Configuration de OpenTelemetry pour la traçabilité
 builder.Services.AddOpenTelemetry()
@@ -135,6 +178,7 @@ var app = builder.Build();
 app.Map("/team-management", teamApp =>
 {
     teamApp.UseRouting();
+    teamApp.UseAuthentication();
     teamApp.UseAuthorization();
     teamApp.UseMiddleware<ExceptionMiddleware>();
 

@@ -5,19 +5,11 @@ using Newtonsoft.Json;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
-public class TeamRepository : ITeamRepository
+public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
 {
-    private readonly TeamDbContext teamDbContext;
-    public TeamRepository(TeamDbContext teamDbContext)
-    {
-        this.teamDbContext = teamDbContext;
-    }
     public async Task<Team>? GetTeamByIdAsync(Guid teamId)
     {
-        var teams = await teamDbContext.Teams!.ToListAsync();
-        return teams
-        .Where(t => t.Id == teamId)
-        .FirstOrDefault()!;
+        return await teamDbContext.Teams.AsTracking().FirstOrDefaultAsync(t => t.Id == teamId); //AsTracking améliore la performance de la requête en évitant le suivi des modifications pour les entités récupérées, ce qui est utile si vous ne prévoyez pas de modifier ces entités dans le contexte actuel.
     }
     public async Task<List<Team>> GetAllTeamsAsync()
     {
@@ -43,13 +35,28 @@ public class TeamRepository : ITeamRepository
         await teamDbContext.SaveChangesAsync();
         return team;
     }
+    public async Task UpdateTeamAsync(Team team)
+    {
+        var existingTeam = await teamDbContext.Teams!.FirstOrDefaultAsync(t => t.Id == team.Id);
+        existingTeam!.Name = team.Name;
+        existingTeam.MemberId = team.MemberId;
+        existingTeam.TeamManagerId = team.TeamManagerId;
+        existingTeam.MemberIdSerialized = JsonConvert.SerializeObject(existingTeam.MemberId);
+        await teamDbContext.SaveChangesAsync();
+    }
 
-    public Task<bool> DeleteTeamAsync(Guid teamId)
+    // public async Task<bool> DeleteTeamAsync(Guid teamId)
+    // {
+    //     var team = await teamDbContext.Teams.FindAsync(teamId);
+    //     teamDbContext.Teams.Remove(team);
+    //     await teamDbContext.SaveChangesAsync();
+    // }
+    
+    public async Task DeleteTeamAsync(Guid teamId)
     {
-        throw new NotImplementedException();
+        var team = await teamDbContext.Teams.FindAsync(teamId);  
+        teamDbContext.Teams.Remove(team);  
+        await teamDbContext.SaveChangesAsync();
     }
-    public Task<Team> UpdateTeamAsync(Team team)
-    {
-        throw new NotImplementedException();
-    }
+
 }

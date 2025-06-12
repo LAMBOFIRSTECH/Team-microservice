@@ -2,36 +2,38 @@ using MediatR;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.CORE.Layer.Interfaces;
-using Teams.CORE.Layer.Entities;
 using Teams.API.Layer.Middlewares;
 using AutoMapper;
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class UpdateTeamCommandHandler : IRequestHandler<UpdateTeamCommand, TeamDto> // A voir plustard
+public class UpdateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper) : IRequestHandler<UpdateTeamCommand, TeamRequestDto>
 {
-    private readonly ITeamRepository teamRepository;
-    private readonly IMapper mapper;
-    public UpdateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper)
-    {
-        this.teamRepository = teamRepository;
-        this.mapper = mapper;
-    }
-
-    public async Task<TeamDto> Handle(UpdateTeamCommand request, CancellationToken cancellationToken)
-    {
-        var listOfTeams = await teamRepository.GetAllTeamsAsync();
-        if (listOfTeams.Any(t => t.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+    public async Task<TeamRequestDto> Handle(UpdateTeamCommand command, CancellationToken cancellationToken)
         {
-            throw new HandlerException(
-                409,
-                $"A team with the name '{request.Name}' already exists.",
-                "Conflict",
-                "Team Name Conflict"
-
-            );
+            var existingTeam = await teamRepository.GetTeamByIdAsync(command.Id);
+            if (existingTeam == null)
+            {
+                throw new HandlerException(
+                    404,
+                    $"A team with the Id '{command.Id}' not found.",
+                    "Not Found",
+                    "Team ID not found"
+                );
+            }
+            if (existingTeam.Name == command.Name && existingTeam.MemberId.SequenceEqual(command.MemberId))
+            {
+                throw new HandlerException(
+                    400,
+                    "No changes detected in the team details.",
+                    "Bad Request",
+                    "No changes to update"
+                );
+            }
+            existingTeam.Name = command.Name;
+            existingTeam.TeamManagerId = command.TeamManagerId;
+            existingTeam.MemberId = command.MemberId;
+            await teamRepository.UpdateTeamAsync(existingTeam);
+            return mapper.Map<TeamRequestDto>(existingTeam);
         }
-        var team = mapper.Map<Team>(request);
-        await teamRepository.UpdateTeamAsync(team);
-        return mapper.Map<TeamDto>(team);
-    }
+    
 }

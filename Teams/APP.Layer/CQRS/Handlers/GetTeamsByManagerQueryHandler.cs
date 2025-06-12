@@ -6,7 +6,7 @@ using Teams.API.Layer.Middlewares;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetTeamsByManagerQueryHandler : IRequestHandler<GetTeamsByManagerQuery, List<TeamDto>>
+public class GetTeamsByManagerQueryHandler : IRequestHandler<GetTeamsByManagerQuery, List<TeamRequestDto>>
 {
     private readonly ITeamRepository teamRepository;
     public GetTeamsByManagerQueryHandler(ITeamRepository teamRepository)
@@ -14,7 +14,7 @@ public class GetTeamsByManagerQueryHandler : IRequestHandler<GetTeamsByManagerQu
         this.teamRepository = teamRepository;
     }
 
-    public async Task<List<TeamDto>> Handle(GetTeamsByManagerQuery request, CancellationToken cancellationToken)
+    public async Task<List<TeamRequestDto>> Handle(GetTeamsByManagerQuery request, CancellationToken cancellationToken)
     {
         var teams = await teamRepository.GetTeamsByManagerIdAsync(request.TeamManagerId);
         if (teams == null || teams.Count.Equals(0))
@@ -32,7 +32,7 @@ public class GetTeamsByManagerQueryHandler : IRequestHandler<GetTeamsByManagerQu
                 team.MemberId = new List<Guid>();
             }
         }
-        var teamDtos = teams.Select(team => new TeamDto(team.TeamManagerId, team.Name, request.IncludeMembers, team.MemberId)).ToList();
+        var teamDtos = teams.Select(team => new TeamRequestDto(team.Id,team.TeamManagerId, team.Name, request.IncludeMembers, team.MemberId)).ToList();
         return teamDtos;
     }
 }

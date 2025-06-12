@@ -18,6 +18,7 @@ public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<Te
         var teams = await teamRepository.GetAllTeamsAsync();
         var teamDtos = teams.Select(team => new TeamDto
         {
+            Id =team.Id,
             Name = team.Name,
             TeamManagerId= team.TeamManagerId,
             MemberId = team.MemberId
@@ -25,4 +26,3 @@ public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<Te
         return teamDtos;
     }
 }
-

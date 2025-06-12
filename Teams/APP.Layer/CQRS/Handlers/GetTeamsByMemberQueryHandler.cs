@@ -3,10 +3,9 @@ using Teams.CORE.Layer.Interfaces;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.CQRS.Queries;
 using Teams.API.Layer.Middlewares;
-
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetTeamsByMemberQueryHandler : IRequestHandler<GetTeamsByMemberQuery, List<TeamDto>>
+public class GetTeamsByMemberQueryHandler : IRequestHandler<GetTeamsByMemberQuery, List<TeamRequestDto>>
 {
     private readonly ITeamRepository teamRepository;
     public GetTeamsByMemberQueryHandler(ITeamRepository teamRepository)
@@ -14,7 +13,7 @@ public class GetTeamsByMemberQueryHandler : IRequestHandler<GetTeamsByMemberQuer
         this.teamRepository = teamRepository;
     }
 
-    public async Task<List<TeamDto>> Handle(GetTeamsByMemberQuery request, CancellationToken cancellationToken)
+    public async Task<List<TeamRequestDto>> Handle(GetTeamsByMemberQuery request, CancellationToken cancellationToken)
     {
         var teams = await teamRepository.GetTeamsByMemberIdAsync(request.MemberId);
         if (teams == null || teams.Count.Equals(0))
@@ -32,7 +31,7 @@ public class GetTeamsByMemberQueryHandler : IRequestHandler<GetTeamsByMemberQuer
                 team.MemberId = new List<Guid>();
             }
         }
-        var teamDtos = teams.Select(team => new TeamDto(team.TeamManagerId, team.Name, request.IncludeMembers, team.MemberId)).ToList();
+        var teamDtos = teams.Select(team => new TeamRequestDto(team.Id,team.TeamManagerId, team.Name, request.IncludeMembers, team.MemberId)).ToList();
         return teamDtos;
     }
 }

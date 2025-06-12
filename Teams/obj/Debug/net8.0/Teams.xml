@@ -4,15 +4,7 @@
         <name>Teams</name>
     </assembly>
     <members>
-        <member name="M:Teams.API.Layer.Controllers.TeamController.#ctor(MediatR.IMediator)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Teams.API.Layer.Controllers.TeamController"/> class.
-            </summary>
-            <param name="mediator">
-            The mediator instance used to send commands and queries within the application.
-            </param>
-        </member>
-        <member name="P:Teams.APP.Layer.CQRS.Queries.GetAllTeamsQuery.TeamManagerId">
+        <member name="P:Teams.APP.Layer.CQRS.Queries.GetAllTeamsQuery.Id">
             <summary>
             Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetAllTeamsQuery"/> class.
             </summary>
@@ -39,13 +31,6 @@
             Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetTeamsByMemberQuery"/> class with the specified team identifier.
             </summary>
             <param name="MemberId">The unique identifier of the team manager to retrieve.</param>
-            <param name="includeMembers">Whether to include team members in the result.</param>
-        </member>
-        <member name="M:Teams.APP.Layer.CQRS.Queries.GetTeamsByNameQuery.#ctor(System.String,System.Boolean)">
-            <summary>
-            Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetTeamsByNameQuery"/> class with the specified team identifier.
-            </summary>
-            <param name="name">The unique identifier of the team manager to retrieve.</param>
             <param name="includeMembers">Whether to include team members in the result.</param>
         </member>
     </members>
