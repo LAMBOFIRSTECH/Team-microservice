@@ -1,0 +1,3 @@
+# Ignore les répertoires bin et obj
+/bin/
+/obj/
