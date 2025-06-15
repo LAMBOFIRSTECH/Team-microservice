@@ -1,8 +1,10 @@
 using AutoMapper;
-using Teams.CORE.Layer.Entities;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.CQRS.Commands;
+using Teams.CORE.Layer.Entities;
+
 namespace Teams.API.Layer.Mappings;
+
 public class TeamProfile : Profile
 {
     public TeamProfile()

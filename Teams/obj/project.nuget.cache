@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "rVnurnKT4WqfEBzdrJLdRTQseHaOyJylusFRDmHPIgdWD0ziFci/rE6YWuKqRv/FT//5hs8D8xJ/OgSindJx6w==",
+  "dgSpecHash": "umweLu9EE6hqE7SwoWPnnxRCxIolpTwc7ROnE+m00EC5FyORWN8oBRQCgV63OR2+uOwY8XhVU4rJGzzkz1G1yg==",
   "success": true,
   "projectFilePath": "/home/snow/APIS/Team-management/Teams/Teams.csproj",
   "expectedPackageFiles": [
@@ -78,6 +78,7 @@
     "/home/snow/.nuget/packages/swashbuckle.aspnetcore.swaggerui/8.1.4/swashbuckle.aspnetcore.swaggerui.8.1.4.nupkg.sha512",
     "/home/snow/.nuget/packages/system.codedom/6.0.0/system.codedom.6.0.0.nupkg.sha512",
     "/home/snow/.nuget/packages/system.collections.immutable/7.0.0/system.collections.immutable.7.0.0.nupkg.sha512",
+    "/home/snow/.nuget/packages/system.componentmodel.annotations/5.0.0/system.componentmodel.annotations.5.0.0.nupkg.sha512",
     "/home/snow/.nuget/packages/system.composition/7.0.0/system.composition.7.0.0.nupkg.sha512",
     "/home/snow/.nuget/packages/system.composition.attributedmodel/7.0.0/system.composition.attributedmodel.7.0.0.nupkg.sha512",
     "/home/snow/.nuget/packages/system.composition.convention/7.0.0/system.composition.convention.7.0.0.nupkg.sha512",

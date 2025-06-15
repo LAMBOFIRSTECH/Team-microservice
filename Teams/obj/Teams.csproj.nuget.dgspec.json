@@ -115,6 +115,10 @@
               "target": "Package",
               "version": "[8.1.4, )"
             },
+            "System.ComponentModel.Annotations": {
+              "target": "Package",
+              "version": "[5.0.0, )"
+            },
             "VaultSharp": {
               "target": "Package",
               "version": "[1.17.5.1, )"

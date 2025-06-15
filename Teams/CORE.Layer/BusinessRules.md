@@ -1,39 +1,39 @@
 # Les règles métier pour l'entité Equipe
 
+`EmployeService` et `ProjetService` (sont des services à part qui devront etre injecter dans le handler)
+
 1. Règles de validation de données (Fluent validation)
----------------------------------------------------------------------------------------------------
-| Règle                                           | Exemple                                       |
-| ----------------------------------------------- | --------------------------------------------- |
-| Une équipe doit avoir un nom non vide           | `"NomEquipe != null && NomEquipe.Length > 0"` |
-|                                                 |                                               |
-| Le responsable doit être un employé valide      | Vérifié via `EmployeService`                  |
-|                                                 |                                               |
-| Les membres doivent être des employés existants | Vérifié avant ajout                           |
----------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+| Règle                                           | Exemple                                            |
+| ----------------------------------------------- | ---------------------------------------------------|
+|☑️  Une équipe doit avoir un nom non vide        | `"NomEquipe != null && NomEquipe.Length > 0"`      | 
+|                                                 |                                                    |
+| Le responsable doit être un employé valide      | Vérifié via `EmployeService`                       |
+|                                                 |                                                    |
+| Les membres doivent être des employés existants | Vérifié avant ajout                                |
+--------------------------------------------------------------------------------------------------------
 
 
 2. Règles d’invariant métier
------------------------------------------------------------------------------------------------------------------
-| Règle                                                           | Invariant                                   |
-| --------------------------------------------------------------- | ------------------------------------------- |
-| Une équipe doit toujours avoir **un et un seul responsable**    | `Equipe.Responsable != null`                |
-|                                                                 |                                             |
-| Un responsable **doit être membre** de l’équipe                 | `Equipe.Membres.Contains(Responsable)`      |
-|                                                                 |                                             |
-| Un employé ne peut pas apparaître deux fois dans la même équipe | `Membres.Distinct().Count == Membres.Count` |
------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------
+| Règle                                                           | Invariant                                     |
+| --------------------------------------------------------------- | ----------------------------------------------|
+|☑️ Une équipe doit toujours avoir **un et un seul responsable** | `Equipe.Responsable != null`                   |
+|                                                                 |                                               |
+|☑️ Un responsable **doit être membre** de l’équipe              | `Equipe.Membres.Contains(Responsable)`         |
+|                                                                 |                                                |
+|☑️ Un employé ne peut pas apparaître deux fois dans la même équipe | `Membres.Distinct().Count == Membres.Count` |
+--------------------------------------------------------------------------------------------------------------------
 
 
-3.  Règles d’intégrité métier
---------------------------------------------------------------------------------------------------------
-| Règle                                                   | Détails                                    |
-|---------------------------------------------------------| -------------------------------------------|
-| Tous les membres doivent exister dans `EmployeService`  | Validé à l’ajout                           |
-|                                                         |                                            |
-| Une équipe ne peut être affectée à un projet inexistant | `ProjetService` doit valider l’affectation |
-|                                                         |                                            |
-| Les ID des membres doivent être valides et uniques      | GUID ou Id interne valide                  |
---------------------------------------------------------------------------------------------------------
+3. Règles d’agrégation métier
+-------------------------------------------------------------------------------------------
+| Règle                                          | Exemple                                |
+|------------------------------------------------|--------------------------------------- |
+|☑️Une équipe ne peut pas dépasser 10 membres    | `if (Membres.Count >= 10) throw ...`   |
+|                                                |                                         |
+|☑️Minimum 2 membres pour valider une équipe     | Empêche les équipes “fantômes”         |
+-------------------------------------------------------------------------------------------
 
 
 4. Règles de workflow / transition d’état
@@ -67,16 +67,19 @@
 
 
 7. Règles d’accès métier / autorisation
------------------------------------------------------------------------------------------------
-| Règle                                                  | Exemple                            |
-|------------------------------------------------------- | -----------------------------------|
-| Seul un responsable peut modifier les membres          | Autorisation métier, non technique |
-|                                                        |                                    |
-| Seuls les administrateurs peuvent supprimer une équipe | Protection de la suppression       |
------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                              | Exemple                            |
+|------------------------------------------------------------------------------------|------------------------------------|
+|☑️Seul un responsable peut modifier les membres                                     | Autorisation métier, non technique |
+|                                                                                     |                                   |
+|☑️ Seuls les administrateurs peuvent supprimer une équipe                           | Protection de la suppression       |
+|                                                                                    |                                     |
+|☑️ Seul un membre qui n'est pas un **team manager** peut être supprimé d'une équipe | Protection de la suppression       |
+---------------------------------------------------------------------------------------------------------------------------
 
 
-8. Règles temporelles / périodiques
+
+8. Règles temporelles / périodiques (dictionnaire ou cache dans l'implémentation)
 -------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                                 | Exemple                               |
 |------------------------------------------------------------------------------------------------------ | --------------------------------------|
@@ -86,14 +89,17 @@
 -------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-9. Règles d’agrégation métier
--------------------------------------------------------------------------------------
-| Règle                                      | Exemple                              |
-|------------------------------------------- | ------------------------------------ |
-| Une équipe ne peut pas dépasser 10 membres | `if (Membres.Count >= 10) throw ...` |
-|                                            |                                      |
-| Minimum 2 membres pour valider une équipe  | Empêche les équipes “fantômes”       |
--------------------------------------------------------------------------------------
+9.  Règles d’intégrité métier
+--------------------------------------------------------------------------------------------------------
+| Règle                                                   | Détails                                    |
+|---------------------------------------------------------| -------------------------------------------|
+| Tous les membres doivent exister dans `EmployeService`  | Validé à l’ajout                           |
+|                                                         |                                            |
+| Une équipe ne peut être affectée à un projet inexistant | `ProjetService` doit valider l’affectation |
+|                                                         |                                            |
+| Les ID des membres doivent être valides et uniques      | GUID ou Id interne valide                  |
+--------------------------------------------------------------------------------------------------------
+
 
 10. Règles de dépendance / prérequis
 -----------------------------------------------------------------------------------------------------------------------------------

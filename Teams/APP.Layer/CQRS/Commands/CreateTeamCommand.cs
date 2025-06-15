@@ -1,5 +1,6 @@
 using MediatR;
 using Teams.API.Layer.DTOs;
+
 namespace Teams.APP.Layer.CQRS.Commands;
 
 public class CreateTeamCommand : IRequest<TeamDto>
@@ -8,7 +9,7 @@ public class CreateTeamCommand : IRequest<TeamDto>
     public Guid TeamManagerId { get; }
     public List<Guid> MemberId { get; } = new();
 
-    public CreateTeamCommand( string name, Guid teamManagerId, List<Guid> memberId)
+    public CreateTeamCommand(string name, Guid teamManagerId, List<Guid> memberId)
     {
         Name = name;
         TeamManagerId = teamManagerId;

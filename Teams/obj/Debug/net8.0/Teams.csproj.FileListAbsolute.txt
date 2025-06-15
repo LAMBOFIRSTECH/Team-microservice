@@ -1,3 +1,11 @@
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.csproj.AssemblyReference.cache
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.GeneratedMSBuildEditorConfig.editorconfig
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.AssemblyInfoInputs.cache
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.AssemblyInfo.cs
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.csproj.CoreCompileInputs.cache
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.MvcApplicationPartsAssemblyInfo.cs
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.MvcApplicationPartsAssemblyInfo.cache
+/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.sourcelink.json
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/API.Layer/appsettings.Development.json
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/Teams
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/Teams.deps.json
@@ -146,14 +154,6 @@
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/zh-Hans/Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 /home/snow/APIS/Team-management/Teams/bin/Debug/net8.0/runtimes/browser/lib/net8.0/System.Text.Encodings.Web.dll
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.csproj.AssemblyReference.cache
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.GeneratedMSBuildEditorConfig.editorconfig
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.AssemblyInfoInputs.cache
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.AssemblyInfo.cs
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.csproj.CoreCompileInputs.cache
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.MvcApplicationPartsAssemblyInfo.cs
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.MvcApplicationPartsAssemblyInfo.cache
-/home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/Teams.sourcelink.json
 /home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/staticwebassets.build.json
 /home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/staticwebassets.development.json
 /home/snow/APIS/Team-management/Teams/obj/Debug/net8.0/staticwebassets/msbuild.Teams.Microsoft.AspNetCore.StaticWebAssets.props

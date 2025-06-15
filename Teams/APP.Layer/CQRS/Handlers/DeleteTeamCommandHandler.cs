@@ -1,10 +1,12 @@
 using MediatR;
-using Teams.CORE.Layer.Interfaces;
-using Teams.APP.Layer.CQRS.Commands;
 using Teams.API.Layer.Middlewares;
+using Teams.APP.Layer.CQRS.Commands;
+using Teams.CORE.Layer.Interfaces;
+
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class DeleteTeamCommandHandler(ITeamRepository teamRepository) : IRequestHandler<DeleteTeamCommand>
+public class DeleteTeamCommandHandler(ITeamRepository teamRepository)
+    : IRequestHandler<DeleteTeamCommand>
 {
     public async Task Handle(DeleteTeamCommand command, CancellationToken cancellationToken)
     {

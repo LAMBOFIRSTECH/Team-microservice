@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 
 namespace Teams.CORE.Layer.Entities;
+
 public class Team
 {
     [Key]
@@ -11,7 +12,10 @@ public class Team
     public string? MemberIdSerialized { get; set; } = string.Empty;
     public List<Guid> MemberId
     {
-        get => string.IsNullOrEmpty(MemberIdSerialized) ? new List<Guid>() : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
+        get =>
+            string.IsNullOrEmpty(MemberIdSerialized)
+                ? new List<Guid>()
+                : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
         set => MemberIdSerialized = JsonConvert.SerializeObject(value);
     }
 }

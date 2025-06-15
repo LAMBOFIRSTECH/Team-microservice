@@ -10,14 +10,12 @@ namespace Teams.API.Layer.Middlewares;
 public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearerOptions>
 {
     private readonly IConfiguration configuration;
-    private readonly ILogger<JwtBearerAuthenticationMiddleware> log;
-    public JwtBearerAuthenticationMiddleware(IConfiguration configuration, ILogger<JwtBearerAuthenticationMiddleware> log, IOptionsMonitor<JwtBearerOptions> options,
+    public JwtBearerAuthenticationMiddleware(IConfiguration configuration, IOptionsMonitor<JwtBearerOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder)
     : base(options, logger, encoder)
     {
         this.configuration = configuration;
-        this.log = log;
     }
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -38,10 +36,7 @@ public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearer
             var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = Options.TokenValidationParameters;
             var vault = new HashicorpVaultService(configuration);
-            var pass= await vault.GetClientCertificatePassword();
-            log.LogCritical($"cert pass {pass}");
             validationParameters.IssuerSigningKey = await vault.GetJwtSigningKeyFromVaultServer();
-            log.LogCritical($"Using JWT signing key from Hashicorp Vault {validationParameters.IssuerSigningKey}");
             var principal = tokenHandler.ValidateToken(jwtToken, validationParameters, out SecurityToken securityToken);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
             return await Task.FromResult(AuthenticateResult.Success(ticket));

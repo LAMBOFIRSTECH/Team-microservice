@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LamboFT")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bf8b1f4a5454e64f0ae1beb682dde925d47eee11")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ec72b36974ab94503c6e302a260ee3851169739")]
 [assembly: System.Reflection.AssemblyProductAttribute("Teams")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Teams")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
