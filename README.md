@@ -1,6 +1,6 @@
 # 📌 Gestion des équipes (EQUIPE)
 
-## Liste des équipes chez FirsTech
+## Liste des équipes du projet
 
 1. Équipe de développement (Dev Team)
 ----------------------------------------------------------------------------------------------------------------------------------------
