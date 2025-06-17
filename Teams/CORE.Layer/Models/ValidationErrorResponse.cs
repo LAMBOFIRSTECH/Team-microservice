@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace Teams.CORE.Layer.Models;
+
 public class ValidationErrorResponse
 {
     public string Type { get; set; }

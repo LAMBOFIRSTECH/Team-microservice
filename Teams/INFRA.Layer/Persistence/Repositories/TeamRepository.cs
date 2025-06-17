@@ -5,8 +5,14 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
-public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
+public class TeamRepository(TeamDbContext teamDbContext, ILogger<TeamRepository> log)
+    : ITeamRepository
 {
+    public void Dispose()
+    {
+        teamDbContext.Database.EnsureDeleted();
+    }
+
     public async Task<Team>? GetTeamByIdAsync(Guid teamId)
     {
         return await teamDbContext.Teams.AsTracking().FirstOrDefaultAsync(t => t.Id == teamId); //AsTracking améliore la performance de la requête en évitant le suivi des modifications pour les entités récupérées, ce qui est utile si vous ne prévoyez pas de modifier ces entités dans le contexte actuel.
@@ -50,6 +56,13 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         await teamDbContext.SaveChangesAsync();
     }
 
+    public async Task DeleteTeamAsync(Guid teamId)
+    {
+        var team = await teamDbContext.Teams!.FindAsync(teamId);
+        teamDbContext.Teams.Remove(team!);
+        await teamDbContext.SaveChangesAsync();
+    }
+
     // public async Task<bool> DeleteTeamAsync(Guid teamId)
     // {
     //     var team = await teamDbContext.Teams.FindAsync(teamId);
@@ -57,16 +70,14 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     //     await teamDbContext.SaveChangesAsync();
     // }
 
-    public async Task DeleteTeamAsync(Guid teamId)
-    {
-        var team = await teamDbContext.Teams!.FindAsync(teamId);
-        teamDbContext.Teams.Remove(team!);
-        await teamDbContext.SaveChangesAsync();
-    }
     public async Task DeleteTeamMemberAsync(Guid memberId)
     {
-        var team = await teamDbContext.Teams!.FindAsync(memberId);
-        team!.MemberId?.Remove(memberId);
+        var team = await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
+            t.MemberId.Contains(memberId)
+        );
+        var memberToRemove = team.MemberId.FirstOrDefault(m => m.Equals(memberId));
+        if (memberToRemove != Guid.Empty)
+            team.RemoveMember(memberToRemove);
         await teamDbContext.SaveChangesAsync();
     }
 }

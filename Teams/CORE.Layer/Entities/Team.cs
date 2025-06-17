@@ -18,4 +18,11 @@ public class Team
                 : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
         set => MemberIdSerialized = JsonConvert.SerializeObject(value);
     }
+
+    public void RemoveMember(Guid memberId)
+    {
+        var members = MemberId;
+        members.RemoveAll(m => m == memberId);
+        MemberId = members;
+    }
 }

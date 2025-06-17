@@ -1,6 +1,8 @@
 using Newtonsoft.Json;
+
 namespace Teams.API.Layer.Middlewares;
-public class ExceptionMiddleware(RequestDelegate _next)
+
+public class ExceptionHandlerMiddleware(RequestDelegate _next)
 {
     public async Task Invoke(HttpContext context)
     {
@@ -17,7 +19,7 @@ public class ExceptionMiddleware(RequestDelegate _next)
             {
                 title = ex.Title,
                 message = ex.Message,
-                reason = ex.Reason
+                reason = ex.Reason,
             };
 
             var json = JsonConvert.SerializeObject(error);
@@ -28,12 +30,14 @@ public class ExceptionMiddleware(RequestDelegate _next)
             context.Response.StatusCode = 500;
             context.Response.ContentType = "application/json";
 
-            var json = JsonConvert.SerializeObject(new
-            {
-                title = "Internal Server Error",
-                message = ex.Message,
-                reason = "UnhandledException"
-            });
+            var json = JsonConvert.SerializeObject(
+                new
+                {
+                    title = "Internal Server Error",
+                    message = ex.Message,
+                    reason = "UnhandledException",
+                }
+            );
             await context.Response.WriteAsync(json);
         }
     }

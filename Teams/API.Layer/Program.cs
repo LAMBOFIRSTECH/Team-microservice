@@ -1,66 +1,25 @@
-using System.Reflection;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using FluentValidation;
-using JwtAuthLibrary;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using Newtonsoft.Json.Serialization;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using Teams.API.Layer.Mappings;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
-using Teams.APP.Layer.CQRS.Validators;
-using Teams.APP.Layer.Services;
-using Teams.CORE.Layer.Interfaces;
-using Teams.INFRA.Layer.Persistence;
-using Teams.INFRA.Layer.Persistence.Repositories;
+using Teams.APP.Layer;
+using Teams.APP.Layer.Configurations;
+using Teams.CORE.Layer;
+using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder
-    .Services.AddControllers()
-    .AddNewtonsoftJson(options =>
-    {
-        options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-    });
+// Ajouter les services via les DI respectives
+builder.Services.AddApiDI(builder.Configuration);
+builder.Services.AddApplicationDI(builder.Configuration);
+builder.Services.AddInfrastructureDI(builder.Configuration);
+builder.Services.AddCoreDI();
 
-builder.Services.AddEndpointsApiExplorer();
-builder
-    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
-    .AddJsonFile(
-        $"appsettings.{builder.Environment.EnvironmentName}.json",
-        optional: false,
-        reloadOnChange: false
-    )
-    .AddEnvironmentVariables();
-
-builder.Services.AddSwaggerGen(opt =>
-{
-    opt.SwaggerDoc(
-        builder.Configuration["ApiVersion"],
-        new OpenApiInfo
-        {
-            Title = "Team Management service | Api",
-            Description = "An ASP.NET Core Web API for managing Teams",
-            Version = builder.Configuration["ApiVersion"],
-            Contact = new OpenApiContact { Name = "Artur Lambo", Email = "lamboartur94@gmail.com" },
-        }
-    );
-
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
-});
-
-var conStrings = builder.Configuration.GetSection("ConnectionStrings")["DefaultConnection"];
-if (string.IsNullOrEmpty(conStrings))
-{
-    throw new ArgumentException(
-        "Connection string 'DefaultConnection' is not set in appsettings.json"
-    );
-}
+// Configuration HTTPS et certificats
 var kestrelSection = builder.Configuration.GetSection("Kestrel:EndPoints:Https");
 var certificateFile = kestrelSection["Certificate:File"];
 var certificatePassword = kestrelSection["Certificate:CertPassword"];
@@ -70,7 +29,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.ConfigureHttpsDefaults(httpsOptions =>
     {
-        // 📜 Charge le certificat serveur pour HTTPS
         if (
             string.IsNullOrEmpty(certificateFile)
             || string.IsNullOrEmpty(certificatePassword)
@@ -80,21 +38,19 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
         var serverCertificate = new X509Certificate2(certificateFile, certificatePassword);
         httpsOptions.ServerCertificate = serverCertificate;
-        // 🔐 Active le mode de certificat client
+
         httpsOptions.ClientCertificateMode = Enum.Parse<ClientCertificateMode>(
             kestrelSection["ClientCertificateMode"] ?? "RequireCertificate",
             ignoreCase: true
         );
 
-        // vérifier que le certificat client est signé et validé par le bon CA
         httpsOptions.ClientCertificateValidation = (cert, chain, errors) =>
         {
             if (string.IsNullOrEmpty(caCertFile) || !File.Exists(caCertFile))
-            {
                 throw new ArgumentException(
                     "CA certificate file path 'Kestrel:EndPoints:Https:Certificate:CAFile' is not set in configuration."
                 );
-            }
+
             var caCert = new X509Certificate2(caCertFile);
             var chain2 = new X509Chain();
             chain2.ChainPolicy = new X509ChainPolicy
@@ -109,90 +65,19 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     });
 });
 
-builder.Services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
+// Ajouter d'autres services comme HttpClient, Routing, Health Checks, etc.
 builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRouting();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
-builder.Logging.AddConsole();
-builder.Services.AddScoped<ITeamRepository, TeamRepository>();
-builder.Services.AddScoped<EmployeService>();
+builder.Services.AddLogging();
 
-builder.Services.AddValidatorsFromAssemblyContaining<CreateTeamCommandValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<UpdateTeamCommandValidator>();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
-builder.Services.AddAutoMapper(typeof(TeamProfile).Assembly);
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-});
-
-// builder.Services.AddAutoMapper(cfg =>
-// {
-//     cfg.AddProfile<TeamProfile>();
-// }, AppDomain.CurrentDomain.GetAssemblies()); //protéger l'assemblage de mappage pour lever les exceptions de mappage
-builder.Services.AddAuthorization();
-builder
-    .Services.AddAuthentication("JwtAuthorization")
-    .AddScheme<JwtBearerOptions, JwtBearerAuthenticationMiddleware>(
-        "JwtAuthorization",
-        options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                RequireExpirationTime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-                ValidAudience = builder.Configuration["JwtSettings:Audience"],
-                ClockSkew = TimeSpan.Zero,
-            };
-        }
-    );
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(
-        "AdminPolicy",
-        policy =>
-            policy
-                .RequireRole(nameof(Rule.Privilege.Administrateur))
-                .RequireAuthenticatedUser()
-                .AddAuthenticationSchemes("JwtAuthorization")
-    );
-
-    options.AddPolicy(
-        "ManagerPolicy",
-        policy =>
-            policy
-                .RequireRole(nameof(Rule.Privilege.Manager))
-                .RequireAuthenticatedUser()
-                .AddAuthenticationSchemes("JwtAuthorization")
-    );
-});
-
-// Configuration de OpenTelemetry pour la traçabilité
-builder
-    .Services.AddOpenTelemetry()
-    .WithTracing(tracerProviderBuilder =>
-    {
-        tracerProviderBuilder
-            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("api-teams"))
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddOtlpExporter(otlpOptions =>
-            {
-                otlpOptions.Endpoint = new Uri(
-                    $"http://{builder.Configuration["Jaeger:IpAddress"]}:{builder.Configuration["Jaeger:Port"]}"
-                );
-                otlpOptions.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-            });
-    });
+// Ajouter l'authentification et l'autorisation
+builder.Services.AddAuthorizationPolicies(); // Déplacé dans APP.Layer
+// Ajouter OpenTelemetry
+builder.Services.AddOpenTelemetryTracing(builder.Configuration); // Déplacé dans APP.Layer
 
 var app = builder.Build();
 app.Map(
@@ -202,7 +87,7 @@ app.Map(
         teamApp.UseRouting();
         teamApp.UseAuthentication();
         teamApp.UseAuthorization();
-        teamApp.UseMiddleware<ExceptionMiddleware>();
+        teamApp.UseMiddleware<ExceptionHandlerMiddleware>();
 
         teamApp.UseEndpoints(endpoints =>
         {
@@ -220,4 +105,5 @@ app.Map(
         });
     }
 );
+
 await app.RunAsync();

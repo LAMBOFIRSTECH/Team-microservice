@@ -4,8 +4,8 @@ namespace Teams.APP.Layer.CQRS.Commands;
 
 public class DeleteTeamMemberCommand : IRequest
 {
-    public Guid MemberId { get; set; }
-    public string TeamName { get; set; }
+    public Guid MemberId { get; }
+    public string TeamName { get; }
 
     public DeleteTeamMemberCommand(Guid memberId, string teamName)
     {

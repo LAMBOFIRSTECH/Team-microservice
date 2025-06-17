@@ -13,4 +13,10 @@ public class HandlerException : Exception
         Title = title;
         Reason = reason;
     }
+
+    public static HandlerException NotFound(string message, string reason) =>
+        new HandlerException(404, message, "Not Found", reason);
+
+    public static HandlerException BadRequest(string message, string reason) =>
+        new HandlerException(400, message, "Bad Request", reason);
 }

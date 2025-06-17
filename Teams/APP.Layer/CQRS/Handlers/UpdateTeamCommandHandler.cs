@@ -11,7 +11,7 @@ namespace Teams.APP.Layer.CQRS.Handlers;
 public class UpdateTeamCommandHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
-    EmployeService employeService
+    EmployeeService employeService
 ) : IRequestHandler<UpdateTeamCommand, TeamRequestDto>
 {
     private async Task<bool> CanMemberJoinNewTeam(Guid memberId)

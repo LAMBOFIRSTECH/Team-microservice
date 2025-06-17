@@ -14,7 +14,8 @@ namespace Teams.API.Layer.Controllers;
 public class TeamController(
     IMediator mediator,
     IValidator<CreateTeamCommand> createTeamValidator,
-    IValidator<UpdateTeamCommand> updateTeamValidator
+    IValidator<UpdateTeamCommand> updateTeamValidator,
+    ILogger<TeamController> log
 ) : ControllerBase
 {
     [HttpGet]
@@ -101,7 +102,7 @@ public class TeamController(
     {
         if (teamId != command.Id)
             return BadRequest("Team ID in the URL does not match the ID in the request body.");
-        var validationResult = await updateTeamValidator.ValidateAsync(command);
+        var validationResult = await updateTeamValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
             var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);

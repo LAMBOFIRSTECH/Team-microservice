@@ -1,6 +1,8 @@
 using MediatR;
 using Teams.API.Layer.DTOs;
+
 namespace Teams.APP.Layer.CQRS.Queries;
+
 public class GetTeamsByManagerQuery : IRequest<List<TeamRequestDto>>
 {
     public Guid TeamManagerId { get; }
