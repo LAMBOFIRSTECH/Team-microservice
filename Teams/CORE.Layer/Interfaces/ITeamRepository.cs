@@ -9,7 +9,8 @@ public interface ITeamRepository
     Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId);
     Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId);
     Task<Team> CreateTeamAsync(Team team);
+    Task AddTeamMemberByDetailsAsync(Guid memberId, string teamName);
     Task UpdateTeamAsync(Team team);
     Task DeleteTeamAsync(Guid teamId);
-    Task DeleteTeamMemberAsync(Guid teamId);
+    Task DeleteTeamMemberAsync(Guid memberId);
 }

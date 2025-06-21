@@ -25,4 +25,11 @@ public class Team
         members.RemoveAll(m => m == memberId);
         MemberId = members;
     }
+
+    public void AddMember(Guid memberId)
+    {
+        var members = MemberId;
+        members.Add(memberId);
+        MemberId = members;
+    }
 }

@@ -1,4 +1,7 @@
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Microsoft.EntityFrameworkCore;
+using Teams.APP.Layer.CQRS.Handlers.Events;
 using Teams.CORE.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence;
 using Teams.INFRA.Layer.Persistence.Repositories;
@@ -17,8 +20,19 @@ public static class DependancyInjection
         {
             services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase("TeamMemoryDb"));
         }
-        services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
+        else
+        {
+            services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
+        }
         services.AddScoped<ITeamRepository, TeamRepository>();
+        services.AddScoped<TeamEvent>();
+        services.AddHangfire(config => config.UseMemoryStorage());
+        services.AddHangfireServer();
+        services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = 2;
+            options.Queues = new[] { "default", "getnewmemberfromexternalapi" };
+        });
         return services;
     }
 }

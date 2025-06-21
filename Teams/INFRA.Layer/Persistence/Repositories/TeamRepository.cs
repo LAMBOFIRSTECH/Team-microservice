@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.Models;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
@@ -70,14 +71,38 @@ public class TeamRepository(TeamDbContext teamDbContext, ILogger<TeamRepository>
     //     await teamDbContext.SaveChangesAsync();
     // }
 
+    public async Task ManageTeamMemberAsync(Guid memberId, string teamName, TeamMemberAction action)
+    {
+        var team = action switch
+        {
+            TeamMemberAction.Add => await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
+                t.Name == teamName
+            ),
+            TeamMemberAction.Remove => await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
+                t.MemberId.Contains(memberId)
+            ),
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+        switch (action)
+        {
+            case TeamMemberAction.Add:
+                team!.AddMember(memberId);
+                break;
+
+            case TeamMemberAction.Remove:
+                team!.RemoveMember(memberId);
+                break;
+        }
+        await teamDbContext.SaveChangesAsync();
+    }
+
+    public async Task AddTeamMemberByDetailsAsync(Guid memberId, string teamName)
+    {
+        await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add);
+    }
+
     public async Task DeleteTeamMemberAsync(Guid memberId)
     {
-        var team = await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
-            t.MemberId.Contains(memberId)
-        );
-        var memberToRemove = team.MemberId.FirstOrDefault(m => m.Equals(memberId));
-        if (memberToRemove != Guid.Empty)
-            team.RemoveMember(memberToRemove);
-        await teamDbContext.SaveChangesAsync();
+        await ManageTeamMemberAsync(memberId, teamName: string.Empty, TeamMemberAction.Remove);
     }
 }

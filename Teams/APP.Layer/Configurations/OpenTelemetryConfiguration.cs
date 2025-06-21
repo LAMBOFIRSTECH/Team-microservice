@@ -1,6 +1,5 @@
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Teams.API.Layer;
 
 namespace Teams.APP.Layer.Configurations;
 
@@ -11,11 +10,8 @@ public static class OpenTelemetryConfiguration
         IConfiguration configuration
     )
     {
-        // Récupérer les valeurs de configuration
         var ipAddress = configuration.GetSection("Jaeger")["IpAddress"];
         var port = configuration.GetSection("Jaeger")["Port"];
-
-        // Vérifier si l'une des valeurs est manquante
         if (string.IsNullOrWhiteSpace(ipAddress) || string.IsNullOrWhiteSpace(port))
         {
             throw new InvalidOperationException(

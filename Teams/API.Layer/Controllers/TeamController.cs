@@ -14,8 +14,7 @@ namespace Teams.API.Layer.Controllers;
 public class TeamController(
     IMediator mediator,
     IValidator<CreateTeamCommand> createTeamValidator,
-    IValidator<UpdateTeamCommand> updateTeamValidator,
-    ILogger<TeamController> log
+    IValidator<UpdateTeamCommand> updateTeamValidator
 ) : ControllerBase
 {
     [HttpGet]

@@ -1,21 +1,40 @@
-using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Builder;
+using Hangfire;
+using Hangfire.Dashboard.BasicAuthorization;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer;
 using Teams.APP.Layer.Configurations;
+using Teams.APP.Layer.CQRS.Handlers.Events;
 using Teams.CORE.Layer;
 using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
+builder
+    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
+    .AddJsonFile(
+        $"appsettings.{builder.Environment.EnvironmentName}.json",
+        optional: false,
+        reloadOnChange: false
+    )
+    .AddEnvironmentVariables();
+foreach (var kvp in builder.Configuration.AsEnumerable())
+{
+    if (kvp.Value?.StartsWith("${") == true && kvp.Value.EndsWith("}"))
+    {
+        var envVarName = kvp.Value.Trim(new char[] { '$', '{', '}' });
+        var envValue = Environment.GetEnvironmentVariable(envVarName);
+        if (!string.IsNullOrEmpty(envValue))
+        {
+            builder.Configuration[kvp.Key] = envValue;
+        }
+    }
+}
 
 // Ajouter les services via les DI respectives
 builder.Services.AddApiDI(builder.Configuration);
-builder.Services.AddApplicationDI(builder.Configuration);
+builder.Services.AddApplicationDI();
 builder.Services.AddInfrastructureDI(builder.Configuration);
 builder.Services.AddCoreDI();
 
@@ -76,8 +95,9 @@ builder.Services.AddLogging();
 
 // Ajouter l'authentification et l'autorisation
 builder.Services.AddAuthorizationPolicies(); // Déplacé dans APP.Layer
+
 // Ajouter OpenTelemetry
-builder.Services.AddOpenTelemetryTracing(builder.Configuration); // Déplacé dans APP.Layer
+builder.Services.AddOpenTelemetryTracing(builder.Configuration);
 
 var app = builder.Build();
 app.Map(
@@ -103,7 +123,38 @@ app.Map(
                 }
             );
         });
+
+        var HangFireConfig = app.Configuration.GetSection("HangfireCredentials");
+        teamApp.UseHangfireDashboard(
+            "/hangfire",
+            new DashboardOptions()
+            {
+                DashboardTitle = "Hangfire Dashboard for Lamboft Inc ",
+                Authorization = new[]
+                {
+                    new BasicAuthAuthorizationFilter(
+                        new BasicAuthAuthorizationFilterOptions
+                        {
+                            Users = new[]
+                            {
+                                new BasicAuthAuthorizationUser
+                                {
+                                    Login = HangFireConfig["UserName"],
+                                    PasswordClear = HangFireConfig["HANGFIRE_PASSWORD"],
+                                },
+                            },
+                        }
+                    ),
+                },
+            }
+        );
     }
+);
+RecurringJob.AddOrUpdate<TeamEvent>(
+    "job-check-and-add-member",
+    handler => handler.SafeAddTeamMemberAsync(),
+    Cron.Hourly,
+    new RecurringJobOptions { QueueName = "getnewmemberfromexternalapi" }
 );
 
 await app.RunAsync();
