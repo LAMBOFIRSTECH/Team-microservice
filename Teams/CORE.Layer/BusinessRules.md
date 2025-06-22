@@ -164,3 +164,33 @@
 |                                                                                                  |                                               |
 | Seuls les utilisateurs authentifiés avec rôle "Manager" peuvent visualiser les équipes complètes | Restriction par `ClaimsPrincipal` ou `Policy` |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+15. Règles de planning
+------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                                | Exemple                                               |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Éviter d’avoir deux équipes avec plus de 50% de membres en commun                    | `Analyse recouvrement` entre `Equipe.A` et `Equipe.B` |
+|                                                                                      |                                                       |
+| Un membre ne peut être affecté à deux projets en parallèle via 2 équipes différentes | Conflit de planning détecté par `PlanningService`     |
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+16. Règle d'analyse comportementale
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                                       | Exemple                                             |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Si un membre a été dans 3 équipes différentes en moins de 30 jours → alerte sur instabilité | `HistoriqueMembreService.GetTurnoverRate(membreId)` |
+|                                                                                             |                                                     |
+| Un responsable qui a géré > 3 équipes en parallèle doit être restreint                      | `Responsable.LimiteChargeGestion`                   |
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+17. Règles de granularité contractuelle
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                                         | Exemple                                              |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Les membres d’une équipe doivent être sous contrat valide (CDI, CDD, etc.) à la date courante | Vérifié via un service RH externe (`ContratService`) |
+|                                                                                               |                                                      |
+| Impossible d’ajouter un stagiaire en tant que responsable                                     | `if (membre.TypeContrat == "Stagiaire") => throw`    |
+--------------------------------------------------------------------------------------------------------------------------------------------------------
