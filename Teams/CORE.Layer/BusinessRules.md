@@ -134,3 +134,33 @@
 |                                                                         |                                                            |
 | Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
 ----------------------------------------------------------------------------------------------------------------------------------------
+
+
+12. Règles de performance 
+------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                           | Exemple                                        |
+| ------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Une équipe ayant un taux de productivité moyen < 40% sur 3 mois doit être revue | Détection automatique via indicateurs          |
+|                                                                                 |                                                |
+| Trop de turn-over (> 50% en 2 mois) déclenche une alerte au RH                  | Extrait des `Join/LeaveDate` dans l’historique |
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+13. Règles de cycle de vie projet-équipe
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                                         | Exemple                                             |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Une équipe doit être désaffectée automatiquement si un projet est terminé                     | Trigger métier dans `EquipeService` ou job planifié |
+|                                                                                               |                                                     |
+| Le changement de statut d’un projet (actif → suspendu) entraîne la mise en veille de l’équipe | `Equipe.Etat = Suspendue` si projet suspendu        |
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+14. Règles de sécurité /audit
+----------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                                            | Exemple                                       |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| Toute modification de la composition d’une équipe doit être tracée                               | `AuditLogService.LogEquipeChange(...)`        |
+|                                                                                                  |                                               |
+| Seuls les utilisateurs authentifiés avec rôle "Manager" peuvent visualiser les équipes complètes | Restriction par `ClaimsPrincipal` ou `Policy` |
+----------------------------------------------------------------------------------------------------------------------------------------------------
