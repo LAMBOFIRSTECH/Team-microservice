@@ -40,7 +40,7 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                              | Exemple                                                 |
 |------------------------------------------------------------------------------------|---------------------------------------------------------|
-| Une équipe ne peut être activée que si elle a un responsable et au moins un membre | `Etat == Actif` validé à l’activation                   |
+| Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres | `Etat == Actif` validé à l’activation                   |
 |                                                                                    |                                                         |
 | Une équipe archivée ne peut plus être modifiée                                     | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
@@ -48,6 +48,7 @@
 |                                                                                    |                                                         |
 | Changer de responsable est possible seulement si le nouveau est déjà membre        | Pas de promotion externe directe                        |
 ------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 5. Règles de calcul métier
 -------------------------------------------------------------------------------------------------------------
@@ -91,7 +92,6 @@
 ---------------------------------------------------------------------------------------------------------------------------
 
 
-
 8. Règles temporelles / périodiques (dictionnaire ou cache dans l'implémentation)
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                                    | Exemple                               |
@@ -110,7 +110,7 @@
 |                                                         |                                             |
 | Une équipe ne peut être affectée à un projet inexistant | `ProjectService` doit valider l’affectation |
 |                                                         |                                             |
-| Les ID des membres doivent être valides et uniques      | GUID ou Id interne valide                   |
+|☑️ Les ID des membres doivent être valides et uniques   | GUID ou Id interne valide                    |
 ---------------------------------------------------------------------------------------------------------
 
 
@@ -123,13 +123,14 @@
 | Un projet ne peut commencer que si au moins une équipe est affectée | Règle côté `ProjetService` mais dépend de `EquipeService` |
 -----------------------------------------------------------------------------------------------------------------------------------
 
+
 11. Règles de cohérence transversales
---------------------------------------------------------------------------------------------------------------------------------------
-| Règle                                                                   | Exemple                                                  |
-| ----------------------------------------------------------------------- | -------------------------------------------------------- |
-| Une équipe ne peut avoir un nom déjà utilisé                            | `TeamRepository.NameAlreadyExists(name)`                 |
-|                                                                         |                                                          |
-| Le responsable ne peut être supprimé tant qu’il n’est pas remplacé      | `if (membreId == ResponsableId) throw BusinessException` |
-|                                                                         |                                                          |
-| Interdiction d’avoir deux équipes avec **exactement** les mêmes membres | Empêche duplication structurelle                         |
---------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                   | Exemple                                                    |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------- |
+|☑️ Une équipe ne peut avoir un nom déjà utilisé                          | `TeamRepository.NameAlreadyExists(name)`                   |
+|                                                                         |                                                            |
+| Le responsable ne peut être supprimé tant qu’il n’est pas remplacé      | `if (membreId == ResponsableId) throw BusinessException`   |
+|                                                                         |                                                            |
+| Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
+----------------------------------------------------------------------------------------------------------------------------------------
