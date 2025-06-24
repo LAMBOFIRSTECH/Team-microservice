@@ -2,16 +2,25 @@
 
 `EmployeeService` et `ProjectService` (sont des services à part qui devront etre injecter dans le handler)
 
+-------------------------------------------------------------------------------------------------------
+| Aggregate Root | Entités enfants                    | Invariants à protéger                         |
+| -------------- | ---------------------------------- | --------------------------------------------- |
+| `Equipe`       | `Membres`, `Responsable`, `Statut` | Taille, unicité, règles de rôle               |
+| `Projet`       | `Tâches`, `Compétences attendues`  | État projet, affectation équipes, dépendances |
+| `Employé`      | `Compétences`, `Historique`, etc.  | Affectation, disponibilité, type de contrat   |
+--------------------------------------------------------------------------------------------------------
+
+
 1. Règles de validation de données (Fluent validation)
---------------------------------------------------------------------------------------------------------
-| Règle                                           | Exemple                                            |
-| ----------------------------------------------- | ---------------------------------------------------|
-|☑️  Une équipe doit avoir un nom non vide        | `"NomEquipe != null && NomEquipe.Length > 0"`      | 
-|                                                 |                                                    |
-| Le responsable doit être un employé valide      | Vérifié via `EmployeeService`                       |
-|                                                 |                                                    |
-| Les membres doivent être des employés existants | Vérifié avant ajout                                |
---------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------
+| Règle                                              | Exemple                                            |
+| -------------------------------------------------- | ---------------------------------------------------|
+|☑️  Une équipe doit avoir un nom non vide          | `"NomEquipe != null && NomEquipe.Length > 0"`      | 
+|                                                   |                                                    |
+| Le responsable doit être un employé valide        | Vérifié via `EmployeeService`                       |
+|                                                   |                                                    |
+|☑️ Les membres doivent être des employés existants | Vérifié avant ajout                                |
+-----------------------------------------------------------------------------------------------------------
 
 
 2. Règles d’invariant métier
@@ -40,7 +49,7 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                              | Exemple                                                 |
 |------------------------------------------------------------------------------------|---------------------------------------------------------|
-| Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres | `Etat == Actif` validé à l’activation                   |
+| Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
 |                                                                                    |                                                         |
 | Une équipe archivée ne peut plus être modifiée                                     | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
@@ -82,7 +91,7 @@
 ---------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                              | Exemple                            |
 |------------------------------------------------------------------------------------|------------------------------------|
-|☑️Seul un responsable peut modifier les membres                                     | Autorisation métier, non technique |
+|☑️ Seul un responsable peut modifier les membres                                    | Autorisation métier, non technique |
 |                                                                                     |                                   |
 |☑️ Seuls les administrateurs peuvent supprimer une équipe                           | Protection de la suppression       |
 |                                                                                    |                                     |
@@ -130,7 +139,7 @@
 | ----------------------------------------------------------------------- | ---------------------------------------------------------- |
 |☑️ Une équipe ne peut avoir un nom déjà utilisé                          | `TeamRepository.NameAlreadyExists(name)`                   |
 |                                                                         |                                                            |
-| Le responsable ne peut être supprimé tant qu’il n’est pas remplacé      | `if (membreId == ResponsableId) throw BusinessException`   |
+|☑️ Le responsable ne peut être supprimé tant qu’il n’est pas remplacé    | `if (membreId == ResponsableId) throw BusinessException`   |
 |                                                                         |                                                            |
 | Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
 ----------------------------------------------------------------------------------------------------------------------------------------

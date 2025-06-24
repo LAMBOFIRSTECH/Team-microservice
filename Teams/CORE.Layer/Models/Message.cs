@@ -1,4 +1,5 @@
 namespace Teams.CORE.Layer.Models;
+
 public class Message
 {
     public string? Type { get; set; }

@@ -3,7 +3,7 @@ using MediatR;
 using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
-using Teams.APP.Layer.Services;
+using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
@@ -26,22 +26,21 @@ public class UpdateTeamCommandHandler(ITeamRepository teamRepository, IMapper ma
                 "Team ID not found"
             );
         }
-        if (
-            existingTeam.Name == command.Name
-            && existingTeam.MemberId.SequenceEqual(command.MemberId)
-        )
+        try
         {
-            throw new HandlerException(
-                400,
-                "No changes detected in the team details.",
-                "Bad Request",
-                "No changes to update"
-            );
+            existingTeam.UpdateTeam(command.Name!, command.TeamManagerId, command.MemberId);
         }
-        existingTeam.Name = command.Name!;
-        existingTeam.TeamManagerId = command.TeamManagerId;
-        existingTeam.MemberId = command.MemberId;
+        catch (DomainException ex)
+        {
+            throw HandlerException.BadRequest(ex.Message, "Validation Error");
+        }
         await teamRepository.UpdateTeamAsync(existingTeam);
         return mapper.Map<TeamRequestDto>(existingTeam);
+
+        // existingTeam.Name = command.Name!;
+        // existingTeam.TeamManagerId = command.TeamManagerId;
+        // existingTeam.MemberId = command.MemberId;
+        // await teamRepository.UpdateTeamAsync(existingTeam);
+        // return mapper.Map<TeamRequestDto>(existingTeam);
     }
 }

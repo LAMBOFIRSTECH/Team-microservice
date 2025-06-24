@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
+using Teams.CORE.Layer.BusinessExceptions;
 
 namespace Teams.CORE.Layer.Entities;
 
@@ -31,5 +32,58 @@ public class Team
         var members = MemberId;
         members.Add(memberId);
         MemberId = members;
+    }
+
+    public static Team Create(
+        string name,
+        Guid teamManagerId,
+        List<Guid> memberIds,
+        List<Team> existingTeams
+    )
+    {
+        if (memberIds.Count < 2)
+            throw new DomainException("A team must have at least 2 members.");
+
+        if (memberIds.Count > 10)
+            throw new DomainException("A team cannot have more than 10 members.");
+
+        var uniqueMemberIds = memberIds.Distinct().ToList();
+        if (uniqueMemberIds.Count != memberIds.Count)
+            throw new DomainException("Team members must be unique.");
+
+        if (!uniqueMemberIds.Contains(teamManagerId))
+            throw new DomainException("The team manager must be one of the team members.");
+
+        if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new DomainException($"A team with the name '{name}' already exists.");
+
+        return new Team
+        {
+            Id = Guid.NewGuid(),
+            Name = name,
+            TeamManagerId = teamManagerId,
+            MemberId = uniqueMemberIds,
+        };
+    }
+
+    public void DeleteTeamMemberSafely(Guid memberId)
+    {
+        if (memberId == TeamManagerId)
+            throw new DomainException("Cannot remove the team manager from the team.");
+        var members = MemberId;
+        if (!members.Contains(memberId))
+            throw new DomainException("Member not found in the team.");
+        members.Remove(memberId);
+        MemberId = members;
+    }
+
+    public void UpdateTeam(string name, Guid teamManagerId, List<Guid> memberIds)
+    {
+        if (this.Name == name && this.MemberId.SequenceEqual(memberIds))
+            throw new DomainException("No changes detected in the team details.");
+
+        this.Name = name;
+        this.TeamManagerId = teamManagerId;
+        this.MemberId = memberIds;
     }
 }

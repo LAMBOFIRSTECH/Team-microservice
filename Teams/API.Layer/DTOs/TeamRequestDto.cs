@@ -6,11 +6,16 @@ public class TeamRequestDto
     public string? Name { get; set; }
     public Guid TeamManagerId { get; set; }
     public List<Guid> MemberId { get; set; } = new();
-    public TeamRequestDto()
-    {
 
-    }
-    public TeamRequestDto(Guid identifier, Guid managerId, string teamName, bool includeMembers = false, List<Guid>? memberIds = null)
+    public TeamRequestDto() { }
+
+    public TeamRequestDto(
+        Guid identifier,
+        Guid managerId,
+        string teamName,
+        bool includeMembers = false,
+        List<Guid>? memberIds = null
+    )
     {
         Id = identifier;
         TeamManagerId = managerId;
@@ -19,6 +24,5 @@ public class TeamRequestDto
             MemberId = memberIds ?? [];
         else
             MemberId = [];
-
     }
 }

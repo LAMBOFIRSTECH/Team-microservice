@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.Models;
@@ -9,11 +10,6 @@ namespace Teams.INFRA.Layer.Persistence.Repositories;
 public class TeamRepository(TeamDbContext teamDbContext, ILogger<TeamRepository> log)
     : ITeamRepository
 {
-    public void Dispose()
-    {
-        teamDbContext.Database.EnsureDeleted();
-    }
-
     public async Task<Team>? GetTeamByIdAsync(Guid teamId)
     {
         return await teamDbContext.Teams.AsTracking().FirstOrDefaultAsync(t => t.Id == teamId); //AsTracking améliore la performance de la requête en évitant le suivi des modifications pour les entités récupérées, ce qui est utile si vous ne prévoyez pas de modifier ces entités dans le contexte actuel.
@@ -73,26 +69,32 @@ public class TeamRepository(TeamDbContext teamDbContext, ILogger<TeamRepository>
 
     public async Task ManageTeamMemberAsync(Guid memberId, string teamName, TeamMemberAction action)
     {
-        var team = action switch
-        {
-            TeamMemberAction.Add => await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
-                t.Name == teamName
-            ),
-            TeamMemberAction.Remove => await teamDbContext.Teams!.FirstOrDefaultAsync(t =>
-                t.MemberId.Contains(memberId)
-            ),
-            _ => throw new ArgumentOutOfRangeException(),
-        };
+        var team = await teamDbContext.Teams.FirstOrDefaultAsync(t => t.Name == teamName);
+        if (team == null)
+            throw new TeamMemberException($"Team '{teamName}' not found.");
+
         switch (action)
         {
             case TeamMemberAction.Add:
-                team!.AddMember(memberId);
+                if (team.MemberId != null && team.MemberId.Contains(memberId))
+                    throw new TeamMemberException(
+                        $"Member '{memberId}' already exists in team '{teamName}'."
+                    );
+                team.AddMember(memberId);
                 break;
 
             case TeamMemberAction.Remove:
-                team!.RemoveMember(memberId);
+                if (team.MemberId == null || !team.MemberId.Contains(memberId))
+                    throw new TeamMemberException(
+                        $"Member '{memberId}' does not exist in team '{teamName}'."
+                    );
+                team.RemoveMember(memberId);
                 break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(action), action, null);
         }
+
         await teamDbContext.SaveChangesAsync();
     }
 
@@ -101,8 +103,8 @@ public class TeamRepository(TeamDbContext teamDbContext, ILogger<TeamRepository>
         await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add);
     }
 
-    public async Task DeleteTeamMemberAsync(Guid memberId)
+    public async Task DeleteTeamMemberAsync(Guid memberId, string teamName)
     {
-        await ManageTeamMemberAsync(memberId, teamName: string.Empty, TeamMemberAction.Remove);
+        await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove);
     }
 }

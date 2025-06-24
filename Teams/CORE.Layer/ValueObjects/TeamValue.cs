@@ -1,6 +1,3 @@
 namespace Teams.CORE.Layer.ValueObjects;
 
-public class TeamValue
-{ 
-    
-}
+public class TeamValue { }

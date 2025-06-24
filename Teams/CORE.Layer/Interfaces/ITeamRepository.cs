@@ -12,5 +12,5 @@ public interface ITeamRepository
     Task AddTeamMemberByDetailsAsync(Guid memberId, string teamName);
     Task UpdateTeamAsync(Team team);
     Task DeleteTeamAsync(Guid teamId);
-    Task DeleteTeamMemberAsync(Guid memberId);
+    Task DeleteTeamMemberAsync(Guid memberId, string teamName);
 }

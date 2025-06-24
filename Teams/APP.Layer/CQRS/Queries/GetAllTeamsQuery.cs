@@ -1,6 +1,8 @@
 using MediatR;
 using Teams.API.Layer.DTOs;
+
 namespace Teams.APP.Layer.CQRS.Queries;
+
 public class GetAllTeamsQuery : IRequest<List<TeamDto>>
 {
     /// <summary>
@@ -14,14 +16,20 @@ public class GetAllTeamsQuery : IRequest<List<TeamDto>>
     public Guid TeamManagerId { get; }
     public string Name { get; set; } = string.Empty;
     public List<Guid> MemberId { get; set; }
+
     public GetAllTeamsQuery()
     {
-        Id =
-        TeamManagerId = Guid.Empty;
+        Id = TeamManagerId = Guid.Empty;
         MemberId = new List<Guid>();
         Name = string.Empty;
     }
-    public GetAllTeamsQuery(Guid identifier, Guid teamManagerId, List<Guid> memberId, string name = "")
+
+    public GetAllTeamsQuery(
+        Guid identifier,
+        Guid teamManagerId,
+        List<Guid> memberId,
+        string name = ""
+    )
     {
         this.Id = identifier;
         this.TeamManagerId = teamManagerId;
