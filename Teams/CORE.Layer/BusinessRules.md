@@ -29,6 +29,45 @@ Les differents Etat d'une équipe et leur signification
 |**À désaffecter**|L’équipe est toujours active mais **plus assignée à un projet** terminé        |Trigger interne après fin d’un projet affecté   |
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+# Entité Equipe microservice dédié
+
+## A- Richesse fonctionnelle et intéraction avec le système
+
+---------------------------------------------------------------------------------------
+| Interactions           | Rôle                                                       |
+| ---------------------- | ---------------------------------------------------------- |
+| `EmployeeService`      | Pour valider les employés lors de l’ajout                  |
+|                        |                                                            |
+| `ProjectService`       | Pour affecter une équipe à un projet                       |
+|                        |                                                            |
+| `FicheActiviteService` | Pour voir les activités par équipe                         |
+|                        |                                                            |
+| `NotificationService`  | Envoi d’email aux membres/responsable en cas de changement |
+---------------------------------------------------------------------------------------
+
+## B- Evènements métier (Even dispatching)
+
+------------------------------------------------------------------------------------------------
+| Event                      | Payload principal              | Destinataires                  |
+|----------------------------|--------------------------------|--------------------------------|
+| `EquipeCreee`              | Id, Responsable, MembreIds     | Notification, RH               |
+|                            |                                |                                |
+| `MembreAjouteAÉquipe`      | IdEquipe, MembreId             | EmployeService                 |
+|                            |                                |                                |
+| `MembreRetireDEquipe`      | IdEquipe, MembreId             | EmployeService                 |
+|                            |                                |                                |
+| `ResponsableEquipeModifie` | EquipeId, OldRespId, NewRespId | ProjetService                  |
+|                            |                                |                                |
+| `EquipeAffecteeAProjet`    | ProjetId, EquipeId             | ProjetService, ActiviteService |
+|                            |                                |                                |
+| `EquipeSupprimee`          | EquipeId                       | Tous les services dépendants   |
+------------------------------------------------------------------------------------------------
+
+## C- Agrégats et règles
+
+
+
 1. Règles de validation de données (Fluent validation)
 -----------------------------------------------------------------------------------------------------------
 | Règle                                              | Exemple                                            |
