@@ -3,6 +3,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Build.Framework;
 using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Commands;
@@ -17,7 +18,8 @@ public class TeamController(
     IMediator mediator,
     IValidator<CreateTeamCommand> createTeamValidator,
     IValidator<UpdateTeamCommand> updateTeamValidator,
-    IEmployeeService employeeService
+    IEmployeeService employeeService,
+    IEventSource eventSource
 ) : ControllerBase
 {
     /// <summary>
@@ -160,12 +162,18 @@ public class TeamController(
     /// </summary>
     /// <param name="memberId"></param>
     /// <returns></returns>
-    //[Authorize(Roles = "Manager(responsable d'équipe)")]
+    //[Authorize(Roles = "Manager(responsable d'équipe)")] tous les deux admin et manager
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType(typeof(TeamDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [AllowAnonymous] // Temporarily allowing anonymous access for testing purposes
     [HttpPost("member")]
     public async Task<ActionResult<TeamDto>> AddTeamMember([FromQuery] Guid memberId)
     {
-        var teamMember = await employeeService.AddTeamMemberAsync(memberId);
-        return CreatedAtAction(nameof(GetTeam), new { member = teamMember.Title }, AddTeamMember); // revoir tres vite meme
+        await employeeService.AddTeamMemberAsync(memberId);
+        return NoContent();
     }
 
     /// <summary>
@@ -278,14 +286,18 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteTeamMemberById(
         [FromBody] DeleteTeamMemberDto deleteTeamMemberDto
-    )
+    )// doit etre pareil que AddTeamMember  c'est à dire vient depuis un service externe
     {
         if (deleteTeamMemberDto == null)
             return BadRequest("Request data cannot be null.");
         if (string.IsNullOrWhiteSpace(deleteTeamMemberDto.TeamName))
             return BadRequest("Team name must be provided.");
-        await mediator.Send(
-            new DeleteTeamMemberCommand(deleteTeamMemberDto.MemberId, deleteTeamMemberDto.TeamName)
+        // await mediator.Send(
+        //     new DeleteTeamMemberCommand(deleteTeamMemberDto.MemberId, deleteTeamMemberDto.TeamName)
+        // );
+        await employeeService.DeleteTeamMemberAsync(
+            deleteTeamMemberDto.MemberId,
+            deleteTeamMemberDto.TeamName
         );
         return NoContent();
     }

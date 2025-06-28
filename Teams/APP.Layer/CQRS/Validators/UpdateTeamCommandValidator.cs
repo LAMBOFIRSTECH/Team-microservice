@@ -17,8 +17,10 @@ public class UpdateTeamCommandValidator : AbstractValidator<UpdateTeamCommand>
             .WithMessage("Team manager ID cannot be an empty GUID");
         RuleFor(x => x.MemberId)
             .NotEmpty()
-            .WithMessage("Team must have at least one member")
+            .WithMessage("Team member cannot be an empty list")
             .Must(members => members.All(id => id != Guid.Empty))
-            .WithMessage("All team member IDs must be valid (non-empty GUIDs)");
+            .WithMessage("All team member IDs must be valid (non-empty GUIDs)")
+            .Must(members => members.Count >= 2)
+            .WithMessage("A team must have at least 2 members.");
     }
 }

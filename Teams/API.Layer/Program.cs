@@ -6,7 +6,7 @@ using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer;
 using Teams.APP.Layer.Configurations;
-using Teams.APP.Layer.CQRS.Handlers.Events;
+using Teams.APP.Layer.CQRS.Events;
 using Teams.CORE.Layer;
 using Teams.INFRA.Layer;
 
@@ -150,11 +150,11 @@ app.Map(
         );
     }
 );
-RecurringJob.AddOrUpdate<TeamEvent>(
-    "job-check-and-add-member",
-    handler => handler.SafeAddTeamMemberAsync(),
-    Cron.Hourly,
-    new RecurringJobOptions { QueueName = "getnewmemberfromexternalapi" }
-);
+// RecurringJob.AddOrUpdate<EmployeeCreatedEventHandler>(
+//     "job-check-and-add-member",
+//     handler => handler.SafeAddTeamMemberAsync(),
+//     Cron.Hourly,
+//     new RecurringJobOptions { QueueName = "getnewmemberfromexternalapi" }
+// );
 
 await app.RunAsync();

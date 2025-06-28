@@ -13,6 +13,7 @@ public static class DependancyInjection
         services.AddValidatorsFromAssemblyContaining<CreateTeamCommandValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateTeamCommandValidator>();
         services.AddValidatorsFromAssemblyContaining<AddTeamMemberRecordValidator>();
+        services.AddValidatorsFromAssemblyContaining<ProjectRecordValidator>();
         services.AddValidatorsFromAssemblyContaining<Program>();
         services.AddAutoMapper(typeof(TeamProfile).Assembly);
         services.AddMediatR(cfg =>

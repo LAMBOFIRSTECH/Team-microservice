@@ -1,8 +1,9 @@
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.EntityFrameworkCore;
-using Teams.APP.Layer.CQRS.Handlers.Events;
+using Teams.APP.Layer.CQRS.Events;
 using Teams.CORE.Layer.Interfaces;
+using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Persistence;
 using Teams.INFRA.Layer.Persistence.Repositories;
 
@@ -25,7 +26,8 @@ public static class DependancyInjection
             services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
         }
         services.AddScoped<ITeamRepository, TeamRepository>();
-        services.AddScoped<TeamEvent>();
+        // services.AddScoped<EmployeeCreatedEventHandler>();
+        services.AddScoped<TeamExternalService>();
         services.AddHangfire(config => config.UseMemoryStorage());
         services.AddHangfireServer();
         services.AddHangfireServer(options =>

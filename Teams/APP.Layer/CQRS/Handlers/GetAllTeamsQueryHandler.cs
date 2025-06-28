@@ -26,7 +26,7 @@ public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<Te
                 Id = team.Id,
                 Name = team.Name,
                 TeamManagerId = team.TeamManagerId,
-                MemberId = team.MemberId,
+                MemberId = team.MemberIds.ToList(),
             })
             .ToList();
         return teamDtos;

@@ -10,6 +10,24 @@
 | `Employé`      | `Compétences`, `Historique`, etc.  | Affectation, disponibilité, type de contrat   |
 --------------------------------------------------------------------------------------------------------
 
+Les differents Etat d'une équipe et leur signification
+---------------------------------------------------------------------------------------------------------------------------------------------------
+| Statut         | Description                                                                    | Déclencheurs / Conditions métier               |
+| ---------------| -------------------------------------------------------------------------------|----------------------------------------------- |
+| **Incomplète** |État par défaut si l’équipe n’a **pas** de responsable ou **moins de 2 membres**|`Membres.Count < 2` ou `Responsable == null`    |
+| **Active**     |L’équipe est complète et opérationnelle.                                        |`Membres.Count >= 2` et `Responsable != null`   |
+|****************|********************************************************************************|************************************************|
+| **Suspendue**  |État temporaire,généralement déclenché par un changement de statut du projet lié|                                                | 
+|                |       (ex. projet suspendu) Règle de cohérence projet-équipe :                 |`Projet.Etat == Suspendu → Equipe.Etat = Suspendue`|
+|                |                                                                                |                                                |
+| **Archivée**   |L’équipe n’est plus modifiable, souvent car inactive depuis longtemps           | Inactivité > 90 jours                          |
+|****************|********************************************************************************|************************************************|
+| **En révision**|L’équipe ne respecte plus certains seuils                                       |`Productivité < 40%` ou Turnover > 50% en 2 mois|
+|                |(ex : productivité basse, turnover élevé), en cours d’audit interne             |                                                |
+|****************|********************************************************************************|************************************************|
+|                |                                                                                |déclenche un processus de revue RH.             |
+|**À désaffecter**|L’équipe est toujours active mais **plus assignée à un projet** terminé        |Trigger interne après fin d’un projet affecté   |
+---------------------------------------------------------------------------------------------------------------------------------------------------
 
 1. Règles de validation de données (Fluent validation)
 -----------------------------------------------------------------------------------------------------------
@@ -17,7 +35,7 @@
 | -------------------------------------------------- | ---------------------------------------------------|
 |☑️  Une équipe doit avoir un nom non vide          | `"NomEquipe != null && NomEquipe.Length > 0"`      | 
 |                                                   |                                                    |
-| Le responsable doit être un employé valide        | Vérifié via `EmployeeService`                       |
+|☑️ Le responsable doit être un employé valide        | Vérifié via `EmployeeService`                    |
 |                                                   |                                                    |
 |☑️ Les membres doivent être des employés existants | Vérifié avant ajout                                |
 -----------------------------------------------------------------------------------------------------------
@@ -49,7 +67,7 @@
 -----------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                              | Exemple                                                 |
 |------------------------------------------------------------------------------------|---------------------------------------------------------|
-| Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
+|☑️ Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
 |                                                                                    |                                                         |
 | Une équipe archivée ne peut plus être modifiée                                     | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
@@ -60,17 +78,19 @@
 
 
 5. Règles de calcul métier
--------------------------------------------------------------------------------------------------------------
-| Règle                                   | Exemple                                                         |
-|---------------------------------------- | ----------------------------------------------------------------|
-| Calcul du nombre de membres             | `Membres.Count()`                                               |
-|                                         |                                                                 |
-| Score de stabilité d’équipe             | Basé sur turnover des membres (moyenne des jours dans l’équipe) |
-|                                         |                                                                 |
-| Durée moyenne de présence des membres   | `Avg(DateTime.Now - membre.JoinDate)`                           |
-|                                         |                                                                 |
-| Taux moyen de productivité d’une équipe | Moyenne des scores des membres (via Activités)                  |
--------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                               | Exemple                                                         |
+|---------------------------------------------------------------------| ----------------------------------------------------------------|
+| Calcul de productivité démarre à cette date de lancement du projet  | Moyenne des scores des membres (via Activités)                  |
+|                                                                     |                                                                 |
+| Calcul du nombre de membres                                         | `Membres.Count()`                                               |
+|                                                                     |                                                                 |
+| Score de stabilité d’équipe                                         | Basé sur turnover des membres (moyenne des jours dans l’équipe) |
+|                                                                     |                                                                 |
+| Durée moyenne de présence des membres                               | `Avg(DateTime.Now - membre.JoinDate)`                           |
+|                                                                     |                                                                 |
+| Taux moyen de productivité d’une équipe                             | Moyenne des scores des membres (via Activités)                  |
+-----------------------------------------------------------------------------------------------------------------------------------------
 
 
 6. Règles de dérivation métier
@@ -78,7 +98,7 @@
 | Règle                                   | Exemple                                                                 |
 |-----------------------------------------|-------------------------------------------------------------------------|
 |Statut de l’équipe (Complète /Incomplète)|                                                                         |
-|dérivé du nombre de membres et de        | `Etat = (Membres.Count >= 3 && Responsable != null) ? Actif : Incomplet`| 
+|dérivé du nombre de membres et de        | `Etat = (Membres.Count >= 2 && Responsable != null) ? Actif : Incomplet`| 
 |la présence d’un responsable             |                                                                         |
 |                                         |                                                                         |
 | Taux d'engagement de l’équipe           | % de membres actifs dans des projets                                    |
@@ -108,6 +128,8 @@
 |☑️ Un membre ne peut pas être ajouté à une équipe **s’il en a quitté une autre il y a moins de 7 jours** | Délai de “repos” entre deux équipes   |
 |                                                                                                          |                                       |
 | Une équipe inactive depuis plus de 90 jours est archivée automatiquement                                 | Via job planifié dans `EquipeService` |
+|                                                                                                          |                                       |
+| Le délai entre création et lancement du projet ne doit pas dépasser N jours                              |                                       |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -192,6 +214,8 @@
 | Si un membre a été dans 3 équipes différentes en moins de 30 jours → alerte sur instabilité | `HistoriqueMembreService.GetTurnoverRate(membreId)` |
 |                                                                                             |                                                     |
 | Un responsable qui a géré > 3 équipes en parallèle doit être restreint                      | `Responsable.LimiteChargeGestion`                   |
+|                                                                                             |                                                     |
+| Une équipe ne peut être suspendue qu’après la date de lancement                             |                                                     |
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 
 

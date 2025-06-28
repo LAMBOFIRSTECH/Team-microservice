@@ -1,7 +1,8 @@
+using Newtonsoft.Json;
+
 namespace Teams.API.Layer.DTOs;
 
-public class DeleteTeamMemberDto
-{
-    public Guid MemberId { get; set; }
-    public string? TeamName { get; set; }
-}
+public record DeleteTeamMemberDto(
+    [property: JsonProperty(Required = Required.Always)] Guid MemberId,
+    [property: JsonProperty(Required = Required.Always)] string? TeamName
+);
