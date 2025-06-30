@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Teams</name>
+    </assembly>
+    <members>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.GetAllTeams">
+            <summary>
+            Retrieves all teams in the system.
+            This endpoint allows you to get a list of all teams, including their details such as
+            team name, members, and team manager.
+            If no teams are found, an empty list will be returned.
+            This endpoint is useful for administrators or managers to view all teams in the system.
+            Authorization is not required for this endpoint, but it can be restricted to specific roles
+            such as "Admin" or "Manager" if needed.
+            Example usage:
+            GET /teams
+            This will return a list of all teams in the system.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.GetTeam(System.Guid)">
+            <summary>
+            Retrieves a team by its unique identifier.
+            This endpoint allows you to get the details of a specific team based on its ID.
+            If the team with the specified ID does not exist, a 404 Not Found response will be returned.
+            If the team is found, a 200 OK response with the team details will be returned.
+            This endpoint is useful for retrieving information about a specific team, such as its name,
+            members, and team manager.
+            Authorization is not required for this endpoint, but it can be restricted to specific roles
+            such as "Admin" or "Manager" if needed.
+            Example usage:
+            GET /teams/{teamId}
+            where `{teamId}` is the unique identifier of the team you want to retrieve.
+            </summary>
+            <param name="teamId"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "M:Teams.API.Layer.Controllers.TeamController.GetTeamsByManagerId(System.Guid,System.Boolean,System.Threading.CancellationToken)" -->
+        <member name="M:Teams.API.Layer.Controllers.TeamController.GetTeamsByMemberId(System.Guid,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Retrieves all teams that a specific member is part of.
+            This endpoint allows you to get a list of teams based on the member's #if true
+            unique identifier (memberId)
+            and optionally include the members of those teams.
+            If `includeMembers` is set to true, the response will include the members of each team.
+            If `includeMembers` is false, the response will only include the team details without member information.
+            If no teams are found for the given member ID, a 404 Not Found response will be returned.
+            This endpoint is useful for members to view the teams they are part of and their members.
+            It can also be used by administrators to manage teams based on their members.
+            Authorization is not required for this endpoint, but it can be restricted to specific roles
+            such as "Admin" or "Manager" if needed.
+            Example usage:
+            GET /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000&amp;includeMembers=true
+            This will return a list of teams that the member with ID `123e4567-e89b-12d3-a456-426614174000` is part of.
+            </summary>
+            <param name="memberId"></param>
+            <param name="includeMembers"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.AddTeamMember(System.Guid)">
+            <summary>
+            Adds a new member to the team.
+            This endpoint allows an administrator or team manager to add a new member to a specific team.
+            If the member with the specified ID does not exist, a 404 Not Found response will be returned.
+            If the addition is successful, a 201 Created response with the team details will be returned.
+            This endpoint is useful for managing team memberships and ensuring that teams are up-to-date with their members.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+            Example usage:
+            POST /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000
+            where `memberId` is the unique identifier of the member to be added to the team.
+            The request will create a new team member and associate them with the team.
+            </summary>
+            <param name="memberId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.CreateTeam(Teams.APP.Layer.CQRS.Commands.CreateTeamCommand)">
+            <summary>
+            Creates a new team with the specified details.
+            This endpoint allows an administrator or team manager to create a new team in the system.
+            If the creation is successful, a 201 Created response with the created team details will be returned.
+            If the request data is invalid, a 400 Bad Request response with validation          errors will be returned.
+            This endpoint is useful for managing teams, allowing users to organize members into specific groups.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+            Example usage:
+            POST /teams
+            {
+              "name": "Development Team",
+              "memberId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
+              "teamManagerId": "123e4567-e89b-12d3-a456-426614174002"
+            }
+            The request body should contain the team name, a list of member IDs, and the team manager ID.
+            The `teamManagerId` should be a valid user ID of a user who will manage the team.
+            </summary>
+            <param name="command"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.UpdateTeamById(System.Guid,Teams.APP.Layer.CQRS.Commands.UpdateTeamCommand,System.Threading.CancellationToken)">
+            <summary>
+            Updates an existing team by its unique identifier.
+            This endpoint allows an administrator or team manager to modify the details of a specific team.
+            If the team with the specified ID does not exist, a 404 Not Found response will be returned.
+            If the update is successful, a 200 OK response with the updated team details will be returned.
+            This endpoint is useful for managing team information, such as changing the team name,
+            updating team members, or changing the team manager.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+            Example usage:
+            PUT /teams/{teamId}
+            {
+              "id": "123e4567-e89b-12d3-a456-426614174000",
+              "name": "Updated Team Name",
+              "memberId": ["123e4567-e89b-12d3-a456-426614174001", "123e4567-e89b-12d3-a456-426614174002"],
+              "teamManagerId": "123e4567-e89b-12d3-a456-426614174003"
+            }
+            where `teamId` is the unique identifier of the team to be updated.
+            The request body should contain the updated team details, including the team ID, name,
+            member IDs, and the team manager ID.
+            </summary>
+            <param name="teamId"></param>
+            <param name="command"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.DeleteTeamMemberById(Teams.API.Layer.DTOs.DeleteTeamMemberDto)">
+            <summary>
+            Deletes a team member by their unique identifier and the name of the team.
+            This endpoint allows an administrator or team manager to remove a member from a specific team.
+            If the member with the specified ID does not exist in the team, a 404 Not Found response will be returned.
+            If the deletion is successful, a 204 No Content response will be returned.
+            This endpoint is useful for managing team memberships and ensuring that only active members are retained in the team.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+            Example usage:
+            DELETE /teams/member
+            {
+              "memberId": "123e4567-e89b-12d3-a456-426614174000",
+              "teamName": "Development Team"
+            }
+            where `memberId` is the unique identifier of the member to be deleted and `teamName` is the name of the team from which the member will be removed.
+            </summary>
+            <param name="deleteTeamMemberDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.DeleteTeam(System.Guid)">
+            <summary>
+            Deletes a team by its unique identifier.
+            This endpoint allows an administrator to delete a team from the system.
+            If the team with the specified ID does not exist, a 404 Not Found response will be returned.
+            If the deletion is successful, a 204 No Content response will be returned.
+            This endpoint is useful for managing teams and ensuring that only active teams are retained in the system.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" role.
+            Example usage:
+            DELETE /teams/{teamId}
+            where `{teamId}` is the unique identifier of the team to be deleted.
+            </summary>
+            <param name="teamId"></param>
+            <returns></returns>
+        </member>
+        <member name="P:Teams.APP.Layer.CQRS.Queries.GetAllTeamsQuery.Id">
+            <summary>
+            Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetAllTeamsQuery"/> class.
+            </summary>
+            <remarks>
+            This constructor is parameterless and is used for deserialization purposes.
+            It allows the MediatR library to create instances of this query without requiring any parameters.
+            </remarks>
+        </member>
+        <member name="M:Teams.APP.Layer.CQRS.Queries.GetTeamQuery.#ctor(System.Guid)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetTeamQuery"/> class with the specified team identifier.
+            </summary>
+            <param name="identifier">The unique identifier of the team to retrieve.</param>
+        </member>
+        <member name="M:Teams.APP.Layer.CQRS.Queries.GetTeamsByManagerQuery.#ctor(System.Guid,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetTeamsByManagerQuery"/> class with the specified team identifier.
+            </summary>
+            <param name="TeamManagerId">The unique identifier of the team manager to retrieve.</param>
+            <param name="includeMembers">Whether to include team members in the result.</param>
+        </member>
+        <member name="M:Teams.APP.Layer.CQRS.Queries.GetTeamsByMemberQuery.#ctor(System.Guid,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Teams.APP.Layer.CQRS.Queries.GetTeamsByMemberQuery"/> class with the specified team identifier.
+            </summary>
+            <param name="MemberId">The unique identifier of the team manager to retrieve.</param>
+            <param name="includeMembers">Whether to include team members in the result.</param>
+        </member>
+        <member name="M:Teams.INFRA.Layer.ExternalServices.TeamExternalService.RetrieveNewMemberToAddAsync">
+                https://jsonbin.io/quick-store/
+                {
+                    "MemberId": "23456789-0abc-def1-2345-67890abcdef1",
+                    "SourceTeam": "Equipe de sécurité (Security Team)",
+                    "DestinationTeam": "Equipe de recherche et d'innovation (RnD Team)",
+                    "AffectationStatus": {
+                        "IsTransferAllowed": true,
+                        "LastLeaveDate": "2025-06-10T12:34:56Z"
+                  }
+                }
+                *
+        </member>
+    </members>
+</doc>

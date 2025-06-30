@@ -42,14 +42,14 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     public async Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId)
     {
         var listOfteams = await teamDbContext.Teams!.ToListAsync();
-        var teams = listOfteams.Where(m => m.MemberIds.Contains(memberId)).ToList();
+        var teams = listOfteams.Where(m => m.MembersIds.Contains(memberId)).ToList();
         return teams;
     }
 
     public async Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId, string teamName)
     {
         return await teamDbContext
-            .Teams!.Where(t => t.Name == teamName && t.MemberIds.Contains(memberId))
+            .Teams!.Where(t => t.Name == teamName && t.MembersIds.Contains(memberId))
             .FirstOrDefaultAsync();
     }
 

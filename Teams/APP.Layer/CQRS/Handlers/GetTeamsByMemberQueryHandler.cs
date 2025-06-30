@@ -29,21 +29,13 @@ public class GetTeamsByMemberQueryHandler
                 "Not Found",
                 "Team ressource not found"
             );
-
-        // foreach (var team in teams)
-        // {
-        //     if (team.MemberIds == null || team.MemberIds.Count == 0)
-        //     {
-        //         team.MemberIds = new List<Guid>();
-        //     }
-        // }
         var teamDtos = teams
             .Select(team => new TeamRequestDto(
                 team.Id,
                 team.TeamManagerId,
                 team.Name,
                 request.IncludeMembers,
-                team.MemberIds.ToList()
+                team.MembersIds.ToList()
             ))
             .ToList();
         return teamDtos;

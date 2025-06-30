@@ -15,10 +15,16 @@ public class CreateTeamCommandValidator : AbstractValidator<CreateTeamCommand>
         RuleFor(x => x.TeamManagerId)
             .Must(managerId => managerId != Guid.Empty)
             .WithMessage("Team manager ID cannot be an empty GUID");
-        RuleFor(x => x.MemberId)
+        RuleFor(x => x.MembersId)
             .NotEmpty()
             .WithMessage("Team member cannot be empty")
             .Must(members => members.All(id => id != Guid.Empty))
             .WithMessage("All team member IDs must be valid (non-empty GUIDs)");
+        // RuleFor(x => x.CreationDate)
+        //     .NotEmpty()
+        //     .WithMessage("Project start date cannot be empty")
+        //     .Must(date => date != default)
+        //     .WithMessage("Project start date must be a valid date")
+        //     .Must(date => date <= DateTime.UtcNow);
     }
 }

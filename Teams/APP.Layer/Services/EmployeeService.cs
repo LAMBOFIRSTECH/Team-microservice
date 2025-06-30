@@ -4,6 +4,7 @@ using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.Models;
+using Teams.CORE.Layer.ValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
 
 namespace Teams.APP.Layer.Services;
@@ -22,6 +23,37 @@ public class EmployeeService(
     public async Task AddTeamMemberAsync(Guid memberId)
     {
         throw new NotImplementedException("AddTeamMemberAsync method is not implemented yet.");
+    }
+
+    public (bool, Message?) CanMemberJoinNewTeam(Team team, TransfertMember transfertMember)
+    {
+        if (team.MembersIds.Count == 0)
+            return (true, null); // Le membre n'existe pas dans une équipe
+        if (!transfertMember.AffectationStatus.IsTransferAllowed)
+            return (
+                false,
+                new Message
+                {
+                    Status = 400,
+                    Detail =
+                        $"The team member {transfertMember.MemberTeamId} cannot be added in a new team.",
+                    Type = "Business Rule Violation",
+                    Title = "Not allow member",
+                }
+            );
+        if (transfertMember.AffectationStatus.LeaveDate.AddDays(7) > DateTime.UtcNow)
+            return (
+                false,
+                new Message
+                {
+                    Type = "Business Rule Violation",
+                    Title = "Member Cooldown Period",
+                    Detail =
+                        $"member {transfertMember!.MemberTeamId} must wait 7 days before being added to a new team.",
+                    Status = 400,
+                }
+            ); // Moins de 7 jours : refus
+        return (true, null);
     }
     // public async Task<Team> ManageTeamMemberAsync(
     //     Guid memberId,

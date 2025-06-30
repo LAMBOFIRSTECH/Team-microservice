@@ -43,7 +43,7 @@ public class GetTeamsByManagerQueryHandler
                 team.TeamManagerId,
                 team.Name,
                 request.IncludeMembers,
-                team.MemberIds.ToList()
+                team.MembersIds.ToList()
             ))
             .ToList();
         return teamDtos;

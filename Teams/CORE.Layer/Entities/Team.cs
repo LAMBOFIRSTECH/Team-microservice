@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
-using Teams.APP.Layer.ExternalServicesDtos;
+using Newtonsoft.Json;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.Models;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
@@ -10,11 +9,14 @@ namespace Teams.CORE.Layer.Entities;
 public enum TeamState
 {
     Incomplete = 0, // équipe créée et active mais pas de projet affecté
-    Active = 1,
-    Suspendue = 2,
-    Archivee = 3,
-    EnRevision = 4,
-    ADesaffecter = 5,
+    Active = 1, // équipe ayant au moins 2 membres et un manager, avec ou sans projet associé
+    Suspendue = 2, // équipe inactive, sans projet associé ou avec un projet associé mais inactif
+    Archivee = 3, // équipe inactive, figée dans le temps, sans projet associé
+    EnRevision = 4, // équipe en cours de révision, avec ou sans projet associé
+    ADesaffecter = 5, // équipe active mais sans projet associé, en attente de désaffectation
+
+    // pour les équipes qui ont un projet associé mais qui ne sont pas actives
+    // (par exemple, un projet terminé ou suspendu)
     Complete = 6, // est une équipe active + projet associé
 }
 
@@ -24,21 +26,38 @@ public class Team
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public Guid TeamManagerId { get; private set; }
-    private readonly List<Guid> _memberIds = new();
-    public IReadOnlyCollection<Guid> MemberIds => _memberIds.AsReadOnly();
+
+    // private readonly List<Guid> _memberIds = new();
+    // public IReadOnlyCollection<Guid> MemberIds => _memberIds.AsReadOnly();
+    public string? MemberIdSerialized { get; set; } = string.Empty;
+    public List<Guid> MembersIds
+    {
+        get =>
+            string.IsNullOrEmpty(MemberIdSerialized)
+                ? new List<Guid>()
+                : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
+        set => MemberIdSerialized = JsonConvert.SerializeObject(value);
+    }
+
     public TeamState State { get; private set; } = TeamState.Incomplete;
+    public bool ActiveAssociatedProject { get; private set; } = false;
+    private readonly DateTime _creationDate;
+    public DateTime? CreationDate => _creationDate;
     public DateTime LastActivityDate { get; private set; }
-    public bool ActiveAssociatedProject { get; private set; }
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
     private DateTime? _projectStartDate;
     public DateTime? ProjectStartDate => _projectStartDate;
+    private const int ValidityPeriodInDays = 90;
+
+    public Team() { } //Pour EF
 
     private Team(
         Guid id,
         string name,
         Guid teamManagerId,
         List<Guid> memberIds,
+        DateTime creationDate,
         TeamState state = TeamState.Incomplete,
         bool activeAssociatedProject = false
     )
@@ -46,42 +65,27 @@ public class Team
         Id = id;
         Name = name;
         TeamManagerId = teamManagerId;
-        _memberIds.AddRange(memberIds);
+        MembersIds = memberIds;
         State = state;
         ActiveAssociatedProject = activeAssociatedProject;
+        _creationDate = creationDate;
     }
 
-    private static void ValidateTeamCreation(
-        string name,
-        Guid teamManagerId,
-        List<Guid> memberIds,
-        List<Team> existingTeams
+    public void AttachProjectToTeam(
+        ProjectAssociation projectAssociation,
+        bool activeAssociatedProject
     )
     {
-        if (memberIds.Count < 2)
-            throw new DomainException("A team must have at least 2 members.");
-        if (memberIds.Count > 10)
-            throw new DomainException("A team cannot have more than 10 members.");
-        if (memberIds.Distinct().Count() != memberIds.Count)
-            throw new DomainException("Team members must be unique.");
-        if (!memberIds.Contains(teamManagerId))
-            throw new DomainException("The team manager must be one of the team members.");
-        if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            throw new DomainException($"A team with the name '{name}' already exists.");
+        EnsureTeamIsWithinValidPeriod();
+        if (activeAssociatedProject)
+        {
+            _projectStartDate = projectAssociation.ProjectStartDate;
+            AssociateProject(projectAssociation);
+            State = TeamState.Complete;
+        }
     }
 
-    public void Activate()
-    {
-        if (_memberIds.Count < 2)
-            throw new DomainException("A team must have at least 2 members to be activated.");
-        if (!MemberIds.Contains(TeamManagerId))
-            throw new DomainException(
-                "The team manager must be a member of the team to activate it."
-            );
-        State = TeamState.Active;
-    }
-
-    public void IsAnyProjectAssociated(ProjectAssociation projectAssociation)
+    private void AssociateProject(ProjectAssociation projectAssociation)
     {
         if (projectAssociation == null)
             throw new DomainException("Project associated data cannot be null.");
@@ -95,7 +99,37 @@ public class Team
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can have associated projects.");
         ActiveAssociatedProject = true;
-        _projectStartDate = projectAssociation.ProjectStartDate; // save the project start date in the team domain
+        _projectStartDate = projectAssociation.ProjectStartDate;
+    }
+
+    private void ValidateTeamData()
+    {
+        if (MembersIds.Count < 2)
+            throw new DomainException("A team must have at least 2 members.");
+        if (MembersIds.Count > 10)
+            throw new DomainException("A team cannot have more than 10 members.");
+        if (MembersIds.Distinct().Count() != MembersIds.Count)
+            throw new DomainException("Team members must be unique.");
+        if (!MembersIds.Contains(TeamManagerId))
+            throw new DomainException("The team manager must be one of the team members.");
+    }
+
+    private void EnsureTeamIsWithinValidPeriod()
+    {
+        if (_creationDate.AddDays(ValidityPeriodInDays) <= DateTime.UtcNow)
+        {
+            State = TeamState.Archivee;
+            throw new DomainException("Team has exceeded the 90-day validity period.");
+        }
+    }
+
+    public void AddMember(Guid memberId)
+    {
+        var members = MembersIds;
+        if (members.Contains(memberId))
+            throw new DomainException("Member already exists in the team.");
+        members.Add(memberId);
+        MembersIds = members;
     }
 
     public static Team Create(
@@ -103,21 +137,71 @@ public class Team
         Guid teamManagerId,
         List<Guid> memberIds,
         List<Team> existingTeams,
-        bool activeAssociatedProject = false,
-        ProjectAssociation? projectAssociation = null
+        bool activeAssociatedProject,
+        ProjectAssociation? projectAssociation = null,
+        DateTime? creationDate = null
     )
     {
-        ValidateTeamCreation(name, teamManagerId, memberIds, existingTeams);
-        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds);
-        team.Activate();
-        // Only associate a project if there is an active associated project
-        if (!activeAssociatedProject)
-            return team;
-        if (projectAssociation != null)
-            team.IsAnyProjectAssociated(projectAssociation);
-
+        var actualDate = creationDate ?? DateTime.UtcNow;
+        if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new DomainException($"A team with the name '{name}' already exists.");
+        var team = new Team(
+            Guid.NewGuid(),
+            name,
+            teamManagerId,
+            memberIds,
+            actualDate,
+            activeAssociatedProject ? TeamState.Complete : TeamState.Active,
+            activeAssociatedProject
+        );
+        team.ValidateTeamData();
+        team.EnsureTeamIsWithinValidPeriod();
+        if (activeAssociatedProject)
+        {
+            team.AssociateProject(projectAssociation!);
+            team.State = TeamState.Complete;
+        }
+        else
+            team.State = TeamState.Active;
         return team;
     }
+
+    public void UpdateTeam(string newName, Guid newManagerId, List<Guid> newMemberIds)
+    {
+        ValidateTeamData();
+        EnsureTeamIsWithinValidPeriod();
+        bool isSameName = Name.Equals(newName, StringComparison.OrdinalIgnoreCase);
+        bool sameMembers = MembersIds.SequenceEqual(newMemberIds);
+        bool sameManager = TeamManagerId.Equals(newManagerId);
+        if (isSameName && sameMembers && sameManager)
+            throw new DomainException("No changes detected in the team details.");
+        Name = newName;
+        TeamManagerId = newManagerId;
+        MembersIds.Clear();
+        MembersIds.AddRange(newMemberIds);
+        ActiveAssociatedProject = false;
+    }
+
+    // public static Team CreateWithProjectAssociated(
+    //     string name,
+    //     Guid teamManagerId,
+    //     List<Guid> memberIds,
+    //     List<Team> existingTeams,
+    //     ProjectAssociation projectAssociation,
+    //     bool activeAssociatedProject = true
+    // )
+    // {
+    //     EnsureTeamIsWithinValidPeriod(_creationDate);
+    //     var team = Create(name, teamManagerId, memberIds, existingTeams);
+    //     if (team == null)
+    //         throw new DomainException("Team creation failed due to invalid parameters.");
+    //     if (team.Name != name)
+    //         throw new DomainException("Team name does not match the provided name.");
+
+    //     team.AssociatedProject(projectAssociation!);
+    //     team.State = TeamState.Complete;
+    //     return team;
+    // }
 
     public void Suspend()
     {
@@ -131,7 +215,7 @@ public class Team
         if (State == TeamState.Archivee)
             return; // State figé
 
-        if (_memberIds.Count < 2 || TeamManagerId == null)
+        if (MembersIds.Count < 2 || TeamManagerId == null)
         {
             State = TeamState.Incomplete;
             return;
@@ -160,19 +244,11 @@ public class Team
             State = TeamState.Archivee;
     }
 
-    public void AddMember(Guid memberId)
-    {
-        if (_memberIds.Contains(memberId))
-            throw new DomainException("Member already exists in the team.");
-
-        _memberIds.Add(memberId);
-    }
-
     public void ChangeTeamManager(Guid newTeamManagerId)
     {
         if (newTeamManagerId == Guid.Empty)
             throw new DomainException("New team manager ID cannot be empty.");
-        if (_memberIds.Contains(newTeamManagerId))
+        if (MembersIds.Contains(newTeamManagerId))
             throw new DomainException("New team manager must be a member of the team.");
         TeamManagerId = newTeamManagerId;
     }
@@ -182,50 +258,10 @@ public class Team
         if (memberId == TeamManagerId)
             throw new DomainException("Cannot remove the team manager from the team.");
 
-        if (!_memberIds.Contains(memberId))
+        if (!MembersIds.Contains(memberId))
             throw new DomainException("Member not found in the team.");
-        _memberIds.Remove(memberId);
+        MembersIds.Remove(memberId);
     }
 
-    public void UpdateTeam(string name, Guid teamManagerId, List<Guid> memberIds)
-    {
-        if (this.Name == name && this._memberIds.SequenceEqual(memberIds))
-            throw new DomainException("No changes detected in the team details.");
-
-        this.Name = name;
-        this.TeamManagerId = teamManagerId;
-        _memberIds.Clear();
-        _memberIds.AddRange(memberIds);
-    }
-
-    public (bool, Message?) CanMemberJoinNewTeam(TransfertMemberDto transfertMemberDto)
-    {
-        if (_memberIds == null || _memberIds.Count == 0)
-            return (true, null); // Le membre n'existe pas dans une équipe
-        if (!transfertMemberDto.AffectationStatus.IsTransferAllowed)
-            return (
-                false,
-                new Message
-                {
-                    Status = 400,
-                    Detail =
-                        $"The team member {transfertMemberDto.MemberTeamIdDto} cannot be added in a new team.",
-                    Type = "Business Rule Violation",
-                    Title = "Not allow member",
-                }
-            );
-        if (transfertMemberDto.AffectationStatus.LeaveDate.AddDays(7) > DateTime.UtcNow)
-            return (
-                false,
-                new Message
-                {
-                    Type = "Business Rule Violation",
-                    Title = "Member Cooldown Period",
-                    Detail =
-                        $"member {transfertMemberDto!.MemberTeamIdDto} must wait 7 days before being added to a new team.",
-                    Status = 400,
-                }
-            ); // Moins de 7 jours : refus
-        return (true, null);
-    }
+    public void canMemberJoinNewTeam(TransfertMember transfertMember) { }
 }

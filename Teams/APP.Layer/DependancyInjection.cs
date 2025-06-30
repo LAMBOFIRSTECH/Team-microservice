@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Validators;
+using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
 
 namespace Teams.APP.Layer;
@@ -20,7 +21,7 @@ public static class DependancyInjection
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
-        services.AddScoped<EmployeeService>();
+        services.AddScoped<IEmployeeService, EmployeeService>();
         return services;
     }
 }

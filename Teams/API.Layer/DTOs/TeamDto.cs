@@ -5,7 +5,7 @@ public class TeamDto
     public Guid Id { get; set; }
     public string? Name { get; set; }
     public Guid TeamManagerId { get; set; }
-    public List<Guid> MemberId { get; set; } = new();
+    public List<Guid> MembersId { get; set; } = new();
 
     public TeamDto() { }
 
@@ -19,8 +19,8 @@ public class TeamDto
         TeamManagerId = managerId;
         Name = teamName;
         if (includeMembers)
-            MemberId = memberIds ?? [];
+            MembersId = memberIds ?? [];
         else
-            MemberId = [];
+            MembersId = [];
     }
 }

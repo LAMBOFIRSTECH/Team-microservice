@@ -9,8 +9,11 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class CreateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper)
-    : IRequestHandler<CreateTeamCommand, TeamDto>
+public class CreateTeamCommandHandler(
+    ITeamRepository teamRepository,
+    IMapper mapper,
+    ILogger<CreateTeamCommandHandler> log
+) : IRequestHandler<CreateTeamCommand, TeamDto>
 {
     public async Task<TeamDto> Handle(
         CreateTeamCommand command,
@@ -24,8 +27,11 @@ public class CreateTeamCommandHandler(ITeamRepository teamRepository, IMapper ma
             team = Team.Create(
                 command.Name!,
                 command.TeamManagerId,
-                command.MemberId,
-                existingTeams
+                command.MembersId,
+                existingTeams,
+                false,
+                null,
+                null
             );
         }
         catch (DomainException ex)

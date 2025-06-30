@@ -19,7 +19,7 @@ public class TeamController(
     IValidator<CreateTeamCommand> createTeamValidator,
     IValidator<UpdateTeamCommand> updateTeamValidator,
     IEmployeeService employeeService,
-    IEventSource eventSource
+    ILogger<TeamController> log
 ) : ControllerBase
 {
     /// <summary>
@@ -286,7 +286,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> DeleteTeamMemberById(
         [FromBody] DeleteTeamMemberDto deleteTeamMemberDto
-    )// doit etre pareil que AddTeamMember  c'est à dire vient depuis un service externe
+    ) // doit etre pareil que AddTeamMember  c'est à dire vient depuis un service externe
     {
         if (deleteTeamMemberDto == null)
             return BadRequest("Request data cannot be null.");

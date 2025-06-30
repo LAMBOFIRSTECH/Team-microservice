@@ -67,7 +67,6 @@ Les differents Etat d'une équipe et leur signification
 ## C- Agrégats et règles
 
 
-
 1. Règles de validation de données (Fluent validation)
 -----------------------------------------------------------------------------------------------------------
 | Règle                                              | Exemple                                            |

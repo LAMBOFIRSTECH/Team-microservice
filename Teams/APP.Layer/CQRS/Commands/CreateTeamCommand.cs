@@ -7,12 +7,14 @@ public class CreateTeamCommand : IRequest<TeamDto>
 {
     public string? Name { get; }
     public Guid TeamManagerId { get; }
-    public List<Guid> MemberId { get; } = new();
+    public List<Guid> MembersId { get; set; } = new();
 
-    public CreateTeamCommand(string name, Guid teamManagerId, List<Guid> memberId)
+    // public DateTime CreationDate { get; } = DateTime.UtcNow;
+
+    public CreateTeamCommand(string name, Guid teamManagerId, List<Guid> membersId)
     {
         Name = name;
         TeamManagerId = teamManagerId;
-        MemberId = memberId;
+        MembersId = membersId;
     }
 }

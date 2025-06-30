@@ -1,4 +1,5 @@
-using Teams.CORE.Layer.Entities;
+#nullable enable
+using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.ValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
@@ -11,29 +12,27 @@ public class ProjectService(
     TeamExternalService teamExternalService
 )
 {
-    public async Task ManageTeamProjectAssociationAsync()
+    public async Task ManageTeamteamProjectAsync()
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
 
-        var projectAssociation = new ProjectAssociation(
+        var teamProject = new ProjectAssociation(
             dto.TeamManagerIdDto,
             dto.TeamNameDto,
             dto.ProjectStartDateDto
         );
-        var existingTeams = await teamRepository.GetAllTeamsAsync();
-        var dbTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
-            projectAssociation.TeamManagerId,
-            projectAssociation.TeamName
+
+        var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
+            teamProject.TeamManagerId,
+            teamProject.TeamName
         );
-        var memberIds = dbTeam?.MemberIds.Select(m => m).ToList() ?? new List<Guid>();
-        var team = Team.Create(
-            projectAssociation.TeamName,
-            projectAssociation.TeamManagerId,
-            memberIds,
-            existingTeams,
-            true,
-            projectAssociation
-        );
-        await teamRepository.CreateTeamAsync(team);
+
+        if (existingTeam == null)
+            throw new DomainException(
+                $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}"
+            );
+
+        existingTeam.AttachProjectToTeam(teamProject, true);
+        await teamRepository.UpdateTeamAsync(existingTeam);
     }
 }
