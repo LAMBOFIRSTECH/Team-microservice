@@ -3,7 +3,6 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Build.Framework;
 using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Commands;

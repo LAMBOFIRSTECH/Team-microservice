@@ -9,11 +9,8 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class CreateTeamCommandHandler(
-    ITeamRepository teamRepository,
-    IMapper mapper,
-    ILogger<CreateTeamCommandHandler> log
-) : IRequestHandler<CreateTeamCommand, TeamDto>
+public class CreateTeamCommandHandler(ITeamRepository teamRepository, IMapper mapper)
+    : IRequestHandler<CreateTeamCommand, TeamDto>
 {
     public async Task<TeamDto> Handle(
         CreateTeamCommand command,

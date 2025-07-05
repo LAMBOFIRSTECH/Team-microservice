@@ -26,9 +26,6 @@ public class Team
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public Guid TeamManagerId { get; private set; }
-
-    // private readonly List<Guid> _memberIds = new();
-    // public IReadOnlyCollection<Guid> MemberIds => _memberIds.AsReadOnly();
     public string? MemberIdSerialized { get; set; } = string.Empty;
     public List<Guid> MembersIds
     {
@@ -263,5 +260,5 @@ public class Team
         MembersIds.Remove(memberId);
     }
 
-    public void canMemberJoinNewTeam(TransfertMember transfertMember) { }
+    public void canMemberJoinNewTeam(TransfertMember transfertMember) { } // ne modifie pas vraiment les propriétés de Teams donc pas dans le Domaine
 }

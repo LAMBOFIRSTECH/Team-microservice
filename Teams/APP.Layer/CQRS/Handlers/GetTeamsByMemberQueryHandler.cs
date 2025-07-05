@@ -22,7 +22,7 @@ public class GetTeamsByMemberQueryHandler
     )
     {
         var teams = await teamRepository.GetTeamsByMemberIdAsync(request.MemberId);
-        if (teams == null || teams.Count.Equals(0)) //Mettre la logique métier dans l'agrégat racine et pas dans le handler (Domain Driven Design)
+        if (teams == null || teams.Count.Equals(0))
             throw new HandlerException(
                 404,
                 $"Team with Member ID {request.MemberId} not found.",

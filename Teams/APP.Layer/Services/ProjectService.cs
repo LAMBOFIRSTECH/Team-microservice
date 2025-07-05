@@ -15,7 +15,6 @@ public class ProjectService(
     public async Task ManageTeamteamProjectAsync()
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
-
         var teamProject = new ProjectAssociation(
             dto.TeamManagerIdDto,
             dto.TeamNameDto,
@@ -28,9 +27,11 @@ public class ProjectService(
         );
 
         if (existingTeam == null)
+        {
             throw new DomainException(
                 $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}"
             );
+        }
 
         existingTeam.AttachProjectToTeam(teamProject, true);
         await teamRepository.UpdateTeamAsync(existingTeam);

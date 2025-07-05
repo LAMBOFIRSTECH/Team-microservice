@@ -32,16 +32,14 @@ public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearer
         {
             var authHeader = AuthenticationHeaderValue.Parse(Request.Headers["Authorization"]!);
             if (!authHeader.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase))
-            {
                 return await Task.FromResult(
                     AuthenticateResult.Fail("Invalid authentication scheme")
                 );
-            }
+
             var jwtToken = authHeader.Parameter;
             if (string.IsNullOrEmpty(jwtToken))
-            {
                 return AuthenticateResult.Fail("Token is missing.");
-            }
+
             var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = Options.TokenValidationParameters;
             var vault = new HashicorpVaultService(configuration);

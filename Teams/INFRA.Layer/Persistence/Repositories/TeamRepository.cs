@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 

@@ -1,6 +1,9 @@
 using System.Reflection;
 using FluentValidation;
+using MediatR;
 using Teams.API.Layer.Mappings;
+using Teams.APP.Layer.CQRS.Events;
+using Teams.APP.Layer.CQRS.Handlers;
 using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
@@ -22,6 +25,9 @@ public static class DependancyInjection
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
         services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+        services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
+        services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
         return services;
     }
 }
