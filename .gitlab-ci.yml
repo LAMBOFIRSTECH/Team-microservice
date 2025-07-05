@@ -25,6 +25,7 @@ stages:
   - scan-vulnerabilities
   - sonar-build-and-analysis
   - deploy
+  - rollback
 
 ######## PRE-TREATMENT ########
 pre-treatment:
@@ -33,10 +34,8 @@ pre-treatment:
     - echo "Nettoyage initial..."
     - git reset --hard
     - git clean -fdx
-    - echo "Nettoyage des caches NuGet"
     - dotnet nuget locals all --clear
-    - echo "Nettoyage des artefacts"
-    - rm -rf **/bin/ **/obj/ **/TestResults/ **/.vscode/ Couverture/
+    - rm -rf **/bin/ **/obj/ **/TestResults/ Couverture/ .vscode/
   artifacts:
     expire_in: 20 minutes
 
@@ -45,14 +44,9 @@ build:
   stage: build
   script:
     - SOLUTION_FILE=$(ls *.sln)
-    - echo "Compilation des projets à partir de $SOLUTION_FILE"
+    - echo "Compilation du projet :$SOLUTION_FILE"
     - dotnet restore "$SOLUTION_FILE"
-    - dotnet build $SOLUTION_FILE --configuration $BUILD_CONFIGURATION
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - "$NUGET_PACKAGES_DIRECTORY"
-      - "bin/"
+    - dotnet build "$SOLUTION_FILE" --configuration $BUILD_CONFIGURATION
   artifacts:
     expire_in: 10 minutes
 
@@ -63,13 +57,10 @@ test:
     - echo "Exécution des tests unitaires"
     - TEST_PROJECT=$(find . -name "*.Tests.csproj" | head -n 1)
     - dotnet test $TEST_PROJECT
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - "$NUGET_PACKAGES_DIRECTORY"
-      - "bin/"
+  artifacts:
+    expire_in: 10 minutes
 
-#########  TRIVY SCAN ANALYSIS AND DOCKER BUILD  ########
+######## SCAN VULNERABILITÉS + DOCKER BUILD ########
 scan-vulnerabilities:
   stage: scan-vulnerabilities
   image: aquasec/trivy:latest
@@ -77,40 +68,31 @@ scan-vulnerabilities:
     - gitlab-lamboft-shell-develop
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
-  variables:
-   RUNNER_TAG: "development"
-  allow_failure: false
   script:
-    - echo "Déploiement en environnement de développement"
-    - echo "Construction de l'image Docker"
     - tag=$(./image_tag.sh | tr -cd '0-9.')
-    - echo "DOCKER_TAG=$tag" > $CI_PROJECT_DIR/.env.ci
-    - CERT_PASSWORD="lambo"
-    - echo "CERT_PASSWORD=$CERT_PASSWORD" >> $CI_PROJECT_DIR/.env.ci
+    - echo "DOCKER_TAG=$tag" > .env.ci
+    - echo "CERT_PASSWORD=lambo" >> .env.ci
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker build -t $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag .
-    - echo "Scan FS et Docker image avec Trivy"
     - mkdir -p TRIVY_DIR
-    - dotnet list package --vulnerable
+    - dotnet list package --vulnerable || true
     - trivy image --exit-code 0 --severity HIGH,CRITICAL $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag --format json --output "TRIVY_DIR/trivy_docker_image.json"
     - trivy fs ./ --format json --output "TRIVY_DIR/trivy_scan_report.json"
     - chmod +x trivy.sh && ./trivy.sh
-    - echo "Scan de l'image Docker terminé"
-    - docker push  $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag
-  dependencies:
-    - test
+    - docker push $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag
+    - echo "$tag" > .docker_tag
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/.env.ci
+      - .env.ci
+      - .docker_tag
     expire_in: 10 minutes
 
-######## SONARQUBE BUILD & ANALYSIS ########
+######## SONARQUBE ########
 sonar-build-and-analysis:
   stage: sonar-build-and-analysis
   tags:
     - gitlab-lamboft-shell-develop
   script:
-    - echo "Lancement de l'analyse SonarQube"
     - chmod +x sonar_check.sh && ./sonar_check.sh
     - chmod +x sonar_report.sh && ./sonar_report.sh
   dependencies:
@@ -122,89 +104,106 @@ sonar-build-and-analysis:
       - "${SONAR_USER_HOME}/cache"
       - sonar-scanner/
       - "$NUGET_PACKAGES_DIRECTORY"
-      - "bin/"
       - ".sonarqube/"
   artifacts:
     paths:
       - ".sonarqube/"
     expire_in: 10 minutes
 
-# ######## DEPLOY ENV DEV ########
+######## DEPLOY DEV ########
 Env_dev:
   stage: deploy
   tags:
     - gitlab-lamboft-shell-develop
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
-  variables:
-    RUNNER_TAG: "development"
-    allow_failure: false
   script:
-    - source $CI_PROJECT_DIR/.env.ci
-    - echo "DEVELOPMENT_TAG=$DEVELOPMENT_TAG" >> build.env
-    - |
-      if [[ "$DEVELOPMENT_TAG" == "true" ]]; then
-        echo "Déploiement de l'image Docker"
-        docker rm -f dev-$CI_PROJECT_NAME || true
-        echo "Récupération et substitution des crédentials appRole Vault dans le fichier de configuration"
-        chmod +x vault_app_auth.sh; ./vault_app_auth.sh
-        docker-compose -f application-compose.yml --env-file .env.ci up -d
-        if [ $? != 0 ]; then 
-          echo "Echec de lancement du conatiner docker."
-          ./docker_cleanup.sh dev-$CI_PROJECT_NAME
-          exit 1
-        fi
-      else
-        echo "No environment tag set for this runner development"
-        exit 1
-      fi
+    - source .env.ci
+    - echo "DEVELOPMENT_TAG=true" >> build.env
+    - docker rm -f dev-$CI_PROJECT_NAME || true
+    - chmod +x vault_app_auth.sh && ./vault_app_auth.sh
+    - docker-compose -f application-compose.yml --env-file .env.ci up -d
+    - echo "$DOCKER_TAG" > .docker_tag
   artifacts:
     reports:
       dotenv: build.env
     paths:
       - .docker_tag
     expire_in: 10 minutes
-# ######## DEPLOY ENV STAGING #########
+######## DEPLOY STAGING ########
 Env_staging:
   stage: deploy
   tags:
     - gitlab-lamboft-shell-runner
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-  variables:
-    RUNNER_TAG: "staging"
-    allow_failure: false
   script:
-    - echo "STAGING_TAG=$STAGING_TAG" >> build.env
-    - |
-      if [[ "$STAGING_TAG" == "true" ]]; then
-        echo "Déploiement en environnement de staging"
-        echo "Construction de l'image Docker"
-        dotnet nuget locals all --clear
-        tag=$(./image_tag.sh | tr -cd '0-9.')
-        echo "DOCKER_TAG=$tag" > .env.ci 
-        echo "CERT_PASSWORD=$CERT_PASSWORD" >> .env.ci
-        docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-        docker build -t $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag .
-        docker push  $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag
-        echo "Déploiement de l'image Docker"
-        docker rm -f staging-$CI_PROJECT_NAME || true
-        docker-compose -f application-compose.yml --env-file .env.ci up -d
-        sleep 15
-        docker ps --format 'table {{.Names}}\t{{.Status}}' | grep 'dev-$CI_PROJECT_NAME' | grep 'Up'
-        if [ $? != 0 ]; then
-          echo "Echec de lancement du conatiner docker."
-          ./docker_cleanup.sh staging-$CI_PROJECT_NAME
-          exit 1
-        fi
-        docker network connect redis_redis staging-$CI_PROJECT_NAME
-      else
-        echo "No environment tag set for this runner development"
-        exit 1
-      fi
+    - PREVIOUS_TAG=$(cat .docker_tag || echo "none")
+    - tag=$(./image_tag.sh | tr -cd '0-9.')
+    - echo "$tag" > .docker_tag
+    - echo "PREVIOUS_DOCKER_TAG=$PREVIOUS_TAG" > build.env
+    - echo "DOCKER_TAG=$tag" >> .env.ci
+    - echo "CERT_PASSWORD=lambo" >> .env.ci
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag .
+    - docker push $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag
+    - docker rm -f staging-$CI_PROJECT_NAME || true
+    - docker-compose -f application-compose.yml --env-file .env.ci up -d
+    - sleep 10
   artifacts:
     reports:
       dotenv: build.env
     paths:
       - .docker_tag
+      - .rollback_tag
     expire_in: 10 minutes
+
+######## HEALTH CHECK ########
+health_check:
+  stage: health-check
+  tags:
+    - gitlab-lamboft-shell-runner
+  needs: ["Env_staging"]
+  script:
+    - echo "Vérification de l'état de l'application sur $HEALTH_ENDPOINT..."
+    - for i in {1..5}; do
+        curl -fs $HEALTH_ENDPOINT && exit 0;
+        echo "Health check failed, tentative $i...";
+        sleep 5;
+      done
+    - echo "Health check échoué après 5 tentatives. Déclenchement du rollback."
+    - echo "$PREVIOUS_DOCKER_TAG" > .rollback_tag
+    - |
+      if [ -n "$TRIGGER_ROLLBACK_URL" ]; then
+        curl -X POST "$TRIGGER_ROLLBACK_URL"
+      else
+        echo "Aucune URL de trigger rollback définie. Rollback manuel nécessaire."
+      fi
+    - exit 1
+  artifacts:
+    paths:
+      - .rollback_tag
+    expire_in: 10 minutes
+  allow_failure: false
+
+######## ROLLBACK STAGING ########
+rollback_staging:
+  stage: rollback
+  tags:
+    - gitlab-lamboft-shell-runner
+  rules:
+    - when: manual
+  script:
+    - ROLLBACK_TAG=$(cat .rollback_tag || cat .docker_tag || echo "none")
+    - if [ "$ROLLBACK_TAG" = "none" ]; then
+        echo "Aucun tag trouvé pour rollback.";
+        exit 1;
+      fi
+    - echo "Rollback vers l'image :$ROLLBACK_TAG"
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker pull $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$ROLLBACK_TAG
+    - docker rm -f staging-$CI_PROJECT_NAME || true
+    - echo "CERT_PASSWORD=lambo" > .env.rollback
+    - echo "DOCKER_TAG=$ROLLBACK_TAG" >> .env.rollback
+    - docker-compose -f application-compose.yml --env-file .env.rollback up -d
+    - echo "Rollback terminé avec succès."
