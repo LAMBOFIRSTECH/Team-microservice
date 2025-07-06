@@ -1,9 +1,3 @@
-using System;
+namespace Teams.APP.Layer.CQRS.Events;
 
-namespace Teams.APP.Layer.CQRS.Events
-{
-    public class ProjectAssociatedEvent
-    {
-        
-    }
-}
+public class ProjectAssociatedEvent { }

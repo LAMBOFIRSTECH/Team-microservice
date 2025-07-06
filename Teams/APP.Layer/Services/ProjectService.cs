@@ -27,11 +27,9 @@ public class ProjectService(
         );
 
         if (existingTeam == null)
-        {
             throw new DomainException(
                 $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}"
             );
-        }
 
         existingTeam.AttachProjectToTeam(teamProject, true);
         await teamRepository.UpdateTeamAsync(existingTeam);

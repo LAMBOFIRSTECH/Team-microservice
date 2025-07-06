@@ -179,27 +179,6 @@ public class Team
         ActiveAssociatedProject = false;
     }
 
-    // public static Team CreateWithProjectAssociated(
-    //     string name,
-    //     Guid teamManagerId,
-    //     List<Guid> memberIds,
-    //     List<Team> existingTeams,
-    //     ProjectAssociation projectAssociation,
-    //     bool activeAssociatedProject = true
-    // )
-    // {
-    //     EnsureTeamIsWithinValidPeriod(_creationDate);
-    //     var team = Create(name, teamManagerId, memberIds, existingTeams);
-    //     if (team == null)
-    //         throw new DomainException("Team creation failed due to invalid parameters.");
-    //     if (team.Name != name)
-    //         throw new DomainException("Team name does not match the provided name.");
-
-    //     team.AssociatedProject(projectAssociation!);
-    //     team.State = TeamState.Complete;
-    //     return team;
-    // }
-
     public void Suspend()
     {
         if (State != TeamState.Active)
