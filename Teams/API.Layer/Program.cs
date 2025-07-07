@@ -84,7 +84,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     });
 });
 
-// Ajouter d'autres services comme HttpClient, Routing, Health Checks, etc.
 builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRouting();
@@ -93,10 +92,10 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-// Ajouter l'authentification et l'autorisation
+//  l'authentification et l'autorisation
 builder.Services.AddAuthorizationPolicies(); // Déplacé dans APP.Layer
 
-// Ajouter OpenTelemetry
+// OpenTelemetry
 builder.Services.AddOpenTelemetryTracing(builder.Configuration);
 
 var app = builder.Build();
