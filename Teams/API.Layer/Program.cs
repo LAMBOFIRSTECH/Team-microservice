@@ -150,11 +150,4 @@ app.Map(
         );
     }
 );
-RecurringJob.AddOrUpdate<ManageTeamEventHandler>(
-    "job-check-and-add-member",
-    handler => handler.HandleAsync(),
-    Cron.Hourly,
-    new RecurringJobOptions { QueueName = "getnewmemberfromexternalapi" }
-);
-
 await app.RunAsync();

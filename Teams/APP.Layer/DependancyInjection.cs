@@ -1,5 +1,6 @@
 using System.Reflection;
 using FluentValidation;
+using Hangfire;
 using MediatR;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Events;
@@ -26,8 +27,21 @@ public static class DependancyInjection
         });
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
-        services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
-        services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
+        // services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
+        // services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
+        services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = 3;
+            options.Queues = HangfireQueues;
+        });
         return services;
     }
+
+    private static readonly string[] HangfireQueues =
+    {
+        "default",
+        "runner_operation_add_new_member",
+        "runner_operation_delete_new_member",
+        "runner_operation_project",
+    };
 }

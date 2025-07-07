@@ -1,41 +1,137 @@
-using System;
 using Hangfire;
+using Teams.APP.Layer.Exceptions;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.APP.Layer.Services;
 
-public class BackgroundJobService(EmployeeService employeeService) : IBackgroundJobService
+public class BackgroundJobService(
+    EmployeeService employeeService,
+    ProjectService project,
+    ILogger<BackgroundJobService> log
+) : IBackgroundJobService
 {
-    public Task ScheduleAddTeamMemberAsync(Guid memberId)
+    public string TryScheduleJob(Func<string> scheduleJobAction, int retryCount, TimeSpan delay)
     {
-        return Task.Run(() =>
+        string? jobId = null;
+        for (int i = 0; i < retryCount; i++)
         {
-            // Ajouter un job Hangfire pour l'ajout d'un membre de l'équipe
-            BackgroundJob.Enqueue(() => employeeService.AddTeamMemberAsync(memberId));
-        });
+            jobId = scheduleJobAction();
+            if (!string.IsNullOrEmpty(jobId))
+                break;
+
+            Thread.Sleep(delay);
+        }
+        return jobId!;
     }
 
-    public Task ScheduleDeleteTeamMemberAsync(Guid memberId, string teamName)
+    [Queue("runner_operation_add_new_member")]
+    public void ScheduleAddTeamMemberAsync(Guid memberId)
     {
-        return Task.Run(() =>
+        try
         {
-            // Ajouter un job Hangfire pour l'ajout d'un membre de l'équipe
-            BackgroundJob.Enqueue(() => employeeService.DeleteTeamMemberAsync(memberId, teamName));
-        });
+            log.LogInformation(
+                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Employees"
+            );
+            string jobId = TryScheduleJob(
+                () =>
+                    BackgroundJob.Schedule(
+                        () => employeeService.AddTeamMemberAsync(memberId),
+                        TimeSpan.FromSeconds(10)
+                    ),
+                retryCount: 2,
+                delay: TimeSpan.FromSeconds(1)
+            );
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new HangFireException(
+                    500,
+                    "Internal Error",
+                    "❌ La planification du job a échoué",
+                    "jobId est null."
+                );
+            }
+            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(
+                ex,
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+        }
     }
 
-    public Task ScheduleProjectAssociationAsync(Guid employeeId)
+    [Queue("runner_operation_delete_new_member")]
+    public void ScheduleDeleteTeamMemberAsync(Guid memberId, string teamName)
     {
-        return Task.Run(() =>
+        try
         {
-            // Ajouter un job Hangfire pour l'association d'un projet
-            BackgroundJob.Enqueue(() => AssociateProjectAsync(employeeId));
-        });
+            log.LogInformation(
+                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Employees"
+            );
+            string jobId = TryScheduleJob(
+                () =>
+                    BackgroundJob.Schedule(
+                        () => employeeService.DeleteTeamMemberAsync(memberId, teamName),
+                        TimeSpan.FromSeconds(10)
+                    ),
+                retryCount: 2,
+                delay: TimeSpan.FromSeconds(1)
+            );
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new HangFireException(
+                    500,
+                    "Internal Error",
+                    "❌ La planification du job a échoué",
+                    "jobId est null."
+                );
+            }
+            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(
+                ex,
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+        }
     }
 
-    public async Task AssociateProjectAsync(Guid employeeId)
+    [Queue("runner_operation_project")]
+    public void ScheduleProjectAssociationAsync()
     {
-        // La logique d'association du projet à un employé
-        await Task.Delay(1000); // Simule une tâche asynchrone
+        try
+        {
+            log.LogInformation(
+                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Projet"
+            );
+            string jobId = TryScheduleJob(
+                () =>
+                    BackgroundJob.Schedule(
+                        () => project.ManageTeamteamProjectAsync(),
+                        TimeSpan.FromSeconds(10)
+                    ),
+                retryCount: 2,
+                delay: TimeSpan.FromSeconds(1)
+            );
+            if (string.IsNullOrEmpty(jobId))
+            {
+                throw new HangFireException(
+                    500,
+                    "Internal Error",
+                    "❌ La planification du job a échoué",
+                    "jobId est null."
+                );
+            }
+            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(
+                ex,
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+        }
     }
 }

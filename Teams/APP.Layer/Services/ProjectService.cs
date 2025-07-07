@@ -6,17 +6,13 @@ using Teams.INFRA.Layer.ExternalServices;
 
 namespace Teams.APP.Layer.Services;
 
-public class ProjectService(
-    ITeamRepository teamRepository,
-    ILogger<ProjectService> log,
-    TeamExternalService teamExternalService
-)
+public class ProjectService(ITeamRepository teamRepository, TeamExternalService teamExternalService)
 {
     public async Task ManageTeamteamProjectAsync()
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
         var teamProject = new ProjectAssociation(
-            dto.TeamManagerIdDto,
+            dto!.TeamManagerIdDto,
             dto.TeamNameDto,
             dto.ProjectStartDateDto
         );

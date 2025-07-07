@@ -85,7 +85,7 @@ public class TeamController(
     ///  Authorization is not required for this endpoint, but it can be restricted to specific roles
     ///  such as "Admin" or "Manager" if needed.
     ///  Example usage:
-    ///  GET /teams/manager?managerId=123e4567-e89b-12d3-a456-426614174000&includeMembers=true
+    ///  GET /teams/manager?managerId=123e4567-e89b-12d3-a456-426614174000&amp;includeMembers=true
     ///  This will return a list of teams managed by the manager with ID `123e4567-e89b-12d3-a456-426614174000`.
     /// </summary>
     /// <param name="managerId"></param>

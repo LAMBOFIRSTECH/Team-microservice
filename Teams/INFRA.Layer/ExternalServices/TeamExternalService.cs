@@ -5,11 +5,7 @@ using Teams.APP.Layer.ExternalServicesDtos;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
-public class TeamExternalService(
-    HttpClient httpClient,
-    IConfiguration configuration,
-    ILogger<TeamExternalService> log
-)
+public class TeamExternalService(HttpClient httpClient, IConfiguration configuration)
 {
     /**
     https://jsonbin.io/quick-store/

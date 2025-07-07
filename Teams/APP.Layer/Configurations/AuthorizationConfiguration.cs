@@ -1,6 +1,4 @@
 using CustomVaultPackage;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Teams.APP.Layer.Configurations;
 

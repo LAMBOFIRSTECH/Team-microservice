@@ -67,6 +67,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         // existingTeam.TeamManagerId = team.TeamManagerId;
         // existingTeam.MemberIdSerialized = JsonConvert.SerializeObject(existingTeam.MembersIds);
         // await teamDbContext.SaveChangesAsync();
+        await Task.Delay(500);
         throw new NotImplementedException("UpdateTeamAsync method is not implemented yet.");
     }
 
