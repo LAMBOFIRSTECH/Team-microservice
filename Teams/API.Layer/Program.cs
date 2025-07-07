@@ -2,8 +2,10 @@ using System.Security.Cryptography.X509Certificates;
 using Hangfire;
 using Hangfire.Dashboard.BasicAuthorization;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Serilog;
 using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
+using Teams.API.Layer.Shared.Logging;
 using Teams.APP.Layer;
 using Teams.APP.Layer.Configurations;
 using Teams.APP.Layer.CQRS.Handlers;
@@ -92,12 +94,22 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-//  l'authentification et l'autorisation
+// Ajouter l'authentification et l'autorisation
 builder.Services.AddAuthorizationPolicies(); // Déplacé dans APP.Layer
 
-// OpenTelemetry
+// Ajouter OpenTelemetry
 builder.Services.AddOpenTelemetryTracing(builder.Configuration);
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.WithEnvironmentName()
+    .Enrich.FromLogContext()
+    .Enrich.WithCorrelationId()
+    .Enrich.WithThreadId()
+    .Enrich.WithProcessId()
+    .CreateLogger();
 
+SerilogConfiguration.ConfigureLogging(builder.Configuration);
+builder.Host.UseSerilog();
 var app = builder.Build();
 app.Map(
     "/team-management",
@@ -107,6 +119,7 @@ app.Map(
         teamApp.UseAuthentication();
         teamApp.UseAuthorization();
         teamApp.UseMiddleware<ExceptionHandlerMiddleware>();
+        teamApp.UseMiddleware<RequestLoggingMiddleware>();
 
         teamApp.UseEndpoints(endpoints =>
         {
