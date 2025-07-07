@@ -1,1 +1,0 @@
-//  Configuration de l'entité `Team` pour Entity Framework
