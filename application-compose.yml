@@ -6,15 +6,21 @@ services:
   authentication:
     image: $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$DOCKER_TAG
     container_name: dev-$CI_PROJECT_NAME
+    healthcheck:
+      test: ["CMD", "curl", "-s", "https://dev-team.api.docker:8181/team-management/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     expose:
       - "8181"
     networks:
       net_api:
         ipv4_address: 172.28.0.4
     volumes:
-      - ./appsettings.json:/app/API.Layer/appsettings.Development.json
+      - ./appsettings.json:/app/Teams/API.Layer/appsettings.Development.json
     environment:
       - ASPNETCORE_Kestrel__Certificates__Default__Password=$CERT_PASSWORD  
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/etc/ssl/certs/localhost.pfx
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8181
+  redis:
