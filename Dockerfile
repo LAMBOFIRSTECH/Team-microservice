@@ -6,12 +6,11 @@ LABEL maintainer="lamboartur94@gmail.com" \
     org.opencontainers.image.version="v2" \
     org.opencontainers.image.created="2025-07-08T00:00:00Z" \
     org.opencontainers.image.revision="02" \
-    org.opencontainers.image.title="dotnet/sdk:8.0.16" \
-    org.opencontainers.image.description="dotnet/sdk:8.0.16 with static gosu and no vulnerabilities" \
+    org.opencontainers.image.title="dotnet/sdk:8.0.17" \
     org.opencontainers.image.vendor="LAMBOFIRSTECH"
 
 ENV DOTNET_VERSION=8.0.410
-ENV DOTNET_DOWNLOAD_URL=https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.410/dotnet-sdk-8.0.410-linux-musl-x64.tar.gz
+ENV DOTNET_DOWNLOAD_URL=https://builds.dotnet.microsoft.com/dotnet/Sdk/${DOTNET_VERSION}/dotnet-sdk-${DOTNET_VERSION}-linux-musl-x64.tar.gz
 ENV DOTNET_ROOT=/opt/dotnet
 ENV PATH="${PATH}:${DOTNET_ROOT}"
 
