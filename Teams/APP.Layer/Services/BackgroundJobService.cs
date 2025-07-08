@@ -5,7 +5,7 @@ using Teams.APP.Layer.Interfaces;
 namespace Teams.APP.Layer.Services;
 
 public class BackgroundJobService(
-    EmployeeService employeeService,
+    IEmployeeService employeeService,
     ProjectService project,
     ILogger<BackgroundJobService> log
 ) : IBackgroundJobService

@@ -10,18 +10,18 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
     /**
     https://jsonbin.io/quick-store/
     {
-        "MemberId": "23456789-0abc-def1-2345-67890abcdef1",
+        "MemberId": "12345678-90ab-cdef-1234-567890abcdef",
         "SourceTeam": "Equipe de sécurité (Security Team)",
-        "DestinationTeam": "Equipe de recherche et d'innovation (RnD Team)",
+        "DestinationTeam": "Pentester",
         "AffectationStatus": {
             "IsTransferAllowed": true,
-            "LastLeaveDate": "2025-06-10T12:34:56Z"
+            "LastLeaveDate": "2025-07-03T12:34:56Z"
       }
     }
     **/
     public async Task<TransfertMemberDto?> RetrieveNewMemberToAddAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalServices:Employee:Url"]);
+        var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 
@@ -37,7 +37,7 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
 
     public async Task<DeleteTeamMemberDto?> RetrieveMemberToDeleteAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalServices:Employee:Url"]);
+        var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 
@@ -53,7 +53,7 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
 
     public async Task<ProjectAssociationDto?> RetrieveProjectAssociationDataAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalServices:Project:Url"]);
+        var response = await httpClient.GetAsync(configuration["ExternalsApi:Project:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             return null;
 

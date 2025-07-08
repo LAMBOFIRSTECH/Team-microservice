@@ -10,9 +10,9 @@ public class TeamTransfertMapper
         public static TransfertMember ToDomain(TransfertMemberDto dto)
         {
             return new TransfertMember(
-                dto.MemberTeamIdDto,
-                dto.SourceTeamDto,
-                dto.DestinationTeamDto,
+                dto.MemberTeamId,
+                dto.SourceTeam,
+                dto.DestinationTeam,
                 new Teams.CORE.Layer.ValueObjects.AffectationStatus(
                     dto.AffectationStatus.IsTransferAllowed,
                     dto.AffectationStatus.LeaveDate

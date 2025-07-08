@@ -10,8 +10,8 @@ public record AffectationStatus(
 );
 
 public record TransfertMemberDto(
-    [property: JsonProperty(Required = Required.Always)] Guid MemberTeamIdDto,
-    [property: JsonProperty(Required = Required.Always)] string SourceTeamDto,
-    [property: JsonProperty(Required = Required.Always)] string DestinationTeamDto,
+    [property: JsonProperty(Required = Required.Always)] Guid MemberTeamId,
+    [property: JsonProperty(Required = Required.Always)] string SourceTeam,
+    [property: JsonProperty(Required = Required.Always)] string DestinationTeam,
     [property: JsonProperty(Required = Required.Always)] AffectationStatus AffectationStatus
 );

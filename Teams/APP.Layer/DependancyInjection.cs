@@ -26,22 +26,15 @@ public static class DependancyInjection
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
         services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<ProjectService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         // services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
         // services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
-        services.AddHangfireServer(options =>
-        {
-            options.WorkerCount = 3;
-            options.Queues = HangfireQueues;
-        });
+        // services.AddHangfireServer(options =>
+        // {
+        //     options.WorkerCount = 3;
+        //     options.Queues = HangfireQueues;
+        // });
         return services;
     }
-
-    private static readonly string[] HangfireQueues =
-    {
-        "default",
-        "runner_operation_add_new_member",
-        "runner_operation_delete_new_member",
-        "runner_operation_project",
-    };
 }
