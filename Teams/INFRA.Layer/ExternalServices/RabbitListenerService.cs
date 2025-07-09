@@ -102,7 +102,7 @@ public partial class RabbitListenerService(
 
             while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
             {
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(1000, stoppingToken); // stop apres avoir consommer
             }
         }
         catch (Exception ex)

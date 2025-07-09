@@ -13,14 +13,10 @@ namespace Teams.APP.Layer.Services;
 public class EmployeeService(
     ITeamRepository teamRepository,
     ILogger<EmployeeService> log,
-    TeamExternalService teamExternalService
+    TeamExternalService teamExternalService,
+    IRedisCacheService redisCache
 ) : IEmployeeService
 {
-    public async Task DeleteTeamMemberAsync(Guid memberId, string teamName)
-    {
-        throw new NotImplementedException("DeleteTeamMemberAsync method is not implemented yet.");
-    }
-
     public (bool, Message?) CanMemberJoinNewTeam(Team team, TransfertMemberDto transfertMemberDto)
     {
         if (team.MembersIds.Count == 0)
@@ -90,7 +86,12 @@ public class EmployeeService(
             TeamMemberAction.Add,
             team
         );
-        await teamRepository.AddTeamMemberAsync(); // C'est dans le cas redis qu'on rajoute la décision de rajouter un new member dépend du Manager (Authorized) dans le controller
+        redisCache.StoreNewTeamMemberInformationsInRedis(
+            transfertMemberDto.MemberTeamId,
+            transfertMemberDto.DestinationTeam
+        );
+        await teamRepository.AddTeamMemberAsync(); // C'est dans le cas redis la décision de rajouter un new member dépend du Manager (Authorized) dans le controller
+        // filtrer les logs de hangfire pour n'afficher que les errors
     }
 
     public void ManageTeamMemberAsync(
@@ -118,30 +119,32 @@ public class EmployeeService(
                         $"Member '{memberId}' does not exist in team '{teamName}'."
                     );
                 team.DeleteTeamMemberSafely(memberId);
+                teamRepository.SaveAsync();
                 break;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(action), action, null);
         }
     }
-    // public async Task DeleteTeamMemberAsync(Guid memberId, string teamName)
-    // {
-    //     var teamMember = await teamRepository.GetTeamByNameAndMemberIdAsync(memberId, teamName)!;
-    //     if (teamMember == null)
-    //         throw new DomainException(
-    //             $"A team with the name '{teamName}' not found.",
-    //             "Team Name not found",
-    //             "No team found with the provided name.",
-    //             $"Requested Team Name: {teamName}"
-    //         );
-    //     try
-    //     {
-    //         await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove, teamMember);
-    //         await teamRepository.DeleteTeamMemberAsync();
-    //     }
-    //     catch (DomainException ex)
-    //     {
-    //         throw HandlerException.BadRequest(ex.Message, "Domain validation failed");
-    //     }
-    //}
+
+    public async Task DeleteTeamMemberAsync(Guid memberId, string teamName)
+    {
+        var teamMember = await teamRepository.GetTeamByNameAndMemberIdAsync(memberId, teamName)!;
+        if (teamMember == null)
+            throw new DomainException(
+                $"A team with the name '{teamName}' not found.",
+                "Team Name not found",
+                "No team found with the provided name.",
+                $"Requested Team Name: {teamName}"
+            );
+        try
+        {
+            ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove, teamMember);
+            await teamRepository.DeleteTeamMemberAsync();
+        }
+        catch (DomainException ex)
+        {
+            throw HandlerException.BadRequest(ex.Message, "Domain validation failed");
+        }
+    }
 }

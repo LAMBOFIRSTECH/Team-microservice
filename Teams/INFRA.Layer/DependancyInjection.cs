@@ -1,8 +1,16 @@
+using System.Net.Security;
+using System.Reflection;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using StackExchange.Redis;
 using Teams.APP.Layer.CQRS.Events;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
@@ -27,6 +35,7 @@ public static class DependancyInjection
             services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
 
         services.AddScoped<ITeamRepository, TeamRepository>();
+        services.AddScoped<IRedisCacheService, RedisCacheService>();
         // services.AddScoped<EmployeeCreatedEventHandler>();
         services.AddScoped<TeamExternalService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
@@ -38,6 +47,7 @@ public static class DependancyInjection
             options.WorkerCount = 3;
             options.Queues = HangfireQueues;
         });
+        ManageRedisCacheMemory(services, configuration);
         return services;
     }
 
@@ -48,4 +58,62 @@ public static class DependancyInjection
         "runner_operation_delete_new_member",
         "runner_operation_project",
     };
+
+    private static IServiceCollection ManageRedisCacheMemory(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
+    {
+        var Config = configuration.GetSection("CacheSettings");
+
+        var clientCertificate = new X509Certificate2(
+            Config["Redis:ConfigurationOptions:Certificate:Redis-pfx"]!,
+            Config["Redis:ConfigurationOptions:Certificate:CertPassword"],
+            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet
+        );
+
+        var options = new ConfigurationOptions
+        {
+            EndPoints = { Config["Redis:ConnectionString"]! },
+            Ssl = true,
+            SslHost = "Redis-server",
+            Password = Config["REDIS_PASSWORD"],
+            AbortOnConnectFail = false,
+            SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+            AllowAdmin = true,
+            ConnectTimeout = 10000,
+            SyncTimeout = 10000,
+            ReconnectRetryPolicy = new ExponentialRetry(5000),
+        };
+
+        options.CertificateValidation += (__, _, chain, sslPolicyErrors) =>
+        {
+            return sslPolicyErrors == SslPolicyErrors.None
+                || (
+                    sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors
+                    && chain!.ChainElements[^1].Certificate.Subject == "CN=Redis-CA"
+                );
+        };
+
+        options.CertificateSelection += delegate
+        {
+            return clientCertificate;
+        };
+
+        services.AddStackExchangeRedisCache(opts => opts.ConfigurationOptions = options);
+        services.AddSingleton<IConnectionMultiplexer>(provider =>
+        {
+            try
+            {
+                return ConnectionMultiplexer.Connect(options);
+            }
+            catch (RedisConnectionException ex)
+            {
+                var logger = provider.GetRequiredService<ILogger<Program>>();
+                logger.LogCritical(ex, "Error connecting to Redis:");
+                throw;
+            }
+        });
+        return services;
+    }
 }

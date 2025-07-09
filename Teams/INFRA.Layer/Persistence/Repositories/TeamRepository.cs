@@ -87,10 +87,15 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     {
         await teamDbContext.SaveChangesAsync();
     }
+
     // public async Task<bool> DeleteTeamAsync(Guid teamId)
     // {
     //     var team = await teamDbContext.Teams.FindAsync(teamId);
     //     teamDbContext.Teams.Remove(team);
     //     await teamDbContext.SaveChangesAsync();
     // }
+    public async Task SaveAsync()
+    {
+        await teamDbContext.SaveChangesAsync();
+    }
 }

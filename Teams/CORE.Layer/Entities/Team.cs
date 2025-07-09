@@ -129,6 +129,16 @@ public class Team
         MembersIds = members;
     }
 
+    public void DeleteTeamMemberSafely(Guid memberId)
+    {
+        if (memberId == TeamManagerId)
+            throw new DomainException("Cannot remove the team manager from the team.");
+
+        if (!MembersIds.Contains(memberId))
+            throw new DomainException("Member not found in the team.");
+        MembersIds.Remove(memberId);
+    }
+
     public static Team Create(
         string name,
         Guid teamManagerId,
@@ -227,16 +237,6 @@ public class Team
         if (MembersIds.Contains(newTeamManagerId))
             throw new DomainException("New team manager must be a member of the team.");
         TeamManagerId = newTeamManagerId;
-    }
-
-    public void DeleteTeamMemberSafely(Guid memberId)
-    {
-        if (memberId == TeamManagerId)
-            throw new DomainException("Cannot remove the team manager from the team.");
-
-        if (!MembersIds.Contains(memberId))
-            throw new DomainException("Member not found in the team.");
-        MembersIds.Remove(memberId);
     }
 
     public void canMemberJoinNewTeam(TransfertMember transfertMember) { } // ne modifie pas vraiment les propriétés de Teams donc pas dans le Domaine
