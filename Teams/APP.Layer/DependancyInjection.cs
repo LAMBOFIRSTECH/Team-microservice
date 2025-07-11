@@ -30,11 +30,6 @@ public static class DependancyInjection
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         // services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
         // services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
-        // services.AddHangfireServer(options =>
-        // {
-        //     options.WorkerCount = 3;
-        //     options.Queues = HangfireQueues;
-        // });
         return services;
     }
 }

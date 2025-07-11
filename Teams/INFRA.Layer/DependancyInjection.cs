@@ -91,7 +91,7 @@ public static class DependancyInjection
             return sslPolicyErrors == SslPolicyErrors.None
                 || (
                     sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors
-                    && chain!.ChainElements[^1].Certificate.Subject == "CN=Redis-CA"
+                    && chain!.ChainElements[^1].Certificate.Subject == "CN=vault-ca"
                 );
         };
 
