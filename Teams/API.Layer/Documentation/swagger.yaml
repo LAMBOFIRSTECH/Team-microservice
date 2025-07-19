@@ -9,7 +9,7 @@ servers:
 
 paths:
 
-  /:
+  teams/:
     get:
       summary: Retrieve all teams
       description: |
@@ -51,7 +51,7 @@ paths:
         '400':
           description: Invalid input / validation error
 
-  /{teamId}:
+  teams/{teamId}:
     get:
       summary: Retrieve a team by ID
       description: |
@@ -61,10 +61,10 @@ paths:
         - name: teamId
           in: path
           required: true
-          description: Unique ID of the team
           schema:
             type: string
             format: uuid
+          description: Unique ID of the team
       responses:
         '200':
           description: Team details
@@ -131,7 +131,7 @@ paths:
         '404':
           description: Team not found
 
-  /manager:
+  teams/manager:
     get:
       summary: Retrieve teams by manager ID
       description: |
@@ -165,7 +165,7 @@ paths:
         '404':
           description: No teams found for the manager
 
-  /member:
+  teams/member:
     get:
       summary: Retrieve teams by member ID
       description: |
