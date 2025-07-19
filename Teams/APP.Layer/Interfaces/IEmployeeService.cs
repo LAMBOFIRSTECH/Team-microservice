@@ -2,6 +2,7 @@ namespace Teams.APP.Layer.Interfaces;
 
 public interface IEmployeeService
 {
-    Task AddTeamMemberAsync(Guid memberId);
+    Task AddTeamMemberIntoRedisCacheAsync(Guid memberId);
+    Task InsertNewTeamMemberIntoDbAsync(Guid memberId);
     Task DeleteTeamMemberAsync(Guid memberId, string teamName);
 }

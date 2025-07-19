@@ -15,11 +15,11 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
         "DestinationTeam": "Pentester",
         "AffectationStatus": {
             "IsTransferAllowed": true,
-            "LastLeaveDate": "2025-07-03T12:34:56Z"
+            "LeaveDate": "2025-07-03T12:34:56Z"
       }
     }
     **/
-    public async Task<TransfertMemberDto?> RetrieveNewMemberToAddAsync()
+    public async Task<TransfertMemberDto?> RetrieveNewMemberToAddInRedisAsync()
     {
         var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)

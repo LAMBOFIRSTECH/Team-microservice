@@ -15,7 +15,7 @@ services:
       - "8181"
     networks:
       net_api:
-        ipv4_address: 172.28.0.4
+        ipv4_address: 172.25.0.4
     volumes:
       - ./appsettings.json:/app/Teams/API.Layer/appsettings.Development.json
     environment:

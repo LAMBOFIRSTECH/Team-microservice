@@ -1,63 +1,72 @@
 using System;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
-using Hangfire;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
-public class RedisCacheService : IRedisCacheService
+public class RedisCacheService(
+    IDistributedCache cache,
+    ILogger<RedisCacheService> logger,
+    IMemoryCache cacheMemory
+) : IRedisCacheService
 {
-    private readonly IDistributedCache _cache;
-    private readonly IMemoryCache cacheMemory;
-    private readonly ILogger<RedisCacheService> logger;
-    private readonly string? cacheKey;
+    private string GetKey(string key) => $"DevCache:{key}";
 
-    public RedisCacheService(
-        IDistributedCache cache,
-        ILogger<RedisCacheService> logger,
-        IMemoryCache cacheMemory
-    )
-    {
-        _cache = cache;
-        this.logger = logger;
-        // cacheKey = $"ExternalData_{GenerateRedisKeyForExternalData()}";
-        this.cacheMemory = cacheMemory;
-    }
+    // HGET DevCache:Pentester data
 
-    public void StoreNewTeamMemberInformationsInRedis(Guid memberId, string teamName)
+    public async Task StoreNewTeamMemberInformationsInRedisAsync(Guid memberId, string teamName)
     {
-        Dictionary<string, object> jsonObject = new()
+        var cacheKey = GetKey(memberId.ToString());
+
+        var cachedData = await cache.GetStringAsync(cacheKey);
+
+        if (cachedData is not null)
+        {
+            logger.LogError("Key already exists in Redis: {CacheKey}", cacheKey);
+            throw new InvalidOperationException();
+        }
+
+        var jsonObject = new Dictionary<string, object>
         {
             { "Id member", memberId },
             { "Team Name", teamName },
         };
-        var cacheKey = $"EntryRedisId-for-{memberId}_{teamName}";
-        var cachedData = _cache.GetStringAsync(cacheKey);
-        if (cachedData is not null)
-        {
-            var serializedData = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
-            _cache.SetStringAsync(
-                cacheKey,
-                serializedData,
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
-                }
-            );
-            logger.LogInformation(
-                "Successfull storage refresh token connection for key: {CacheKey}",
-                cacheKey
-            );
-        }
+
+        var serializedData = JsonConvert.SerializeObject(jsonObject, Formatting.Indented);
+
+        await cache.SetStringAsync(
+            cacheKey,
+            serializedData,
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(4),
+            }
+        );
+        logger.LogInformation("Successfully added new entry for key: {CacheKey}", cacheKey);
     }
 
-    public void GetNewTeamMemberFromCacheAsync()
+    public async Task<string> GetNewTeamMemberFromCacheAsync(Guid memberId)
     {
-        throw new NotImplementedException();
+        var cacheKey = GetKey(memberId.ToString());
+
+        var cachedData = await cache.GetStringAsync(cacheKey);
+        if (string.IsNullOrEmpty(cachedData))
+        {
+            logger.LogWarning("💢 No cache data found for key: {CacheKey}", cacheKey);
+            throw new KeyNotFoundException($"Cache key not found: {cacheKey}");
+        }
+
+        var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(cachedData);
+        if (dict == null || !dict.TryGetValue("Team Name", out var teamNameObj))
+            throw new InvalidOperationException($"Dictionnary is null or key 'Team Name' missing");
+        var teamName =
+            teamNameObj?.ToString() ?? throw new InvalidOperationException("'Team Name' is null");
+        await cache.RemoveAsync(cacheKey);
+        return teamName;
     }
 }

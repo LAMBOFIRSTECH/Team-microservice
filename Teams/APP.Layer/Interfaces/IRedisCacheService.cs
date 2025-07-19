@@ -4,6 +4,6 @@ namespace Teams.APP.Layer.Interfaces;
 
 public interface IRedisCacheService
 {
-    void StoreNewTeamMemberInformationsInRedis(Guid memberId, string teamName);
-    void GetNewTeamMemberFromCacheAsync();
+    Task StoreNewTeamMemberInformationsInRedisAsync(Guid memberId, string teamName);
+    Task<string> GetNewTeamMemberFromCacheAsync(Guid memberId);
 }

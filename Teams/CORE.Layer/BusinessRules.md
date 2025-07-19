@@ -167,7 +167,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                                                          |                                       |
 | Une équipe inactive depuis plus de 90 jours est archivée automatiquement                                 | Via job planifié dans `EquipeService` |
 |                                                                                                          |                                       |
-| Le délai entre création et lancement du projet ne doit pas dépasser N jours                              |                                       |
+| Le délai entre création et lancement du projet ne doit pas dépasser 7 jours                              |                                       |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -175,9 +175,9 @@ Les differents Etat d'une équipe et leur signification
 ---------------------------------------------------------------------------------------------------------
 | Règle                                                   | Détails                                     |
 |---------------------------------------------------------| --------------------------------------------|
-| Tous les membres doivent exister dans `EmployeeService` | Validé à l’ajout                            |
+|☑️Tous les membres doivent exister dans `EmployeeService` | Validé à l’ajout                            |
 |                                                         |                                             |
-| Une équipe ne peut être affectée à un projet inexistant | `ProjectService` doit valider l’affectation |
+|☑️ Une équipe ne peut être affectée à un projet inexistant | `ProjectService` doit valider l’affectation |
 |                                                         |                                             |
 |☑️ Les ID des membres doivent être valides et uniques   | GUID ou Id interne valide                    |
 ---------------------------------------------------------------------------------------------------------

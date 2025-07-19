@@ -163,15 +163,15 @@ public class TeamController(
     /// <returns></returns>
     //[Authorize(Roles = "Manager(responsable d'équipe)")] tous les deux admin et manager
     [Consumes(MediaTypeNames.Application.Json)]
-    [ProducesResponseType(typeof(TeamDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [AllowAnonymous] // Temporarily allowing anonymous access for testing purposes
-    [HttpPost("member")]
-    public async Task<ActionResult<TeamDto>> AddTeamMember([FromQuery] Guid memberId)
+    [HttpPatch("member")]
+    public async Task<ActionResult> AddTeamMember([FromQuery] Guid memberId)
     {
-        await employeeService.AddTeamMemberAsync(memberId);
+        await employeeService.InsertNewTeamMemberIntoDbAsync(memberId);
         return NoContent();
     }
 

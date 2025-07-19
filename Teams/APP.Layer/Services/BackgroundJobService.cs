@@ -35,7 +35,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => employeeService.AddTeamMemberAsync(memberId),
+                        () => employeeService.AddTeamMemberIntoRedisCacheAsync(memberId),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 2,

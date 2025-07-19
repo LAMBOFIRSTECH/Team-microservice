@@ -65,10 +65,9 @@ public static class DependancyInjection
     )
     {
         var Config = configuration.GetSection("CacheSettings");
-
         var clientCertificate = new X509Certificate2(
-            Config["Redis:ConfigurationOptions:Certificate:Redis-pfx"]!,
-            Config["Redis:ConfigurationOptions:Certificate:CertPassword"],
+            Config["Redis:ConfigurationOptions:Certificate:File-pfx"]!,
+            Config["Redis:ConfigurationOptions:Certificate:REDISCLI_AUTH"],
             X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet
         );
 
@@ -76,8 +75,8 @@ public static class DependancyInjection
         {
             EndPoints = { Config["Redis:ConnectionString"]! },
             Ssl = true,
-            SslHost = "Redis-server",
-            Password = Config["REDIS_PASSWORD"],
+            SslHost = "redis.infra.docker",
+            Password = Config["Redis:ConfigurationOptions:Certificate:REDISCLI_AUTH"],
             AbortOnConnectFail = false,
             SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
             AllowAdmin = true,
@@ -91,7 +90,7 @@ public static class DependancyInjection
             return sslPolicyErrors == SslPolicyErrors.None
                 || (
                     sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors
-                    && chain!.ChainElements[^1].Certificate.Subject == "CN=vault-ca"
+                    && chain!.ChainElements[^1].Certificate.Subject == "CN=Infra local CA"
                 );
         };
 

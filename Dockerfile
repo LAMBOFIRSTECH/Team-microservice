@@ -53,4 +53,4 @@ ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/etc/ssl/certs/backend.pfx
 EXPOSE 8181
 USER backend_api
 
-ENTRYPOINT ["dotnet", "Teams.dll"]
+ENTRYPOINT ["dotnet", "/app/Teams.dll"]

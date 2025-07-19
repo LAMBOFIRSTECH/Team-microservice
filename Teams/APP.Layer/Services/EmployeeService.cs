@@ -48,9 +48,9 @@ public class EmployeeService(
         return (true, null);
     }
 
-    public async Task AddTeamMemberAsync(Guid memberId)
+    public async Task AddTeamMemberIntoRedisCacheAsync(Guid memberId)
     {
-        var transfertMemberDto = await teamExternalService.RetrieveNewMemberToAddAsync();
+        var transfertMemberDto = await teamExternalService.RetrieveNewMemberToAddInRedisAsync();
 
         if (transfertMemberDto == null)
             throw new DomainException(
@@ -86,12 +86,10 @@ public class EmployeeService(
             TeamMemberAction.Add,
             team
         );
-        redisCache.StoreNewTeamMemberInformationsInRedis(
+        await redisCache.StoreNewTeamMemberInformationsInRedisAsync(
             transfertMemberDto.MemberTeamId,
             transfertMemberDto.DestinationTeam
         );
-        await teamRepository.AddTeamMemberAsync(); // C'est dans le cas redis la décision de rajouter un new member dépend du Manager (Authorized) dans le controller
-        // filtrer les logs de hangfire pour n'afficher que les errors
     }
 
     public void ManageTeamMemberAsync(
@@ -146,5 +144,20 @@ public class EmployeeService(
         {
             throw HandlerException.BadRequest(ex.Message, "Domain validation failed");
         }
+    }
+
+    public async Task InsertNewTeamMemberIntoDbAsync(Guid memberId)
+    {
+        var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId);
+        var teamMember = await teamRepository.GetTeamByNameAsync(teamName)!;
+        if (teamMember == null)
+            throw new DomainException(
+                $"A team with the name '{teamName}' not found.",
+                "Team Name not found",
+                "No team found with the provided name.",
+                $"Requested Team Name: {teamName}"
+            );
+        ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add, teamMember);
+        await teamRepository.AddTeamMemberAsync();
     }
 }
