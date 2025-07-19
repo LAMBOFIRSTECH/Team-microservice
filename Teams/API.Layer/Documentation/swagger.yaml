@@ -20,6 +20,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TeamDto'
+                  
     post:
       summary: Crée une nouvelle équipe
       description: |
@@ -62,6 +63,48 @@ paths:
                 $ref: '#/components/schemas/TeamDto'
         '404':
           description: Équipe non trouvée
+
+  /teams/member:
+    patch:
+      summary: Adds a new member to the team
+      description: |
+        Adds a new member to the team.
+        
+        This endpoint allows an administrator or team manager to add a new member to a specific team.
+
+        If the member with the specified ID does not exist, a 404 Not Found response will be returned.
+
+        If the addition is successful, a 204 No Content response will be returned.
+
+        Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+
+        **Example usage**:
+        `PATCH /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000`
+
+        Where `memberId` is the unique identifier of the member to be added to the team.
+      operationId: addTeamMember
+      tags:
+        - Teams
+      parameters:
+        - name: memberId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique identifier of the member to be added to the team
+      responses:
+        '204':
+          description: Member added to the team successfully (no content returned)
+        '400':
+          description: Bad request — likely due to invalid input
+        '404':
+          description: Member not found
+        '500':
+          description: Internal server error
+      security:
+        - bearerAuth: []
+
     put:
       summary: Met à jour une équipe
       description: |
