@@ -1,6 +1,9 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
+using Teams.API.Layer.Middlewares;
 
 namespace Teams.API.Layer
 {
@@ -38,6 +41,23 @@ namespace Teams.API.Layer
                 var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 opt.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
             });
+            services
+                .AddAuthentication("JwtAuthorization")
+                .AddScheme<JwtBearerOptions, JwtBearerAuthenticationMiddleware>(
+                    "JwtAuthorization",
+                    options =>
+                    {
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            ValidateIssuer = true,
+                            ValidateAudience = true,
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ValidIssuer = configuration["Jwt:Issuer"],
+                            ValidAudience = configuration["Jwt:Audience"],
+                        };
+                    }
+                );
 
             return services;
         }

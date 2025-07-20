@@ -17,8 +17,7 @@ public class TeamController(
     IMediator mediator,
     IValidator<CreateTeamCommand> createTeamValidator,
     IValidator<UpdateTeamCommand> updateTeamValidator,
-    IEmployeeService employeeService,
-    ILogger<TeamController> log
+    IEmployeeService employeeService
 ) : ControllerBase
 {
     /// <summary>
@@ -61,7 +60,7 @@ public class TeamController(
     /// </summary>
     /// <param name="teamId"></param>
     /// <returns></returns>
-    // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
+    // [Authorize(Policy = "AdminPolicy,ManagerPolicy(responsable d'équipe)")]
     [HttpGet("{teamId:guid}")]
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
@@ -167,7 +166,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    [AllowAnonymous] // Temporarily allowing anonymous access for testing purposes
+    [AllowAnonymous]
     [HttpPatch("member")]
     public async Task<ActionResult> AddTeamMember([FromQuery] Guid memberId)
     {
@@ -259,8 +258,6 @@ public class TeamController(
         return Ok(team);
     }
 
-    // ajouter une méthode ici qui gère TeamEvent (hangfire + authorize [il faut une authentification pour ajouter un membre dans une équipe])
-
     /// <summary>
     /// Deletes a team member by their unique identifier and the name of the team.
     /// This endpoint allows an administrator or team manager to remove a member from a specific team.
@@ -291,9 +288,6 @@ public class TeamController(
             return BadRequest("Request data cannot be null.");
         if (string.IsNullOrWhiteSpace(deleteTeamMemberDto.TeamName))
             return BadRequest("Team name must be provided.");
-        // await mediator.Send(
-        //     new DeleteTeamMemberCommand(deleteTeamMemberDto.MemberId, deleteTeamMemberDto.TeamName)
-        // );
         await employeeService.DeleteTeamMemberAsync(
             deleteTeamMemberDto.MemberId,
             deleteTeamMemberDto.TeamName

@@ -1,5 +1,5 @@
 using FluentValidation;
-using Teams.APP.Layer.ExternalServicesDtos;
+using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.CQRS.Validators;
 

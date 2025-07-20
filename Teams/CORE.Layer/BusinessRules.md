@@ -11,23 +11,24 @@
 --------------------------------------------------------------------------------------------------------
 
 Les differents Etat d'une équipe et leur signification
----------------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------------
 | Statut         | Description                                                                    | Déclencheurs / Conditions métier               |
 | ---------------| -------------------------------------------------------------------------------|----------------------------------------------- |
-| **Incomplète** |État par défaut si l’équipe n’a **pas** de responsable ou **moins de 2 membres**|`Membres.Count < 2` ou `Responsable == null`    |
-| **Active**     |L’équipe est complète et opérationnelle.                                        |`Membres.Count >= 2` et `Responsable != null`   |
-|****************|********************************************************************************|************************************************|
-| **Suspendue**  |État temporaire,généralement déclenché par un changement de statut du projet lié|                                                | 
-|                |       (ex. projet suspendu) Règle de cohérence projet-équipe :                 |`Projet.Etat == Suspendu → Equipe.Etat = Suspendue`|
+| **Incomplète** |Équipe constituée mais sans projet (peut être en création ou non conforme)      |`Membres.Count < 2 ou Responsable == null`      |
 |                |                                                                                |                                                |
-| **Archivée**   |L’équipe n’est plus modifiable, souvent car inactive depuis longtemps           | Inactivité > 90 jours                          |
+| **Active**     |Équipe complète (≥2 membres + manager)                                          |`Membres.Count >= 2` et `Responsable != null`   |
 |****************|********************************************************************************|************************************************|
-| **En révision**|L’équipe ne respecte plus certains seuils                                       |`Productivité < 40%` ou Turnover > 50% en 2 mois|
-|                |(ex : productivité basse, turnover élevé), en cours d’audit interne             |                                                |
+| **Complete**   |Équipe active et associée à un projet                                           |`Équipe.Active == true et Projet != null`       | 
+|                |                                                                                |                                                |
+| **Suspendue**  |Projet associé à l’équipe est suspendu                                          | `Projet.Etat == Suspendu`                      |
 |****************|********************************************************************************|************************************************|
-|                |                                                                                |déclenche un processus de revue RH.             |
-|**À désaffecter**|L’équipe est toujours active mais **plus assignée à un projet** terminé        |Trigger interne après fin d’un projet affecté   |
----------------------------------------------------------------------------------------------------------------------------------------------------
+| **En révision**|Équipe suspendue, en cours d’évaluation RH (productivité, turnover...)          |`Productivité < 40%` ou Turnover > 50% en 2 mois|
+|                |                                                                                |                                                |
+|**À désaffecter**|Équipe non réaffectée à un projet après la révision                            |Évaluation terminée sans réassignation          |
+|****************|********************************************************************************|************************************************|
+|                |                                                                                |                                                |
+|**Archivée**    |Équipe incomplète (sans projet) depuis 15 jours                                 |`État == Incomplète pendant > 15 jours `        |
+----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 # Entité Equipe microservice dédié

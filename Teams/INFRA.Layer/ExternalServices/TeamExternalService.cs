@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Teams.API.Layer.DTOs;
-using Teams.APP.Layer.ExternalServicesDtos;
+using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
@@ -18,7 +18,18 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
             "LeaveDate": "2025-07-03T12:34:56Z"
       }
     }
+
+    {
+        "TeamManagerId": "c5b8e9b6-4a19-4a53-a41e-8b6f4d1a5d74",
+        "TeamName": "Pentester",
+        "ProjectStartDate": "2025-07-20T10:00:00Z",
+        "ProjectState": {
+            "State": "Active"
+        }
+    }
+
     **/
+
     public async Task<TransfertMemberDto?> RetrieveNewMemberToAddInRedisAsync()
     {
         var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);

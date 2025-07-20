@@ -38,7 +38,7 @@ public class BackgroundJobService(
                         () => employeeService.AddTeamMemberIntoRedisCacheAsync(memberId),
                         TimeSpan.FromSeconds(10)
                     ),
-                retryCount: 2,
+                retryCount: 1,
                 delay: TimeSpan.FromSeconds(1)
             );
             if (string.IsNullOrEmpty(jobId))

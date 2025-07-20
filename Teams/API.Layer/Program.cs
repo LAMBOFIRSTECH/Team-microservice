@@ -7,9 +7,6 @@ using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
 using Teams.API.Layer.Shared.Logging;
 using Teams.APP.Layer;
-using Teams.APP.Layer.Configurations;
-using Teams.APP.Layer.CQRS.Handlers;
-using Teams.CORE.Layer;
 using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,9 +33,8 @@ foreach (var kvp in builder.Configuration.AsEnumerable())
 
 // Ajouter les services via les DI respectives
 builder.Services.AddApiDI(builder.Configuration);
-builder.Services.AddApplicationDI();
+builder.Services.AddApplicationDI(builder.Configuration);
 builder.Services.AddInfrastructureDI(builder.Configuration);
-builder.Services.AddCoreDI();
 
 // Configuration HTTPS et certificats
 var kestrelSection = builder.Configuration.GetSection("Kestrel:EndPoints:Https");
@@ -94,11 +90,8 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-// Ajouter l'authentification et l'autorisation
-builder.Services.AddAuthorizationPolicies(); // Déplacé dans APP.Layer
-
 // Ajouter OpenTelemetry
-builder.Services.AddOpenTelemetryTracing(builder.Configuration);
+// builder.Services.AddOpenTelemetryTracing(builder.Configuration);
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.WithEnvironmentName()

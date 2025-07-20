@@ -1,11 +1,11 @@
-using Teams.APP.Layer.ExternalServicesDtos;
 using Teams.CORE.Layer.ValueObjects;
+using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.API.Layer.Mappings;
 
 public class TeamTransfertMapper
 {
-    public static class TransfertMemberMapper
+    public static class TeamTransfertMember
     {
         public static TransfertMember ToDomain(TransfertMemberDto dto)
         {

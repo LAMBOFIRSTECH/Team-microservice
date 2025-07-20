@@ -6,22 +6,13 @@ namespace Teams.INFRA.Layer.Persistence.Repositories;
 
 public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
 {
-    public async Task<Team?> GetTeamByIdAsync(Guid teamId)
-    {
-        return await teamDbContext
-            .Teams!.AsTracking()
-            .FirstOrDefaultAsync(t => t.Id.Equals(teamId)); //AsTracking améliore la performance de la requête en évitant le suivi des modifications pour les entités récupérées, ce qui est utile si vous ne prévoyez pas de modifier ces entités dans le contexte actuel.
-    }
+    public async Task<Team?> GetTeamByIdAsync(Guid teamId) =>
+        await teamDbContext.Teams.AsNoTracking().FirstOrDefaultAsync(t => t.Id == teamId); // AsNoTracking() pour lecture seule, sans intention de modifier
 
-    public async Task<Team?> GetTeamByNameAsync(string teamName)
-    {
-        return await teamDbContext.Teams!.FirstOrDefaultAsync(t => t.Name.Equals(teamName));
-    }
+    public async Task<Team?> GetTeamByNameAsync(string teamName) =>
+        await teamDbContext.Teams.FirstOrDefaultAsync(t => t.Name.Equals(teamName));
 
-    public async Task<List<Team>> GetAllTeamsAsync()
-    {
-        return await teamDbContext.Teams!.ToListAsync();
-    }
+    public async Task<List<Team>> GetAllTeamsAsync() => await teamDbContext.Teams.ToListAsync();
 
     public async Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId)
     {
@@ -31,12 +22,13 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return teams;
     }
 
-    public async Task<Team?> GetTeamByNameAndTeamManagerIdAsync(Guid teamManager, string teamName)
-    {
-        return await teamDbContext
+    public async Task<Team?> GetTeamByNameAndTeamManagerIdAsync(
+        Guid teamManager,
+        string teamName
+    ) =>
+        await teamDbContext
             .Teams!.Where(t => t.Name == teamName && t.TeamManagerId.Equals(teamManager))
             .FirstOrDefaultAsync();
-    }
 
     public async Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId)
     {
@@ -45,12 +37,10 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return teams;
     }
 
-    public async Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId, string teamName)
-    {
-        return await teamDbContext
+    public async Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId, string teamName) =>
+        await teamDbContext
             .Teams!.Where(t => t.Name == teamName && t.MembersIds.Contains(memberId))
             .FirstOrDefaultAsync();
-    }
 
     public async Task<Team> CreateTeamAsync(Team team)
     {
@@ -83,10 +73,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         await teamDbContext.SaveChangesAsync();
     }
 
-    public async Task DeleteTeamMemberAsync()
-    {
-        await teamDbContext.SaveChangesAsync();
-    }
+    public async Task DeleteTeamMemberAsync() => await SaveAsync();
 
     // public async Task<bool> DeleteTeamAsync(Guid teamId)
     // {
@@ -94,8 +81,5 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     //     teamDbContext.Teams.Remove(team);
     //     await teamDbContext.SaveChangesAsync();
     // }
-    public async Task SaveAsync()
-    {
-        await teamDbContext.SaveChangesAsync();
-    }
+    public async Task SaveAsync() => await teamDbContext.SaveChangesAsync();
 }

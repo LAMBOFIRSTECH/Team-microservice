@@ -5,7 +5,7 @@ namespace Teams.CORE.Layer.Interfaces;
 public interface ITeamRepository
 {
     Task<List<Team>> GetAllTeamsAsync();
-    Task<Team>? GetTeamByIdAsync(Guid teamId);
+    Task<Team?> GetTeamByIdAsync(Guid teamId);
     Task<Team?> GetTeamByNameAsync(string teamName);
     Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId);
     Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId, string teamName);

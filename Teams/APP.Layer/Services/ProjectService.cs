@@ -11,10 +11,15 @@ public class ProjectService(ITeamRepository teamRepository, TeamExternalService 
     public async Task ManageTeamteamProjectAsync()
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
+        if (dto is null)
+            throw new DomainException("Record cannot be null");
+        var coreProjectState = Enum.Parse<ProjectState>(dto.ProjectState.ToString());
+
         var teamProject = new ProjectAssociation(
-            dto!.TeamManagerIdDto,
-            dto.TeamNameDto,
-            dto.ProjectStartDateDto
+            dto.TeamManagerId,
+            dto.TeamName,
+            dto.ProjectStartDate,
+            coreProjectState
         );
 
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(

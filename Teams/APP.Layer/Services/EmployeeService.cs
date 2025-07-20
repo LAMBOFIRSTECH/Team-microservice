@@ -1,12 +1,11 @@
 using Teams.API.Layer.Middlewares;
-using Teams.APP.Layer.ExternalServicesDtos;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.Models;
-using Teams.CORE.Layer.ValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
+using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.Services;
 
@@ -17,42 +16,39 @@ public class EmployeeService(
     IRedisCacheService redisCache
 ) : IEmployeeService
 {
-    public (bool, Message?) CanMemberJoinNewTeam(Team team, TransfertMemberDto transfertMemberDto)
+    public Message? CanMemberJoinNewTeam(Team team, TransfertMemberDto transfertMemberDto)
     {
         if (team.MembersIds.Count == 0)
-            return (true, null); // Le membre n'existe pas dans une équipe
+            return null;
+
         if (!transfertMemberDto.AffectationStatus.IsTransferAllowed)
-            return (
-                false,
-                new Message
-                {
-                    Status = 400,
-                    Detail =
-                        $"The team member {transfertMemberDto.MemberTeamId} cannot be added in a new team.",
-                    Type = "Business Rule Violation",
-                    Title = "Not allow member",
-                }
+        {
+            return new Message(
+                400,
+                "Not allowed member",
+                $"The team member {transfertMemberDto.MemberTeamId} cannot be added to a new team.",
+                "Business Rule Violation"
             );
-        if (transfertMemberDto.AffectationStatus.LeaveDate.AddDays(7) > DateTime.UtcNow)
-            return (
-                false,
-                new Message
-                {
-                    Type = "Business Rule Violation",
-                    Title = "Member Cooldown Period",
-                    Detail =
-                        $"member {transfertMemberDto!.MemberTeamId} must wait 7 days before being added to a new team.",
-                    Status = 400,
-                }
-            ); // Moins de 7 jours : refus
-        return (true, null);
+        }
+
+        if (DateTime.UtcNow < transfertMemberDto.AffectationStatus.LeaveDate.AddDays(7))
+        {
+            return new Message(
+                400,
+                "Member Cooldown Period",
+                $"member {transfertMemberDto.MemberTeamId} must wait 7 days before being added to a new team.",
+                "Business Rule Violation"
+            );
+        }
+
+        return null;
     }
 
     public async Task AddTeamMemberIntoRedisCacheAsync(Guid memberId)
     {
         var transfertMemberDto = await teamExternalService.RetrieveNewMemberToAddInRedisAsync();
 
-        if (transfertMemberDto == null)
+        if (transfertMemberDto is null)
             throw new DomainException(
                 "Business Rule Violation",
                 "Missing Member Data",
@@ -79,8 +75,18 @@ public class EmployeeService(
                 $"Requested Team Name: {transfertMemberDto.DestinationTeam}"
             );
 
-        CanMemberJoinNewTeam(team, transfertMemberDto);
-        ManageTeamMemberAsync(
+        var errors = CanMemberJoinNewTeam(team, transfertMemberDto);
+        if (errors != null)
+        {
+            throw new DomainException(
+                errors.Type,
+                errors.Title,
+                errors.Detail,
+                errors.Status.ToString()
+            );
+        }
+
+        await ManageTeamMemberAsync(
             transfertMemberDto.MemberTeamId,
             transfertMemberDto.DestinationTeam,
             TeamMemberAction.Add,
@@ -92,7 +98,7 @@ public class EmployeeService(
         );
     }
 
-    public void ManageTeamMemberAsync(
+    public async Task ManageTeamMemberAsync(
         Guid memberId,
         string teamName,
         TeamMemberAction action,
@@ -117,7 +123,7 @@ public class EmployeeService(
                         $"Member '{memberId}' does not exist in team '{teamName}'."
                     );
                 team.DeleteTeamMemberSafely(memberId);
-                teamRepository.SaveAsync();
+                await teamRepository.SaveAsync();
                 break;
 
             default:
@@ -137,7 +143,7 @@ public class EmployeeService(
             );
         try
         {
-            ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove, teamMember);
+            await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove, teamMember);
             await teamRepository.DeleteTeamMemberAsync();
         }
         catch (DomainException ex)
@@ -149,7 +155,7 @@ public class EmployeeService(
     public async Task InsertNewTeamMemberIntoDbAsync(Guid memberId)
     {
         var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId);
-        var teamMember = await teamRepository.GetTeamByNameAsync(teamName)!;
+        var teamMember = await teamRepository.GetTeamByNameAsync(teamName);
         if (teamMember == null)
             throw new DomainException(
                 $"A team with the name '{teamName}' not found.",
@@ -157,7 +163,7 @@ public class EmployeeService(
                 "No team found with the provided name.",
                 $"Requested Team Name: {teamName}"
             );
-        ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add, teamMember);
-        await teamRepository.AddTeamMemberAsync();
+        await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add, teamMember);
+        await teamRepository.SaveAsync();
     }
 }

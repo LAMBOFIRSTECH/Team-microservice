@@ -6,18 +6,24 @@ using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
 
+/// <summary>
+/// Active       : Équipe ayant au moins deux membres et un manager.
+/// Incomplete   : Équipe constituée mais sans projet affecté.
+/// Complete     : Équipe active et associée à un projet.
+/// Suspendue    : Équipe active dont le projet est suspendu.
+/// EnRevision   : Équipe suspendue en cours d’évaluation pour réaffectation.
+/// ADesaffecter : Équipe non réaffectée à son projet initial après révision.
+/// Archivee     : Équipe restée incomplète pendant 15 jours.
+/// </summary>
 public enum TeamState
 {
-    Incomplete = 0, // équipe créée et active mais pas de projet affecté
-    Active = 1, // équipe ayant au moins 2 membres et un manager, avec ou sans projet associé
-    Suspendue = 2, // équipe inactive, sans projet associé ou avec un projet associé mais inactif
-    Archivee = 3, // équipe inactive, figée dans le temps, sans projet associé
-    EnRevision = 4, // équipe en cours de révision, avec ou sans projet associé
-    ADesaffecter = 5, // équipe active mais sans projet associé, en attente de désaffectation
-
-    // pour les équipes qui ont un projet associé mais qui ne sont pas actives
-    // (par exemple, un projet terminé ou suspendu)
-    Complete = 6, // est une équipe active + projet associé
+    Active = 0,
+    Complete = 1,
+    Incomplete = 2,
+    Archivee = 3,
+    Suspendue = 4,
+    EnRevision = 5,
+    ADesaffecter = 6,
 }
 
 public class Team
@@ -239,5 +245,5 @@ public class Team
         TeamManagerId = newTeamManagerId;
     }
 
-    public void canMemberJoinNewTeam(TransfertMember transfertMember) { } // ne modifie pas vraiment les propriétés de Teams donc pas dans le Domaine
+    // Pour le projet associé sa logique métier doit etre défini ici et non pas dans le service sui orchestre car un projet associé vient changer l'etat de l'agrégat
 }
