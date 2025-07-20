@@ -44,7 +44,7 @@ public static class DependancyInjection
         services.AddHangfireServer();
         services.AddHangfireServer(options =>
         {
-            options.WorkerCount = 3;
+            options.WorkerCount = 1;
             options.Queues = HangfireQueues;
         });
         ManageRedisCacheMemory(services, configuration);

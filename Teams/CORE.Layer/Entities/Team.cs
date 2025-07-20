@@ -207,7 +207,7 @@ public class Team
         if (State == TeamState.Archivee)
             return; // State figé
 
-        if (MembersIds.Count < 2 || TeamManagerId == null)
+        if (MembersIds.Count < 2)
         {
             State = TeamState.Incomplete;
             return;

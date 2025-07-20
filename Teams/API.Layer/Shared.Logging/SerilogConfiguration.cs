@@ -19,6 +19,8 @@ public static class SerilogConfiguration
             .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Debug) // à terme on devra l'envoyer dans Graylog
             .CreateLogger();
 
-        Log.Information("Serilog initialized");
+        Log.Information(
+            "Serilog initialized in consol log | we should sinked to Graylog in the future"
+        );
     }
 }

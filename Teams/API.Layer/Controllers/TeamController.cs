@@ -308,7 +308,7 @@ public class TeamController(
     /// </summary>
     /// <param name="teamId"></param>
     /// <returns></returns>
-    //[Authorize(Roles = "Admin")]
+    //[Authorize(Policy = "AdminPolicy")]
     [HttpDelete("{teamId:guid}")]
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

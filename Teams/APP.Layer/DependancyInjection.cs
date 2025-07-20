@@ -75,7 +75,6 @@ public static class DependancyInjection
                 "Jaeger IP address or port is not configured correctly."
             );
         }
-
         services
             .AddOpenTelemetry()
             .WithTracing(tracerProviderBuilder =>
@@ -86,7 +85,6 @@ public static class DependancyInjection
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(otlpOptions =>
                     {
-                        // Construire l'URL avec vérification des valeurs
                         var endpoint = new Uri($"http://{ipAddress}:{port}");
                         otlpOptions.Endpoint = endpoint;
                         otlpOptions.Protocol = OpenTelemetry

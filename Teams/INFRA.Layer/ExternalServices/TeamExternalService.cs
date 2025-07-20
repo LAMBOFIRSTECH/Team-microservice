@@ -10,7 +10,7 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
     /**
     https://jsonbin.io/quick-store/
     {
-        "MemberId": "12345678-90ab-cdef-1234-567890abcdef",
+        "MemberTeamId": "12345678-90ab-cdef-1234-567890abcdef",
         "SourceTeam": "Equipe de sécurité (Security Team)",
         "DestinationTeam": "Pentester",
         "AffectationStatus": {

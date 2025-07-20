@@ -38,8 +38,8 @@ public class BackgroundJobService(
                         () => employeeService.AddTeamMemberIntoRedisCacheAsync(memberId),
                         TimeSpan.FromSeconds(10)
                     ),
-                retryCount: 1,
-                delay: TimeSpan.FromSeconds(1)
+                retryCount: 3,
+                delay: TimeSpan.FromSeconds(5)
             );
             if (string.IsNullOrEmpty(jobId))
             {
@@ -75,8 +75,8 @@ public class BackgroundJobService(
                         () => employeeService.DeleteTeamMemberAsync(memberId, teamName),
                         TimeSpan.FromSeconds(10)
                     ),
-                retryCount: 2,
-                delay: TimeSpan.FromSeconds(1)
+                retryCount: 3,
+                delay: TimeSpan.FromSeconds(5)
             );
             if (string.IsNullOrEmpty(jobId))
             {
@@ -112,8 +112,8 @@ public class BackgroundJobService(
                         () => project.ManageTeamteamProjectAsync(),
                         TimeSpan.FromSeconds(10)
                     ),
-                retryCount: 2,
-                delay: TimeSpan.FromSeconds(1)
+                retryCount: 3,
+                delay: TimeSpan.FromSeconds(5)
             );
             if (string.IsNullOrEmpty(jobId))
             {

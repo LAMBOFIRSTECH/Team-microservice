@@ -7,13 +7,13 @@ namespace Teams.INFRA.Layer.ExternalServices;
 
 public class RedisCacheService(
     IDistributedCache cache,
-    ILogger<RedisCacheService> logger,
-    IMemoryCache cacheMemory
+    ILogger<RedisCacheService> logger
+// IMemoryCache cacheMemory
 ) : IRedisCacheService
 {
     private string GetKey(string key) => $"DevCache:{key}";
 
-    // HGET DevCache:Pentester data
+    // HGET DevCache:12345678-90ab-cdef-1234-567890abcdef data
 
     public async Task StoreNewTeamMemberInformationsInRedisAsync(Guid memberId, string teamName)
     {

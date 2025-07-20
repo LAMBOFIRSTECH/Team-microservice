@@ -58,7 +58,6 @@ namespace Teams.API.Layer
                         };
                     }
                 );
-
             return services;
         }
     }
