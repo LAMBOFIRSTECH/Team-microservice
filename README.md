@@ -34,8 +34,6 @@
 - 📄 `Controllers/TeamController.cs`
 
 **DTOs**  
-- 📄 `DTOs/ChangeManagerDto.cs`  
-- 📄 `DTOs/DeleteTeamMemberDto.cs`  
 - 📄 `DTOs/TeamDto.cs`  
 - 📄 `DTOs/TeamRequestDto.cs`
 
