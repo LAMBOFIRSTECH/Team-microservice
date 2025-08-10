@@ -23,8 +23,8 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     }
 
     public async Task<Team?> GetTeamByNameAndTeamManagerIdAsync(
-        Guid teamManager,
-        string teamName
+        string teamName,
+        Guid teamManager
     ) =>
         await teamDbContext
             .Teams!.Where(t => t.Name == teamName && t.TeamManagerId.Equals(teamManager))
@@ -49,17 +49,17 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return team;
     }
 
-    public async Task UpdateTeamAsync(Team team)
-    {
-        // var existingTeam = await teamDbContext.Teams!.FirstOrDefaultAsync(t => t.Id == team.Id);
-        // existingTeam!.Name = team.Name;
-        // existingTeam.MembersIds = team.MembersIds;
-        // existingTeam.TeamManagerId = team.TeamManagerId;
-        // existingTeam.MemberIdSerialized = JsonConvert.SerializeObject(existingTeam.MembersIds);
-        // await teamDbContext.SaveChangesAsync();
-        await Task.Delay(500);
-        throw new NotImplementedException("UpdateTeamAsync method is not implemented yet.");
-    }
+    public async Task UpdateTeamAsync(Team team) => await SaveAsync();
+
+    // {
+    //     // var existingTeam = await GetTeamByNameAndTeamManagerIdAsync(team.Name!, team.TeamManagerId);
+    //     // existingTeam!.Name = team.Name;
+    //     // existingTeam.MembersIds = team.MembersIds;
+    //     // existingTeam!.TeamManagerId = team.TeamManagerId;
+    //     // existingTeam.MemberIdSerialized = JsonConvert.SerializeObject(existingTeam.MembersIds);
+    //     await teamDbContext.SaveChangesAsync();
+    //     // throw new NotImplementedException("UpdateTeamAsync method is not implemented yet.");
+    // }
 
     public async Task DeleteTeamAsync(Guid teamId)
     {

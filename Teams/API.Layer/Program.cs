@@ -10,6 +10,8 @@ using Teams.APP.Layer;
 using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
+SerilogConfiguration.ConfigureLogging(builder.Configuration);
+builder.Host.UseSerilog();
 builder
     .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
     .AddJsonFile(
@@ -90,19 +92,6 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging();
 
-// Ajouter OpenTelemetry
-// builder.Services.AddOpenTelemetryTracing(builder.Configuration);
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.WithEnvironmentName()
-    .Enrich.FromLogContext()
-    .Enrich.WithCorrelationId()
-    .Enrich.WithThreadId()
-    .Enrich.WithProcessId()
-    .CreateLogger();
-
-SerilogConfiguration.ConfigureLogging(builder.Configuration);
-builder.Host.UseSerilog();
 var app = builder.Build();
 app.Map(
     "/team-management",

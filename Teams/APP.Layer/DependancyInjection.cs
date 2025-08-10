@@ -19,6 +19,7 @@ public static class DependancyInjection
     {
         services.AddValidatorsFromAssemblyContaining<CreateTeamCommandValidator>();
         services.AddValidatorsFromAssemblyContaining<UpdateTeamCommandValidator>();
+        services.AddValidatorsFromAssemblyContaining<UpdateTeamManagerValidator>();
         services.AddValidatorsFromAssemblyContaining<AddTeamMemberRecordValidator>();
         services.AddValidatorsFromAssemblyContaining<ProjectRecordValidator>();
         services.AddValidatorsFromAssemblyContaining<Program>();

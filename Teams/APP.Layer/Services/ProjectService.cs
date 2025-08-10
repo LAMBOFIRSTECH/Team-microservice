@@ -1,4 +1,4 @@
-#nullable enable
+using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.ValueObjects;
@@ -6,15 +6,21 @@ using Teams.INFRA.Layer.ExternalServices;
 
 namespace Teams.APP.Layer.Services;
 
-public class ProjectService(ITeamRepository teamRepository, TeamExternalService teamExternalService)
+public class ProjectService(
+    ITeamRepository teamRepository,
+    TeamExternalService teamExternalService,
+    ILogger<ProjectService> log
+)
 {
     public async Task ManageTeamteamProjectAsync()
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
         if (dto is null)
+        {
+            LogHelper.Error("Project association data is null", log);
             throw new DomainException("Record cannot be null");
+        }
         var coreProjectState = Enum.Parse<ProjectState>(dto.ProjectState.ToString());
-
         var teamProject = new ProjectAssociation(
             dto.TeamManagerId,
             dto.TeamName,
@@ -23,15 +29,20 @@ public class ProjectService(ITeamRepository teamRepository, TeamExternalService 
         );
 
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
-            teamProject.TeamManagerId,
-            teamProject.TeamName
+            teamProject.TeamName,
+            teamProject.TeamManagerId
         );
 
         if (existingTeam == null)
+        {
+            LogHelper.Warning(
+                $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}",
+                log
+            );
             throw new DomainException(
                 $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}"
             );
-
+        }
         existingTeam.AttachProjectToTeam(teamProject, true);
         await teamRepository.UpdateTeamAsync(existingTeam);
     }

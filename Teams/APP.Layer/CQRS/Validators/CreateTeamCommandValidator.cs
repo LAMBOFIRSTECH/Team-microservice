@@ -8,13 +8,13 @@ public class CreateTeamCommandValidator : AbstractValidator<CreateTeamCommand>
     public CreateTeamCommandValidator()
     {
         RuleFor(x => x.Name).NotEmpty().WithMessage("Team name cannot be empty");
-        RuleFor(x => x.TeamManagerId).NotEmpty().WithMessage("Team manager ID cannot be empty");
         RuleFor(x => x.Name)
             .MaximumLength(100)
             .WithMessage("Team name cannot exceed 100 characters");
         RuleFor(x => x.TeamManagerId)
-            .Must(managerId => managerId != Guid.Empty)
-            .WithMessage("Team manager ID cannot be an empty GUID");
+            .Must(id => id != Guid.Empty)
+            .WithMessage("Team manager ID cannot be empty or an empty GUID");
+
         RuleFor(x => x.MembersId)
             .NotEmpty()
             .WithMessage("Team member cannot be empty")

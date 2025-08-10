@@ -6,16 +6,9 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetTeamsByManagerQueryHandler
+public class GetTeamsByManagerQueryHandler(ITeamRepository teamRepository)
     : IRequestHandler<GetTeamsByManagerQuery, List<TeamRequestDto>>
 {
-    private readonly ITeamRepository teamRepository;
-
-    public GetTeamsByManagerQueryHandler(ITeamRepository teamRepository)
-    {
-        this.teamRepository = teamRepository;
-    }
-
     public async Task<List<TeamRequestDto>> Handle(
         GetTeamsByManagerQuery request,
         CancellationToken cancellationToken
@@ -29,17 +22,9 @@ public class GetTeamsByManagerQueryHandler
                 "Not Found",
                 "Team ressource not found"
             );
-
-        // foreach (var team in teams)
-        // {
-        //     if (team.MemberIds == null || team.MemberIds.Count == 0)
-        //     {
-        //         team.MembersIds = new List<Guid>();
-        //     }
-        // }
         var teamDtos = teams
             .Select(team => new TeamRequestDto(
-                team.Id,
+                // team.Id,
                 team.TeamManagerId,
                 team.Name,
                 request.IncludeMembers,

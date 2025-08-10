@@ -26,9 +26,9 @@ public class EmployeeService(
         if (!transfertMemberDto.AffectationStatus.IsTransferAllowed)
         {
             LogHelper.BusinessRuleViolated(
-                log,
-                "The team member {MemberTeamId} is not allowed to be affected in a new team.",
-                transfertMemberDto.MemberTeamId
+                "Not allowed to be affected in a new team.",
+                transfertMemberDto.MemberTeamId,
+                "The team member {MemberTeamId} is not allowed to be affected in a new team."
             );
             throw DomainExceptionFactory.BusinessRule(
                 $"The team member {transfertMemberDto.MemberTeamId} is not allowed to be affected in a new team.",
@@ -39,8 +39,7 @@ public class EmployeeService(
         if (DateTime.UtcNow < transfertMemberDto.AffectationStatus.LeaveDate.AddDays(7))
         {
             LogHelper.BusinessRuleViolated(
-                log,
-                "Cooldown",
+                "Member Cooldown Period",
                 transfertMemberDto.MemberTeamId,
                 "Still in wait period"
             );
@@ -59,8 +58,8 @@ public class EmployeeService(
         if (transfertMemberDto is null)
         {
             LogHelper.Info(
-                log,
-                "No new member data could be retrieved from external service, fallback applied."
+                "No new member data could be retrieved from external service, fallback applied.",
+                log
             );
             throw ServicesExceptionFactory.Unavailable(
                 "Employees Management microservice",
@@ -79,15 +78,15 @@ public class EmployeeService(
             );
             throw DomainExceptionFactory.Conflict(
                 transfertMemberDto.MemberTeamId.ToString(),
-                $"Mismatch between member IDs Rabbit : {memberId} | Employees Management microservice : {transfertMemberDto.MemberTeamId} "
+                $"Mismatch between member ID Rabbit : {memberId} | Employees Management microservice : {transfertMemberDto.MemberTeamId} "
             );
         }
         var team = await teamRepository.GetTeamByNameAsync(transfertMemberDto.DestinationTeam);
         if (team == null)
         {
-            log.LogError(
-                "Cannot found team in database {DestinationTeam}",
-                transfertMemberDto.DestinationTeam
+            LogHelper.Error(
+                $"Cannot found team {transfertMemberDto.DestinationTeam} in database.",
+                log
             );
             throw DomainExceptionFactory.NotFound(
                 transfertMemberDto.DestinationTeam,
@@ -98,7 +97,11 @@ public class EmployeeService(
         var result = CanMemberJoinNewTeam(team, transfertMemberDto);
         if (!result)
         {
-            log.LogError("Cannot found team to add new member");
+            LogHelper.BusinessRuleViolated(
+                "Cannot found team to add new member",
+                transfertMemberDto.MemberTeamId,
+                $"Team: {transfertMemberDto.DestinationTeam}"
+            );
             throw new DomainException(
                 404,
                 "Cannot found team to add new member",
@@ -123,7 +126,10 @@ public class EmployeeService(
         {
             throw HandlerException.NotFound(ex.Message, "Domain validation failed");
         }
-        log.LogInformation("Team member has been store correctly in redis cache database");
+        LogHelper.Info(
+            $"Team member {transfertMemberDto.MemberTeamId} has been store correctly in redis cache database",
+            log
+        );
     }
 
     public async Task ManageTeamMemberAsync(
@@ -134,22 +140,42 @@ public class EmployeeService(
     )
     {
         if (team == null)
+        {
+            LogHelper.Error(
+                $"Team '{teamName}' not found. Please check the team name or ensure the team exists.",
+                log
+            );
             throw new DomainException($"Team '{teamName}' not found.");
+        }
         switch (action)
         {
             case TeamMemberAction.Add:
                 if (team.MembersIds != null && team.MembersIds.Contains(memberId))
+                {
+                    LogHelper.BusinessRuleViolated(
+                        "Member already exists in the team",
+                        memberId,
+                        $"Team: {teamName}"
+                    );
                     throw new DomainException(
                         $"Member '{memberId}' already exists in team '{teamName}'."
                     );
+                }
                 team.AddMember(memberId);
                 break;
 
             case TeamMemberAction.Remove:
                 if (team.MembersIds == null || !team.MembersIds.Contains(memberId))
+                {
+                    LogHelper.BusinessRuleViolated(
+                        "Member does not exist in the team",
+                        memberId,
+                        $"Team: {teamName}"
+                    );
                     throw new DomainException(
                         $"Member '{memberId}' does not exist in team '{teamName}'."
                     );
+                }
                 team.DeleteTeamMemberSafely(memberId);
                 await teamRepository.SaveAsync();
                 break;
@@ -164,7 +190,7 @@ public class EmployeeService(
         var teamMember = await teamRepository.GetTeamByNameAndMemberIdAsync(memberId, teamName)!;
         if (teamMember == null)
         {
-            log.LogError("Impossible to delete team member in {TeamName}", teamName);
+            LogHelper.Error($"Cannot found team member {memberId} in team {teamName}.", log);
             throw DomainExceptionFactory.NotFound(teamName, memberId);
         }
         try
@@ -178,19 +204,24 @@ public class EmployeeService(
         }
     }
 
-    public async Task InsertNewTeamMemberIntoDbAsync(Guid memberId)
+    public async Task<bool> InsertNewTeamMemberIntoDbAsync(Guid memberId)
     {
         var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId);
         var teamMember = await teamRepository.GetTeamByNameAsync(teamName);
         if (teamMember == null)
         {
-            log.LogError("Impossible to insert team member in {TeamName}", teamName);
-            throw DomainExceptionFactory.NotFound(teamName, memberId);
+            LogHelper.Error(
+                $"Cannot found team {teamName} in database for member {memberId}.",
+                log
+            );
+            // throw DomainExceptionFactory.NotFound(teamName, memberId);
+            return false;
         }
         try
         {
             await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add, teamMember);
             await teamRepository.SaveAsync();
+            return true;
         }
         catch (DomainException ex)
         {

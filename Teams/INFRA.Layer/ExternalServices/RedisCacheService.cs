@@ -1,15 +1,13 @@
+using System.Reflection.Metadata.Ecma335;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
+using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
-public class RedisCacheService(
-    IDistributedCache cache,
-    ILogger<RedisCacheService> logger
-// IMemoryCache cacheMemory
-) : IRedisCacheService
+public class RedisCacheService(IDistributedCache cache, ILogger<RedisCacheService> log)
+    : IRedisCacheService
 {
     private string GetKey(string key) => $"DevCache:{key}";
 
@@ -23,7 +21,7 @@ public class RedisCacheService(
 
         if (cachedData is not null)
         {
-            logger.LogError("Key already exists in Redis: {CacheKey}", cacheKey);
+            LogHelper.Error($"Key already exists in Redis: {cacheKey}", log);
             throw new InvalidOperationException();
         }
 
@@ -43,7 +41,7 @@ public class RedisCacheService(
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(4),
             }
         );
-        logger.LogInformation("Successfully added new entry for key: {CacheKey}", cacheKey);
+        LogHelper.Info($"Successfully added new entry for key: {cacheKey}", log);
     }
 
     public async Task<string> GetNewTeamMemberFromCacheAsync(Guid memberId)
@@ -53,13 +51,19 @@ public class RedisCacheService(
         var cachedData = await cache.GetStringAsync(cacheKey);
         if (string.IsNullOrEmpty(cachedData))
         {
-            logger.LogWarning("💢 No cache data found for key: {CacheKey}", cacheKey);
-            throw new KeyNotFoundException($"Cache key not found: {cacheKey}");
+            LogHelper.Error($"No cache data found for key: {cacheKey}", log);
+            return string.Empty;
         }
 
         var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(cachedData);
         if (dict == null || !dict.TryGetValue("Team Name", out var teamNameObj))
+        {
+            LogHelper.Error(
+                $"Dictionnary is null or key 'Team Name' missing in cache data: {cacheKey}",
+                log
+            );
             throw new InvalidOperationException($"Dictionnary is null or key 'Team Name' missing");
+        }
         var teamName =
             teamNameObj?.ToString() ?? throw new InvalidOperationException("'Team Name' is null");
         await cache.RemoveAsync(cacheKey);

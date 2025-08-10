@@ -1,5 +1,7 @@
 using Hangfire;
+using Serilog;
 using Teams.APP.Layer.Exceptions;
+using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.APP.Layer.Services;
@@ -29,8 +31,9 @@ public class BackgroundJobService(
     {
         try
         {
-            log.LogInformation(
-                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Employees"
+            LogHelper.Info(
+                "🚀 Planification du job Hangfire pour l'ajout d'un nouveau membre dans l'équipe",
+                log
             );
             string jobId = TryScheduleJob(
                 () =>
@@ -43,6 +46,7 @@ public class BackgroundJobService(
             );
             if (string.IsNullOrEmpty(jobId))
             {
+                LogHelper.Error("❌ La planification du job a échoué. jobId est null.", log);
                 throw new HangFireException(
                     500,
                     "Internal Error",
@@ -50,13 +54,20 @@ public class BackgroundJobService(
                     "jobId est null."
                 );
             }
-            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+            LogHelper.Info(
+                "✅ Job Hangfire planifié avec succès pour l'ajout du membre dans l'équipe",
+                log
+            );
         }
         catch (Exception ex)
         {
             log.LogError(
                 ex,
                 "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+            LogHelper.Error(
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception",
+                log
             );
         }
     }
@@ -66,8 +77,9 @@ public class BackgroundJobService(
     {
         try
         {
-            log.LogInformation(
-                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Employees"
+            LogHelper.Info(
+                "🚀 Planification du job Hangfire pour suppression du membre de l'équipe",
+                log
             );
             string jobId = TryScheduleJob(
                 () =>
@@ -80,6 +92,7 @@ public class BackgroundJobService(
             );
             if (string.IsNullOrEmpty(jobId))
             {
+                LogHelper.Error("❌ La planification du job a échoué. jobId est null.", log);
                 throw new HangFireException(
                     500,
                     "Internal Error",
@@ -87,13 +100,21 @@ public class BackgroundJobService(
                     "jobId est null."
                 );
             }
-            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+
+            LogHelper.Info(
+                "✅ Job Hangfire planifié avec succès pour la suppression du membre de l'équipe",
+                log
+            );
         }
         catch (Exception ex)
         {
             log.LogError(
                 ex,
                 "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+            LogHelper.Error(
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception",
+                log
             );
         }
     }
@@ -103,8 +124,9 @@ public class BackgroundJobService(
     {
         try
         {
-            log.LogInformation(
-                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Projet"
+            LogHelper.Info(
+                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Projet",
+                log
             );
             string jobId = TryScheduleJob(
                 () =>
@@ -117,6 +139,7 @@ public class BackgroundJobService(
             );
             if (string.IsNullOrEmpty(jobId))
             {
+                LogHelper.Error("❌ La planification du job a échoué. jobId est null.", log);
                 throw new HangFireException(
                     500,
                     "Internal Error",
@@ -124,13 +147,21 @@ public class BackgroundJobService(
                     "jobId est null."
                 );
             }
-            log.LogInformation("✅ Job Hangfire planifié avec succès. Job ID : {jobId}", jobId);
+
+            LogHelper.Info(
+                "✅ Job Hangfire planifié avec succès pour la récupération des données dans le Microservice Projet",
+                log
+            );
         }
         catch (Exception ex)
         {
             log.LogError(
                 ex,
                 "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
+            );
+            LogHelper.Error(
+                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception",
+                log
             );
         }
     }

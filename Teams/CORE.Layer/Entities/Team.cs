@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
+using Serilog;
+using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.ValueObjects;
 
@@ -18,12 +20,12 @@ namespace Teams.CORE.Layer.Entities;
 public enum TeamState
 {
     Active = 0,
-    Complete = 1,
-    Incomplete = 2,
-    Archivee = 3,
-    Suspendue = 4,
-    EnRevision = 5,
-    ADesaffecter = 6,
+    Incomplete = 1,
+    Complete = 2,
+    Suspendue = 3,
+    EnRevision = 4,
+    ADesaffecter = 5,
+    Archivee = 6,
 }
 
 public class Team
@@ -92,6 +94,7 @@ public class Team
     {
         if (projectAssociation == null)
             throw new DomainException("Project associated data cannot be null.");
+
         if (
             projectAssociation.TeamManagerId != TeamManagerId
             || projectAssociation.TeamName != Name
@@ -99,8 +102,10 @@ public class Team
             throw new DomainException(
                 $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
             );
+
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can have associated projects.");
+
         ActiveAssociatedProject = true;
         _projectStartDate = projectAssociation.ProjectStartDate;
     }
@@ -109,10 +114,13 @@ public class Team
     {
         if (MembersIds.Count < 2)
             throw new DomainException("A team must have at least 2 members.");
+
         if (MembersIds.Count > 10)
             throw new DomainException("A team cannot have more than 10 members.");
+
         if (MembersIds.Distinct().Count() != MembersIds.Count)
             throw new DomainException("Team members must be unique.");
+
         if (!MembersIds.Contains(TeamManagerId))
             throw new DomainException("The team manager must be one of the team members.");
     }
@@ -131,6 +139,7 @@ public class Team
         var members = MembersIds;
         if (members.Contains(memberId))
             throw new DomainException("Member already exists in the team.");
+
         members.Add(memberId);
         MembersIds = members;
     }
@@ -142,6 +151,7 @@ public class Team
 
         if (!MembersIds.Contains(memberId))
             throw new DomainException("Member not found in the team.");
+
         MembersIds.Remove(memberId);
     }
 
@@ -158,6 +168,7 @@ public class Team
         var actualDate = creationDate ?? DateTime.UtcNow;
         if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             throw new DomainException($"A team with the name '{name}' already exists.");
+
         var team = new Team(
             Guid.NewGuid(),
             name,
@@ -188,6 +199,7 @@ public class Team
         bool sameManager = TeamManagerId.Equals(newManagerId);
         if (isSameName && sameMembers && sameManager)
             throw new DomainException("No changes detected in the team details.");
+
         Name = newName;
         TeamManagerId = newManagerId;
         MembersIds.Clear();
@@ -199,6 +211,7 @@ public class Team
     {
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be suspended.");
+
         State = TeamState.Suspendue;
     }
 
@@ -240,7 +253,8 @@ public class Team
     {
         if (newTeamManagerId == Guid.Empty)
             throw new DomainException("New team manager ID cannot be empty.");
-        if (MembersIds.Contains(newTeamManagerId))
+
+        if (!MembersIds.Contains(newTeamManagerId))
             throw new DomainException("New team manager must be a member of the team.");
         TeamManagerId = newTeamManagerId;
     }

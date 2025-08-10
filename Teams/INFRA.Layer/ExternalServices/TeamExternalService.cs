@@ -1,11 +1,17 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using Teams.API.Layer.DTOs;
+using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
-public class TeamExternalService(HttpClient httpClient, IConfiguration configuration)
+public class TeamExternalService(
+    HttpClient httpClient,
+    IConfiguration configuration,
+    ILogger<TeamExternalService> log
+)
 {
     /**
     https://jsonbin.io/quick-store/
@@ -34,14 +40,19 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
     {
         var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            LogHelper.Warning("No new member to add in Redis.", log);
             return null;
-
+        }
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         var root = JObject.Parse(content);
         var record = root["record"]?.ToString();
         if (record is null)
+        {
+            LogHelper.Warning("No record found in response.", log);
             return null;
+        }
         var data = JsonConvert.DeserializeObject<TransfertMemberDto>(record);
         return data;
     }
@@ -50,14 +61,19 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
     {
         var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            LogHelper.Warning("No member to delete.", log);
             return null;
-
+        }
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         var root = JObject.Parse(content);
         var record = root["record"]?.ToString();
         if (record is null)
+        {
+            LogHelper.Warning("No record found in response for member deletion.", log);
             return null;
+        }
         var data = JsonConvert.DeserializeObject<DeleteTeamMemberDto>(record);
         return data;
     }
@@ -66,14 +82,19 @@ public class TeamExternalService(HttpClient httpClient, IConfiguration configura
     {
         var response = await httpClient.GetAsync(configuration["ExternalsApi:Project:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            LogHelper.Warning("No project association data found.", log);
             return null;
-
+        }
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         var root = JObject.Parse(content);
         var record = root["record"]?.ToString();
         if (record is null)
+        {
+            LogHelper.Warning("No record found in response for project association.", log);
             return null;
+        }
         var data = JsonConvert.DeserializeObject<ProjectAssociationDto>(record);
         return data;
     }

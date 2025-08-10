@@ -1,62 +1,51 @@
-openapi: 3.0.3
+openapi: "3.0.3"
 info:
-  title: Team API
-  description: API for managing teams, their members, and managers.
-  version: 2.1.1
+  title: Team Management API
+  version: "3.2.1"
 servers:
-  - url: /teams
-    description: Base URL for Teams API
-
+  - url: https://localhost:8181
 paths:
-
-  teams/:
+  /teams:
     get:
-      summary: Retrieve all teams
+      summary: Récupère toutes les équipes
       description: |
-        - Retrieves all teams in the system.
-        - Returns a list of all teams with details such as team name, members, and team manager.
-        - Returns an empty list if no teams exist.
-        - Authorization is not required.
+        Retourne la liste de toutes les équipes, avec leurs membres et manager.
+        Accessible sans authentification (peut être restreint à Admin/Manager).
       responses:
-        '200':
-          description: List of teams
+        "200":
+          description: Liste des équipes
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TeamDto'
-
+                  $ref: "#/components/schemas/TeamDto"
     post:
-      summary: Create a new team
+      summary: Crée une nouvelle équipe
       description: |
-        - Creates a new team with specified details.
-        - Requires team name, member IDs, and a team manager ID.
-        - Returns the created team.
-        - Validation errors result in 400 Bad Request.
-        - Authorization is typically required (Admin/Manager).
+        Crée une équipe avec nom, membres et manager.
+        Accessible aux Admin/Manager.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTeamCommand'
+              $ref: "#/components/schemas/CreateTeamCommand"
       responses:
-        '201':
-          description: Team created successfully
+        "201":
+          description: Équipe créée
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamDto'
-        '400':
-          description: Invalid input / validation error
+                $ref: "#/components/schemas/TeamDto"
+        "400":
+          description: Requête invalide
 
-  teams/{teamId}:
+  /teams/{teamId}:
     get:
-      summary: Retrieve a team by ID
+      summary: Détail d'une équipe
       description: |
-        - Retrieves details of a specific team by its unique identifier.
-        - Returns 404 if team not found.
+        Retourne les détails d'une équipe par son ID.
       parameters:
         - name: teamId
           in: path
@@ -64,26 +53,19 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Unique ID of the team
       responses:
-        '200':
-          description: Team details
+        "200":
+          description: Détail de l'équipe
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamDto'
-        '404':
-          description: Team not found
-
+                $ref: "#/components/schemas/TeamDto"
+        "404":
+          description: Équipe non trouvée
     put:
-      summary: Update a team by ID
+      summary: Met à jour une équipe
       description: |
-        - Updates details of an existing team identified by `teamId`.
-        - Request body must contain matching team ID.
-        - Returns updated team on success.
-        - Validation errors or mismatched IDs result in 400 Bad Request.
-        - Returns 404 if team not found.
-        - Authorization typically required.
+        Modifie les informations d'une équipe existante.
       parameters:
         - name: teamId
           in: path
@@ -91,32 +73,27 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Unique ID of the team to update
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateTeamCommand'
+              $ref: "#/components/schemas/UpdateTeamCommand"
       responses:
-        '200':
-          description: Updated team details
+        "200":
+          description: Équipe mise à jour
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TeamRequestDto'
-        '400':
-          description: Validation error or ID mismatch
-        '404':
-          description: Team not found
-
+                $ref: "#/components/schemas/TeamDto"
+        "400":
+          description: Requête invalide
+        "404":
+          description: Équipe non trouvée
     delete:
-      summary: Delete a team by ID
+      summary: Supprime une équipe
       description: |
-        - Deletes a team from the system by its unique identifier.
-        - Returns 204 No Content on success.
-        - Returns 404 if team not found.
-        - Authorization typically required (Admin).
+        Supprime une équipe par son ID.
       parameters:
         - name: teamId
           in: path
@@ -124,21 +101,17 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Unique ID of the team to delete
       responses:
-        '204':
-          description: Team deleted successfully
-        '404':
-          description: Team not found
+        "204":
+          description: Équipe supprimée
+        "404":
+          description: Équipe non trouvée
 
-  teams/manager:
+  /teams/manager:
     get:
-      summary: Retrieve teams by manager ID
+      summary: Liste des équipes d'un manager
       description: |
-        - Retrieves all teams managed by a specific manager.
-        - Optionally includes team members.
-        - Returns 404 if no teams found for the manager.
-        - Authorization not required.
+        Retourne toutes les équipes gérées par un manager.
       parameters:
         - name: managerId
           in: query
@@ -146,33 +119,28 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Manager's unique identifier
         - name: includeMembers
           in: query
           required: false
           schema:
             type: boolean
-          description: Whether to include team members in response (default false)
       responses:
-        '200':
-          description: List of teams managed by the manager
+        "200":
+          description: Liste des équipes du manager
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TeamDto'
-        '404':
-          description: No teams found for the manager
+                  $ref: "#/components/schemas/TeamDto"
+        "404":
+          description: Aucune équipe trouvée
 
-  teams/member:
+  /teams/member:
     get:
-      summary: Retrieve teams by member ID
+      summary: Liste des équipes d'un membre
       description: |
-        - Retrieves all teams that a specific member belongs to.
-        - Optionally includes team members.
-        - Returns 404 if no teams found for the member.
-        - Authorization not required.
+        Retourne toutes les équipes auxquelles appartient un membre.
       parameters:
         - name: memberId
           in: query
@@ -180,33 +148,26 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Member's unique identifier
         - name: includeMembers
           in: query
           required: false
           schema:
             type: boolean
-          description: Whether to include team members in response (default false)
       responses:
-        '200':
-          description: List of teams the member belongs to
+        "200":
+          description: Liste des équipes du membre
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TeamDto'
-        '404':
-          description: No teams found for the member
-
-    patch:
-      summary: Add a new member to a team
+                  $ref: "#/components/schemas/TeamDto"
+        "404":
+          description: Aucune équipe trouvée
+    post:
+      summary: Ajoute un membre à une équipe
       description: |
-        - Adds a new member to a team.
-        - Requires memberId as query parameter.
-        - Returns 204 No Content on success.
-        - Returns 404 if member not found.
-        - Authorization required (Admin/Manager).
+        Ajoute un membre à une équipe existante.
       parameters:
         - name: memberId
           in: query
@@ -214,143 +175,85 @@ paths:
           schema:
             type: string
             format: uuid
-          description: Unique identifier of the member to add
       responses:
-        '204':
-          description: Member added successfully
-        '400':
-          description: Bad request
-        '404':
-          description: Member not found
-        '500':
-          description: Internal server error
-
+        "204":
+          description: Membre ajouté
+        "400":
+          description: Requête invalide
+        "404":
+          description: Membre ou équipe non trouvée
+        "500":
+          description: Erreur serveur
     delete:
-      summary: Remove a member from a team
+      summary: Supprime un membre d'une équipe
       description: |
-        - Deletes a team member by member ID and team name.
-        - Returns 204 No Content on success.
-        - Returns 404 if member or team not found.
-        - Authorization required (Admin/Manager).
+        Supprime un membre d'une équipe via son ID et le nom de l'équipe.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteTeamMemberDto'
+              $ref: "#/components/schemas/DeleteTeamMemberDto"
       responses:
-        '204':
-          description: Member removed from team successfully
-        '400':
-          description: Bad request (missing data)
-        '404':
-          description: Member or team not found
+        "204":
+          description: Membre supprimé
+        "400":
+          description: Requête invalide
+        "404":
+          description: Membre ou équipe non trouvée
 
 components:
   schemas:
-
     TeamDto:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          description: Unique identifier of the team
         name:
           type: string
-          description: Name of the team
         members:
           type: array
-          description: List of team members
           items:
-            $ref: '#/components/schemas/MemberDto'
+            type: string
+            format: uuid
         teamManagerId:
           type: string
           format: uuid
-          description: User ID of the team manager
-      required:
-        - id
-        - name
-        - teamManagerId
-
-    TeamRequestDto:
-      allOf:
-        - $ref: '#/components/schemas/TeamDto'
-        - type: object
-          properties:
-            memberId:
-              type: array
-              items:
-                type: string
-                format: uuid
-              description: List of member IDs
-
-    MemberDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier of the member
-        name:
-          type: string
-          description: Full name of the member
-
     CreateTeamCommand:
       type: object
       properties:
         name:
           type: string
-          description: Name of the new team
         memberId:
           type: array
           items:
             type: string
             format: uuid
-          description: List of member IDs to include in the team
         teamManagerId:
           type: string
           format: uuid
-          description: User ID of the team manager
-      required:
-        - name
-        - teamManagerId
-
     UpdateTeamCommand:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          description: Unique identifier of the team to update
         name:
           type: string
-          description: Updated team name
         memberId:
           type: array
           items:
             type: string
             format: uuid
-          description: Updated list of member IDs
         teamManagerId:
           type: string
           format: uuid
-          description: Updated user ID of the team manager
-      required:
-        - id
-        - name
-        - teamManagerId
-
     DeleteTeamMemberDto:
       type: object
       properties:
         memberId:
           type: string
           format: uuid
-          description: Unique identifier of the member to delete
         teamName:
           type: string
-          description: Name of the team to remove the member from
-      required:
-        - memberId
-        - teamName

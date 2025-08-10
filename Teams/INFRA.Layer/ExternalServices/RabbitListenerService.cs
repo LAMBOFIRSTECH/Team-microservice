@@ -3,6 +3,8 @@ using System.Text.RegularExpressions;
 using CustomVaultPackage.Services;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Serilog;
+using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
@@ -28,8 +30,7 @@ public partial class RabbitListenerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        log.LogInformation("🟢 RabbitListenerService démarré");
-
+        LogHelper.Info("🟢 RabbitListenerService started", log);
         try
         {
             var factory = await EstablishConnection();
@@ -50,7 +51,7 @@ public partial class RabbitListenerService(
             {
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                log.LogInformation("📨 Message reçu : {Message}", message);
+                LogHelper.Info($"Message reçu : {message}", log);
 
                 var match = GuidAndTeamRegex().Match(message);
 
@@ -59,7 +60,7 @@ public partial class RabbitListenerService(
                     var teamName = match.Groups[2].Value;
                     try
                     {
-                        // 👇 Création d'un scope local
+                        // 👇 Création d'un scope local afin d'éviter les problèmes de dépendances entre cycle de vie scope et singleton
                         using var scope = scopeFactory.CreateScope();
                         var backgroundJob =
                             scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
@@ -75,30 +76,47 @@ public partial class RabbitListenerService(
                         )
                             backgroundJob.ScheduleProjectAssociationAsync();
                         else
-                            throw new InvalidOperationException("Message non reconnu");
-
+                        {
+                            LogHelper.Warning("Unrecognized message : {message}", log);
+                            throw new InvalidOperationException("Unrecognized message");
+                        }
                         _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
-                        log.LogInformation("✅ Message traité et ack envoyé");
+                        LogHelper.Info(
+                            $"Message successfully processed for member {memberId} in team {teamName}",
+                            log
+                        );
                     }
                     catch (Exception ex)
                     {
-                        log.LogError(ex, "❌ Erreur lors du traitement du message RabbitMQ");
+                        LogHelper.Error(
+                            $"Error processing message for member {memberId} in team {teamName}: {ex.Message}",
+                            log
+                        );
+                        LogHelper.CriticalFailure(
+                            log,
+                            "RabbitListenerService",
+                            "Error processing RabbitMQ message",
+                            ex
+                        );
                         _channel.BasicNack(
                             deliveryTag: ea.DeliveryTag,
                             multiple: false,
-                            requeue: true
+                            requeue: false
                         );
                     }
                 }
                 else
                 {
-                    log.LogWarning("⚠️ Message mal formé ou GUID invalide : {Message}", message);
+                    LogHelper.Warning($"Malformed message or invalid GUID: {message}", log);
                     _channel.BasicReject(ea.DeliveryTag, requeue: false);
                 }
             };
 
             _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
-            log.LogInformation("📡 En écoute sur la queue RabbitMQ : {Queue}", queueName);
+            LogHelper.Info(
+                $"📡 RabbitMQ consumer started successfully for queue: {queueName}",
+                log
+            );
 
             while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
             {
@@ -107,7 +125,15 @@ public partial class RabbitListenerService(
         }
         catch (Exception ex)
         {
-            log.LogError(ex, "❌ Exception dans RabbitListenerService");
+            LogHelper.Error($"❌ Error in RabbitListenerService: {ex.Message}", log);
+            _channel?.Close();
+            _connection?.Close();
+            LogHelper.CriticalFailure(
+                log,
+                "RabbitListenerService",
+                "Exception in RabbitListenerService",
+                ex
+            );
         }
     }
 

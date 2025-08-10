@@ -7,6 +7,7 @@ using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.CQRS.Queries;
+using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.API.Layer.Controllers;
@@ -17,7 +18,9 @@ public class TeamController(
     IMediator mediator,
     IValidator<CreateTeamCommand> createTeamValidator,
     IValidator<UpdateTeamCommand> updateTeamValidator,
+    IValidator<UpdateTeamManagerCommand> updateTeamManagerValidator,
     IEmployeeService employeeService
+// ILogger<TeamController> logger
 ) : ControllerBase
 {
     /// <summary>
@@ -109,6 +112,60 @@ public class TeamController(
     }
 
     /// <summary>
+    /// Changes the team manager for a specific team.
+    /// This endpoint allows you to change the team manager for a specific team identified by its name
+    /// and the ID of the current team manager.
+    /// If the team with the specified name and current manager ID does not exist, a 404 Not Found response will be returned.
+    /// If the change is successful, a 204 No Content response will be returned.
+    /// This endpoint is useful for updating team management responsibilities, such as when a team manager leaves or is replaced.
+    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+    /// Example usage:
+    /// PATCH /teams/manager
+    /// {
+    ///    "Name": "Pentester",
+    ///    "OldTeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
+    ///    "NewTeamManagerId": "9a57d8f7-56f4-47d9-a429-5f4f34e9bc83"
+    /// }
+    /// The request body should contain the team name, the ID of the current team manager,
+    /// and the ID of the new team manager.
+    /// The `newTeamManagerId` should be a valid user ID of a user who will become the new team manager.
+    /// If the request is successful, a 204 No Content response will be returned,
+    /// indicating that the team manager has been successfully changed.
+    /// If the request fails due to validation errors, a 400 Bad Request response will be returned
+    /// with details about the validation errors.
+    /// If the team is not found, a 404 Not Found response will be returned.
+    /// If an unexpected error occurs, a 500 Internal Server Error response will be returned.
+    /// </summary>
+    /// <param name="command"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType<UpdateTeamManagerCommand>(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [AllowAnonymous]
+    [HttpPatch("manager")]
+    public async Task<IActionResult> ChangeTeamManager(
+        [FromBody] UpdateTeamManagerCommand command,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var validationResult = await updateTeamManagerValidator.ValidateAsync(
+            command,
+            cancellationToken
+        );
+        if (!validationResult.IsValid)
+        {
+            var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
+            return BadRequest(errorResponse);
+        }
+        await mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Retrieves all teams that a specific member is part of.
     /// This endpoint allows you to get a list of teams based on the member's #if true
     /// unique identifier (memberId)
@@ -168,9 +225,16 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [AllowAnonymous]
     [HttpPatch("member")]
-    public async Task<ActionResult> AddTeamMember([FromQuery] Guid memberId)
+    public async Task<IActionResult> AddTeamMember([FromQuery] Guid memberId)
     {
-        await employeeService.InsertNewTeamMemberIntoDbAsync(memberId);
+        if (memberId == Guid.Empty)
+            return BadRequest("Member ID cannot be empty.");
+
+        var result = await employeeService.InsertNewTeamMemberIntoDbAsync(memberId);
+        if (!result)
+        {
+            return NotFound($"Member with ID {memberId} not found in any cache team.");
+        }
         return NoContent();
     }
 
@@ -184,9 +248,9 @@ public class TeamController(
     /// Example usage:
     /// POST /teams
     /// {
-    ///   "name": "Development Team",
-    ///   "memberId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
-    ///   "teamManagerId": "123e4567-e89b-12d3-a456-426614174002"
+    ///   "Name": "Development Team",
+    ///   "MembersId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
+    ///   "TeamManagerId": "123e4567-e89b-12d3-a456-426614174002"
     /// }
     /// The request body should contain the team name, a list of member IDs, and the team manager ID.
     /// The `teamManagerId` should be a valid user ID of a user who will manage the team.
@@ -280,9 +344,9 @@ public class TeamController(
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeleteTeamMemberById(
+    public async Task<IActionResult> DeleteTeamMemberById(
         [FromBody] DeleteTeamMemberDto deleteTeamMemberDto
-    ) // doit etre pareil que AddTeamMember  c'est à dire vient depuis un service externe
+    )
     {
         if (deleteTeamMemberDto == null)
             return BadRequest("Request data cannot be null.");
@@ -313,11 +377,9 @@ public class TeamController(
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> DeleteTeam(Guid teamId)
+    public async Task<IActionResult> DeleteTeam(Guid teamId)
     {
         await mediator.Send(new DeleteTeamCommand(teamId, null!));
         return NoContent();
     }
-
-    // Il faut une méthode pour changer le manager d'une équipe
 }

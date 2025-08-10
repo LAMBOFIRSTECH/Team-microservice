@@ -20,6 +20,10 @@ namespace Teams.API.Layer
                 {
                     options.SerializerSettings.ContractResolver =
                         new CamelCasePropertyNamesContractResolver();
+                })
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
                 });
 
             services.AddSwaggerGen(opt =>

@@ -3,17 +3,20 @@ namespace Teams.APP.Layer.Helpers;
 public static class LogHelper
 {
     public static void BusinessRuleViolated(
-        ILogger logger,
-        string rule,
-        Guid memberId,
-        string? detail = null
-    ) =>
-        logger.LogWarning(
-            "Business rule violated: {Rule}. Member: {MemberId}. {Detail}",
-            rule,
-            memberId,
-            detail
-        );
+        string rule = null!,
+        Guid id = default,
+        string? detail = null,
+        ILogger logger = null!
+    ) => logger.LogWarning(rule, id, detail, "Business rule violated: {Rule}. Id: {id}. {Detail}");
+
+    public static void Info(string message, ILogger logger = null!) =>
+        logger.LogInformation("Info: {Message}", message);
+
+    public static void Warning(string message, ILogger logger = null!) =>
+        logger.LogWarning("Warning: {Message}", message);
+
+    public static void Error(string message, ILogger logger = null!) =>
+        logger.LogError("Error: {Message}", message);
 
     public static void CriticalFailure(
         ILogger logger,
@@ -21,9 +24,4 @@ public static class LogHelper
         string message,
         Exception? ex = null
     ) => logger.LogCritical(ex, "Critical failure in {Context}: {Message}", context, message);
-
-    public static void Info(ILogger logger, string message) =>
-        logger.LogInformation("Info: {Message}", message);
-
-    // rajouter un autre logWarning
 }

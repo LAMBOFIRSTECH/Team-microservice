@@ -3,6 +3,7 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
 using Serilog.Sinks.Graylog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Teams.API.Layer.Shared.Logging;
 
@@ -16,11 +17,10 @@ public static class SerilogConfiguration
             .Enrich.WithCorrelationId()
             .Enrich.WithThreadId()
             .Enrich.WithProcessId()
-            .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Debug) // à terme on devra l'envoyer dans Graylog
+            .WriteTo.Console(
+                theme: AnsiConsoleTheme.Sixteen,
+                restrictedToMinimumLevel: LogEventLevel.Debug
+            )
             .CreateLogger();
-
-        Log.Information(
-            "Serilog initialized in consol log | we should sinked to Graylog in the future"
-        );
     }
 }

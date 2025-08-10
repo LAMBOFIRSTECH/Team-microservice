@@ -6,16 +6,9 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetTeamsByMemberQueryHandler
+public class GetTeamsByMemberQueryHandler(ITeamRepository teamRepository)
     : IRequestHandler<GetTeamsByMemberQuery, List<TeamRequestDto>>
 {
-    private readonly ITeamRepository teamRepository;
-
-    public GetTeamsByMemberQueryHandler(ITeamRepository teamRepository)
-    {
-        this.teamRepository = teamRepository;
-    }
-
     public async Task<List<TeamRequestDto>> Handle(
         GetTeamsByMemberQuery request,
         CancellationToken cancellationToken
@@ -31,7 +24,7 @@ public class GetTeamsByMemberQueryHandler
             );
         var teamDtos = teams
             .Select(team => new TeamRequestDto(
-                team.Id,
+                // team.Id,
                 team.TeamManagerId,
                 team.Name,
                 request.IncludeMembers,
