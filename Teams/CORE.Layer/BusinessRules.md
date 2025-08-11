@@ -112,7 +112,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                                    |                                                         |
 | Suppression d’une équipe possible uniquement si aucun projet en dépend             | `ProjectService.HasNoDependencies(equipeId)`            |
 |                                                                                    |                                                         |
-| Changer de responsable est possible seulement si le nouveau est déjà membre        | Pas de promotion externe directe                        |
+|☑️ Changer de responsable est possible seulement si le nouveau est déjà membre      | Pas de promotion externe directe                        |
 ------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -168,20 +168,22 @@ Les differents Etat d'une équipe et leur signification
 |                                                                                                          |                                       |
 | Une équipe inactive depuis plus de 90 jours est archivée automatiquement                                 | Via job planifié dans `EquipeService` |
 |                                                                                                          |                                       |
+| Un membre ne peut pas rester plus de N mois sans changer d’équipe. Eviter l’enfermement                  |                                       |
+|                                                                                                          |                                       |
 | Le délai entre création et lancement du projet ne doit pas dépasser 7 jours                              |                                       |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 9.  Règles d’intégrité métier
----------------------------------------------------------------------------------------------------------
-| Règle                                                   | Détails                                     |
-|---------------------------------------------------------| --------------------------------------------|
-|☑️Tous les membres doivent exister dans `EmployeeService` | Validé à l’ajout                            |
-|                                                         |                                             |
+-----------------------------------------------------------------------------------------------------------
+| Règle                                                     | Détails                                     |
+|---------------------------------------------------------  | --------------------------------------------|
+|☑️ Tous les membres doivent exister dans `EmployeeService` | Validé à l’ajout                            |
+|                                                           |                                             |
 |☑️ Une équipe ne peut être affectée à un projet inexistant | `ProjectService` doit valider l’affectation |
-|                                                         |                                             |
-|☑️ Les ID des membres doivent être valides et uniques   | GUID ou Id interne valide                    |
----------------------------------------------------------------------------------------------------------
+|                                                            |                                             |
+|☑️ Les ID des membres doivent être valides et uniques      | GUID ou Id interne valide                    |
+------------------------------------------------------------------------------------------------------------
 
 
 10. Règles de dépendance / prérequis
@@ -202,7 +204,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                         |                                                            |
 |☑️ Le responsable ne peut être supprimé tant qu’il n’est pas remplacé    | `if (membreId == ResponsableId) throw BusinessException`   |
 |                                                                         |                                                            |
-| Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
+|☑️ Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
 ----------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -240,7 +242,7 @@ Les differents Etat d'une équipe et leur signification
 ------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                | Exemple                                               |
 | ------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| Éviter d’avoir deux équipes avec plus de 50% de membres en commun                    | `Analyse recouvrement` entre `Equipe.A` et `Equipe.B` |
+|☑️ Éviter d’avoir deux équipes avec plus de 50% de membres en commun                 | `Analyse recouvrement` entre `Equipe.A` et `Equipe.B` |
 |                                                                                      |                                                       |
 | Un membre ne peut être affecté à deux projets en parallèle via 2 équipes différentes | Conflit de planning détecté par `PlanningService`     |
 ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -252,7 +254,7 @@ Les differents Etat d'une équipe et leur signification
 | ------------------------------------------------------------------------------------------- | --------------------------------------------------- |
 | Si un membre a été dans 3 équipes différentes en moins de 30 jours → alerte sur instabilité | `HistoriqueMembreService.GetTurnoverRate(membreId)` |
 |                                                                                             |                                                     |
-| Un responsable qui a géré > 3 équipes en parallèle doit être restreint                      | `Responsable.LimiteChargeGestion`                   |
+|☑️ Un responsable ne peut pas géré > 3 équipes en parallèle                                  | `Responsable.LimiteChargeGestion`                   |
 |                                                                                             |                                                     |
 | Une équipe ne peut être suspendue qu’après la date de lancement                             |                                                     |
 -----------------------------------------------------------------------------------------------------------------------------------------------------

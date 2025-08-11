@@ -214,7 +214,6 @@ public class EmployeeService(
                 $"Cannot found team {teamName} in database for member {memberId}.",
                 log
             );
-            // throw DomainExceptionFactory.NotFound(teamName, memberId);
             return false;
         }
         try
@@ -228,4 +227,6 @@ public class EmployeeService(
             throw HandlerException.NotFound(ex.Message, "Domain validation failed");
         }
     }
+    // Contrat des membres
+    // Planning des membres
 }

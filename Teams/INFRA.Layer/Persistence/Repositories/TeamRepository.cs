@@ -49,18 +49,6 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return team;
     }
 
-    public async Task UpdateTeamAsync(Team team) => await SaveAsync();
-
-    // {
-    //     // var existingTeam = await GetTeamByNameAndTeamManagerIdAsync(team.Name!, team.TeamManagerId);
-    //     // existingTeam!.Name = team.Name;
-    //     // existingTeam.MembersIds = team.MembersIds;
-    //     // existingTeam!.TeamManagerId = team.TeamManagerId;
-    //     // existingTeam.MemberIdSerialized = JsonConvert.SerializeObject(existingTeam.MembersIds);
-    //     await teamDbContext.SaveChangesAsync();
-    //     // throw new NotImplementedException("UpdateTeamAsync method is not implemented yet.");
-    // }
-
     public async Task DeleteTeamAsync(Guid teamId)
     {
         var team = await teamDbContext.Teams!.FindAsync(teamId);
@@ -68,18 +56,17 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         await teamDbContext.SaveChangesAsync();
     }
 
-    public async Task AddTeamMemberAsync()
-    {
-        await teamDbContext.SaveChangesAsync();
-    }
+    public async Task UpdateTeamAsync(Team team) => await SaveAsync();
+
+    public async Task AddTeamMemberAsync() => await SaveAsync();
 
     public async Task DeleteTeamMemberAsync() => await SaveAsync();
 
+    public async Task SaveAsync() => await teamDbContext.SaveChangesAsync();
     // public async Task<bool> DeleteTeamAsync(Guid teamId)
     // {
     //     var team = await teamDbContext.Teams.FindAsync(teamId);
     //     teamDbContext.Teams.Remove(team);
     //     await teamDbContext.SaveChangesAsync();
     // }
-    public async Task SaveAsync() => await teamDbContext.SaveChangesAsync();
 }

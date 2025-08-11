@@ -23,5 +23,12 @@ public static class LogHelper
         string context,
         string message,
         Exception? ex = null
-    ) => logger.LogCritical(ex, "Critical failure in {Context}: {Message}", context, message);
+    ) => logger.LogCritical(ex, "Critical failure in {Context}: [ {Message} ]", context, message);
+
+    public static void BusinessRuleFailure(
+        ILogger logger,
+        string context,
+        string message,
+        Exception? ex = null
+    ) => logger.LogError(ex, "Rule Violated in {Context} => [{Message}]", context, message);
 }

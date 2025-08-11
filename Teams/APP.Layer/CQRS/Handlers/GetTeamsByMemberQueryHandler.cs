@@ -24,7 +24,7 @@ public class GetTeamsByMemberQueryHandler(ITeamRepository teamRepository)
             );
         var teamDtos = teams
             .Select(team => new TeamRequestDto(
-                // team.Id,
+                team.Id,
                 team.TeamManagerId,
                 team.Name,
                 request.IncludeMembers,

@@ -36,7 +36,58 @@
             <param name="teamId"></param>
             <returns></returns>
         </member>
-        <!-- Badly formed XML comment ignored for member "M:Teams.API.Layer.Controllers.TeamController.GetTeamsByManagerId(System.Guid,System.Boolean,System.Threading.CancellationToken)" -->
+        <member name="M:Teams.API.Layer.Controllers.TeamController.GetTeamsByManagerId(System.Guid,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+             Retrieve all teams managed by a specific manager.
+             This endpoint allows you to get a list of teams based on the manager's ID
+             and optionally include the members of those teams.
+             If `includeMembers` is set to true, the response will include the members of each team.
+             If `includeMembers` is false, the response will only include the team details without member information.
+             If no teams are found for the given manager ID,
+             a 404 Not Found response will be returned.
+             This endpoint is useful for managers to view the teams they oversee and their members.
+             It can also be used by administrators to manage teams based on their managers.
+             Authorization is not required for this endpoint, but it can be restricted to specific roles
+             such as "Admin" or "Manager" if needed.
+             Example usage:
+             GET /teams/manager?managerId=123e4567-e89b-12d3-a456-426614174000&amp;includeMembers=true
+             This will return a list of teams managed by the manager with ID `123e4567-e89b-12d3-a456-426614174000`.
+            </summary>
+            <param name="managerId"></param>
+            <param name="includeMembers"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Teams.API.Layer.Controllers.TeamController.ChangeTeamManager(Teams.APP.Layer.CQRS.Commands.UpdateTeamManagerCommand,System.Threading.CancellationToken)">
+            <summary>
+            Changes the team manager for a specific team.
+            This endpoint allows you to change the team manager for a specific team identified by its name
+            and the ID of the current team manager.
+            If the team with the specified name and current manager ID does not exist, a 404 Not Found response will be returned.
+            If the change is successful, a 204 No Content response will be returned.
+            This endpoint is useful for updating team management responsibilities, such as when a team manager leaves or is replaced.
+            Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
+            Example usage:
+            PATCH /teams/manager
+            {
+               "Name": "Pentester",
+               "OldTeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
+               "NewTeamManagerId": "9a57d8f7-56f4-47d9-a429-5f4f34e9bc83"
+            }
+            The request body should contain the team name, the ID of the current team manager,
+            and the ID of the new team manager.
+            The `newTeamManagerId` should be a valid user ID of a user who will become the new team manager.
+            If the request is successful, a 204 No Content response will be returned,
+            indicating that the team manager has been successfully changed.
+            If the request fails due to validation errors, a 400 Bad Request response will be returned
+            with details about the validation errors.
+            If the team is not found, a 404 Not Found response will be returned.
+            If an unexpected error occurs, a 500 Internal Server Error response will be returned.
+            </summary>
+            <param name="command"></param>
+            <param name="cancellationToken"></param>
+            <returns></returns>
+        </member>
         <member name="M:Teams.API.Layer.Controllers.TeamController.GetTeamsByMemberId(System.Guid,System.Boolean,System.Threading.CancellationToken)">
             <summary>
             Retrieves all teams that a specific member is part of.
@@ -86,9 +137,9 @@
             Example usage:
             POST /teams
             {
-              "name": "Development Team",
-              "memberId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
-              "teamManagerId": "123e4567-e89b-12d3-a456-426614174002"
+              "Name": "Development Team",
+              "MembersId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
+              "TeamManagerId": "123e4567-e89b-12d3-a456-426614174002"
             }
             The request body should contain the team name, a list of member IDs, and the team manager ID.
             The `teamManagerId` should be a valid user ID of a user who will manage the team.
@@ -185,18 +236,127 @@
             <param name="MemberId">The unique identifier of the team manager to retrieve.</param>
             <param name="includeMembers">Whether to include team members in the result.</param>
         </member>
-        <member name="M:Teams.INFRA.Layer.ExternalServices.TeamExternalService.RetrieveNewMemberToAddAsync">
+        <member name="T:Teams.APP.Layer.Exceptions.ServicesException">
+            <summary>
+            Exception levée lors de défaillances techniques ou d'intégration (ex: service externe, infra).
+            </summary>
+        </member>
+        <member name="M:Teams.APP.Layer.Exceptions.ServicesException.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Constructeur simplifié par défaut (status = 400)
+            </summary>
+        </member>
+        <member name="M:Teams.APP.Layer.Exceptions.ServicesException.#ctor(System.String,System.String)">
+            <summary>
+            Exception spécifique à l'indisponibilité d'un service externe.
+            </summary>
+        </member>
+        <member name="T:Teams.CORE.Layer.Entities.TeamState">
+            <summary>
+            Active       : Équipe ayant au moins deux membres et un manager.
+            Incomplete   : Équipe constituée mais sans projet affecté.
+            Complete     : Équipe active et associée à un projet.
+            Suspendue    : Équipe active dont le projet est suspendu.
+            EnRevision   : Équipe suspendue en cours d’évaluation pour réaffectation.
+            ADesaffecter : Équipe non réaffectée à son projet initial après révision.
+            Archivee     : Équipe restée incomplète pendant 15 jours.
+            </summary>
+        </member>
+        <member name="F:Teams.INFRA.Layer.ExternalServices.RabbitListenerService._connection">
+            Member to Add    | 12345678-90ab-cdef-1234-567890abcdef | Pentester
+                    Member to delete | 12345678-90ab-cdef-1234-567890abcdef | Pentester
+                    Project Affected
+                *
+        </member>
+        <member name="M:Teams.INFRA.Layer.ExternalServices.RabbitListenerService.GuidAndTeamRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\|\\s*([\\da-f]{8}(-[\\da-f]{4}){3}-[\\da-f]{12})\\s*\\|\\s*(.+)</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match '|'.<br/>
+            ○ Match a whitespace character greedily any number of times.<br/>
+            ○ 1st capture group.<br/>
+                ○ Match a character in the set [A-Fa-f\d] exactly 8 times.<br/>
+                ○ Loop exactly 3 times.<br/>
+                    ○ 2nd capture group.<br/>
+                        ○ Match '-'.<br/>
+                        ○ Match a character in the set [A-Fa-f\d] exactly 4 times.<br/>
+                ○ Match '-'.<br/>
+                ○ Match a character in the set [A-Fa-f\d] exactly 12 times.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match '|'.<br/>
+            ○ Match a whitespace character greedily any number of times.<br/>
+            ○ 3rd capture group.<br/>
+                ○ Match a character other than '\n' atomically at least once.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:Teams.INFRA.Layer.ExternalServices.TeamExternalService.RetrieveNewMemberToAddInRedisAsync">
                 https://jsonbin.io/quick-store/
                 {
-                    "MemberId": "23456789-0abc-def1-2345-67890abcdef1",
+                    "MemberTeamId": "12345678-90ab-cdef-1234-567890abcdef",
                     "SourceTeam": "Equipe de sécurité (Security Team)",
-                    "DestinationTeam": "Equipe de recherche et d'innovation (RnD Team)",
+                    "DestinationTeam": "Pentester",
                     "AffectationStatus": {
                         "IsTransferAllowed": true,
-                        "LastLeaveDate": "2025-06-10T12:34:56Z"
+                        "LeaveDate": "2025-07-03T12:34:56Z"
                   }
                 }
+            
+                {
+                    "TeamManagerId": "c5b8e9b6-4a19-4a53-a41e-8b6f4d1a5d74",
+                    "TeamName": "Pentester",
+                    "ProjectStartDate": "2025-07-20T10:00:00Z",
+                    "ProjectState": {
+                        "State": "Active"
+                    }
+                }
+            
                 *
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the GuidAndTeamRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.GuidAndTeamRegex_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
         </member>
     </members>
 </doc>

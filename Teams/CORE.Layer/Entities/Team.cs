@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
-using Serilog;
-using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.ValueObjects;
 
@@ -30,7 +28,7 @@ public enum TeamState
 
 public class Team
 {
-    [Key]
+    // [Key]
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public Guid TeamManagerId { get; private set; }
@@ -55,7 +53,7 @@ public class Team
     public DateTime? ProjectStartDate => _projectStartDate;
     private const int ValidityPeriodInDays = 90;
 
-    public Team() { } //Pour EF
+    public Team() { } // Pour EF
 
     private Team(
         Guid id,
@@ -155,6 +153,29 @@ public class Team
         MembersIds.Remove(memberId);
     }
 
+    public static double GetCommonMembersStats(List<Guid> newTeamMembers, List<Team> existingTeams)
+    {
+        if (newTeamMembers == null || newTeamMembers.Count == 0)
+            throw new DomainException("The new team must have at least one member.");
+
+        if (existingTeams == null || existingTeams.Count == 0)
+            return 0; // Pas d'équipes existantes → pas de comparaison
+
+        double maxPercent = 0;
+
+        foreach (var existingTeam in existingTeams)
+        {
+            var common = existingTeam.MembersIds.Intersect(newTeamMembers).Count();
+            var universe = existingTeam.MembersIds.Union(newTeamMembers).Count();
+            double percent = (double)common / universe * 100;
+
+            if (percent > maxPercent)
+                maxPercent = percent;
+        }
+
+        return maxPercent;
+    }
+
     public static Team Create(
         string name,
         Guid teamManagerId,
@@ -168,6 +189,25 @@ public class Team
         var actualDate = creationDate ?? DateTime.UtcNow;
         if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             throw new DomainException($"A team with the name '{name}' already exists.");
+
+        if (existingTeams.Count(t => t.TeamManagerId == teamManagerId) > 3)
+            throw new DomainException("A manager cannot manage more than 3 teams.");
+
+        if (
+            existingTeams.Any(t =>
+                t.MembersIds.Count == memberIds.Count
+                && !t.MembersIds.Except(memberIds).Any()
+                && t.TeamManagerId == teamManagerId
+            )
+        )
+            throw new DomainException(
+                "A team with exactly the same members and manager already exists."
+            );
+        var maxCommonPercent = GetCommonMembersStats(memberIds, existingTeams);
+        if (maxCommonPercent >= 50)
+            throw new DomainException(
+                "Cannot create a team with more than 50% common members with existing teams."
+            );
 
         var team = new Team(
             Guid.NewGuid(),
@@ -256,6 +296,7 @@ public class Team
 
         if (!MembersIds.Contains(newTeamManagerId))
             throw new DomainException("New team manager must be a member of the team.");
+
         TeamManagerId = newTeamManagerId;
     }
 
