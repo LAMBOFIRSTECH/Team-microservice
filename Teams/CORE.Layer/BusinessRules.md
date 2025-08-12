@@ -108,9 +108,9 @@ Les differents Etat d'une équipe et leur signification
 |------------------------------------------------------------------------------------|---------------------------------------------------------|
 |☑️ Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
 |                                                                                    |                                                         |
-| Une équipe archivée ne peut plus être modifiée                                     | `if (Equipe.Etat == Archivee) throw BusinessException`  |
+|☑️ Une équipe archivée ne peut plus être modifiée                                  | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
-| [] Suppression d’une équipe possible uniquement si aucun projet en dépend             | `ProjectService.HasNoDependencies(equipeId)`            |
+|☑️ Suppression d’une équipe possible uniquement si aucun projet en dépend          | `ProjectService.HasNoDependencies(equipeId)`            |
 |                                                                                    |                                                         |
 |☑️ Changer de responsable est possible seulement si le nouveau est déjà membre      | Pas de promotion externe directe                        |
 ------------------------------------------------------------------------------------------------------------------------------------------------
