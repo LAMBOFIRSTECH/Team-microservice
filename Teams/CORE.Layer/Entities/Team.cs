@@ -122,7 +122,6 @@ public class Team
         }
     }
 
-    // On peut rajouter le messgae prévu dans le model de domaine
 
     private void AssociateProject(ProjectAssociation projectAssociation)
     {
