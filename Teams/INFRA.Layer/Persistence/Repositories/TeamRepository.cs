@@ -45,15 +45,17 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     public async Task<Team> CreateTeamAsync(Team team)
     {
         await teamDbContext.Teams!.AddAsync(team);
-        await teamDbContext.SaveChangesAsync();
+        await SaveAsync();
         return team;
     }
 
     public async Task DeleteTeamAsync(Guid teamId)
     {
-        var team = await teamDbContext.Teams!.FindAsync(teamId);
+        var team = await teamDbContext
+            .Teams.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == teamId);
         teamDbContext.Teams.Remove(team!);
-        await teamDbContext.SaveChangesAsync();
+        await SaveAsync();
     }
 
     public async Task UpdateTeamAsync(Team team) => await SaveAsync();
@@ -63,10 +65,4 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     public async Task DeleteTeamMemberAsync() => await SaveAsync();
 
     public async Task SaveAsync() => await teamDbContext.SaveChangesAsync();
-    // public async Task<bool> DeleteTeamAsync(Guid teamId)
-    // {
-    //     var team = await teamDbContext.Teams.FindAsync(teamId);
-    //     teamDbContext.Teams.Remove(team);
-    //     await teamDbContext.SaveChangesAsync();
-    // }
 }

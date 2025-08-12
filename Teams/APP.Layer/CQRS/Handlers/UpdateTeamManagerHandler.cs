@@ -1,7 +1,4 @@
-using AutoMapper;
 using MediatR;
-using Serilog;
-using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
@@ -20,14 +17,25 @@ public class UpdateTeamManagerHandler(
         CancellationToken cancellationToken
     )
     {
-        var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
+        var team = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             command.Name!,
             command.OldTeamManagerId
         )!;
-        if (existingTeam == null)
+        var existingTeams = await teamRepository.GetAllTeamsAsync();
+        if (existingTeams == null)
+        {
+            LogHelper.Error(" ❌ No teams found in the repository.", logger);
+            throw new HandlerException(
+                404,
+                "No teams found in the repository.",
+                "Not Found",
+                "Team Repository Empty"
+            );
+        }
+        if (team == null)
         {
             LogHelper.Error(
-                $"Team with Name: {command.Name} and Old Team Manager Id: {command.OldTeamManagerId} not found.",
+                $"❌ Team with Name: {command.Name} and Old Team Manager Id: {command.OldTeamManagerId} not found.",
                 logger
             );
             throw new HandlerException(
@@ -37,11 +45,21 @@ public class UpdateTeamManagerHandler(
                 "Team ID not found"
             );
         }
+        if (existingTeams.Count(t => t.TeamManagerId == command.NewTeamManagerId) > 3)
+        {
+            LogHelper.BusinessRuleFailure(
+                logger,
+                "Update Team Manager",
+                "🚫 A manager cannot manage more than 3 teams.",
+                null
+            );
+            throw new DomainException("A manager cannot manage more than 3 teams.");
+        }
         try
         {
-            existingTeam.ChangeTeamManager(command.NewTeamManagerId);
+            team.ChangeTeamManager(command.NewTeamManagerId);
             LogHelper.Info(
-                $"Team manager changed successfully for team -- {command.Name} --",
+                $"✅ Team manager changed successfully for team -- {command.Name} --",
                 logger
             );
         }
@@ -49,7 +67,7 @@ public class UpdateTeamManagerHandler(
         {
             throw HandlerException.BadRequest(ex.Message, "Validation Error");
         }
-        await teamRepository.UpdateTeamAsync(existingTeam);
+        await teamRepository.UpdateTeamAsync(team);
         return Unit.Value;
     }
 }

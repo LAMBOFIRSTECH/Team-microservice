@@ -25,14 +25,16 @@ public class TeamExternalService(
       }
     }
 
-    {
-        "TeamManagerId": "c5b8e9b6-4a19-4a53-a41e-8b6f4d1a5d74",
+      {
+        "TeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
         "TeamName": "Pentester",
-        "ProjectStartDate": "2025-07-20T10:00:00Z",
+        "ProjectName": "Burp suite Analysis",
+        "ProjectStartDate": "2025-08-14T10:00:00Z",
+        "ProjectEndDate": "2025-08-30T10:00:00Z",
         "ProjectState": {
             "State": "Active"
         }
-    }
+   }
 
     **/
 

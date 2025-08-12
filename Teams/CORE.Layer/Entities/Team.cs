@@ -44,16 +44,25 @@ public class Team
 
     public TeamState State { get; private set; } = TeamState.Incomplete;
     public bool ActiveAssociatedProject { get; private set; } = false;
-    private readonly DateTime _creationDate;
-    public DateTime? CreationDate => _creationDate;
-    public DateTime LastActivityDate { get; private set; }
+    public DateTime TeamCreationDate { get; private set; }
+    public DateTime LastActivityDate { get; set; }
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
     private DateTime? _projectStartDate;
+    private DateTime? _projectEndDate;
     public DateTime? ProjectStartDate => _projectStartDate;
+    public DateTime? ProjectEndDate => _projectEndDate;
     private const int ValidityPeriodInDays = 90;
 
     public Team() { } // Pour EF
+
+    public bool IsProjectHasAnyDependencies()
+    {
+        Team team = this;
+        if (team.State == TeamState.Complete)
+            return true;
+        return false;
+    }
 
     private Team(
         Guid id,
@@ -71,7 +80,7 @@ public class Team
         MembersIds = memberIds;
         State = state;
         ActiveAssociatedProject = activeAssociatedProject;
-        _creationDate = creationDate;
+        TeamCreationDate = creationDate;
     }
 
     public void AttachProjectToTeam(
@@ -79,14 +88,41 @@ public class Team
         bool activeAssociatedProject
     )
     {
-        EnsureTeamIsWithinValidPeriod();
+        if (projectAssociation == null)
+            throw new DomainException("Project associated data cannot be null.");
+
+        if (
+            projectAssociation.TeamManagerId != TeamManagerId
+            || projectAssociation.TeamName != Name
+        )
+            throw new DomainException(
+                $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
+            );
+
+        if (State != TeamState.Active && State != TeamState.Complete)
+            throw new DomainException(
+                "Only active or complete teams can been associated to 1 or 5 projects."
+            );
+        if (projectAssociation.ProjectStartDate < TeamCreationDate)
+            throw new DomainException(
+                $"Project start date {projectAssociation.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
+            );
+        _projectEndDate = projectAssociation.ProjectEndDate;
+
         if (activeAssociatedProject)
         {
             _projectStartDate = projectAssociation.ProjectStartDate;
-            AssociateProject(projectAssociation);
+            var delay = _projectStartDate.Value - TeamCreationDate;
+            if (delay.TotalDays > 7)
+                throw new DomainException(
+                    $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
+                );
+
             State = TeamState.Complete;
         }
     }
+
+    // On peut rajouter le messgae prévu dans le model de domaine
 
     private void AssociateProject(ProjectAssociation projectAssociation)
     {
@@ -100,6 +136,13 @@ public class Team
             throw new DomainException(
                 $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
             );
+        if (projectAssociation.ProjectStartDate < TeamCreationDate)
+            throw new DomainException(
+                $"Project start date cannot be earlier than team creation date.{TeamCreationDate}"
+            );
+
+        if (projectAssociation.State == ProjectState.Terminated)
+            throw new DomainException("Cannot associate a terminated project to a team.");
 
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can have associated projects.");
@@ -125,10 +168,10 @@ public class Team
 
     private void EnsureTeamIsWithinValidPeriod()
     {
-        if (_creationDate.AddDays(ValidityPeriodInDays) <= DateTime.UtcNow)
+        if (TeamCreationDate.AddDays(ValidityPeriodInDays) <= DateTime.UtcNow)
         {
             State = TeamState.Archivee;
-            throw new DomainException("Team has exceeded the 90-day validity period.");
+            throw new DomainException($"Team has exceeded the 90-day validity period.Is too old.");
         }
     }
 
@@ -153,80 +196,17 @@ public class Team
         MembersIds.Remove(memberId);
     }
 
-    public static double GetCommonMembersStats(List<Guid> newTeamMembers, List<Team> existingTeams)
-    {
-        if (newTeamMembers == null || newTeamMembers.Count == 0)
-            throw new DomainException("The new team must have at least one member.");
-
-        if (existingTeams == null || existingTeams.Count == 0)
-            return 0; // Pas d'équipes existantes → pas de comparaison
-
-        double maxPercent = 0;
-
-        foreach (var existingTeam in existingTeams)
-        {
-            var common = existingTeam.MembersIds.Intersect(newTeamMembers).Count();
-            var universe = existingTeam.MembersIds.Union(newTeamMembers).Count();
-            double percent = (double)common / universe * 100;
-
-            if (percent > maxPercent)
-                maxPercent = percent;
-        }
-
-        return maxPercent;
-    }
-
     public static Team Create(
         string name,
         Guid teamManagerId,
         List<Guid> memberIds,
-        List<Team> existingTeams,
-        bool activeAssociatedProject,
-        ProjectAssociation? projectAssociation = null,
         DateTime? creationDate = null
     )
     {
         var actualDate = creationDate ?? DateTime.UtcNow;
-        if (existingTeams.Any(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            throw new DomainException($"A team with the name '{name}' already exists.");
-
-        if (existingTeams.Count(t => t.TeamManagerId == teamManagerId) > 3)
-            throw new DomainException("A manager cannot manage more than 3 teams.");
-
-        if (
-            existingTeams.Any(t =>
-                t.MembersIds.Count == memberIds.Count
-                && !t.MembersIds.Except(memberIds).Any()
-                && t.TeamManagerId == teamManagerId
-            )
-        )
-            throw new DomainException(
-                "A team with exactly the same members and manager already exists."
-            );
-        var maxCommonPercent = GetCommonMembersStats(memberIds, existingTeams);
-        if (maxCommonPercent >= 50)
-            throw new DomainException(
-                "Cannot create a team with more than 50% common members with existing teams."
-            );
-
-        var team = new Team(
-            Guid.NewGuid(),
-            name,
-            teamManagerId,
-            memberIds,
-            actualDate,
-            activeAssociatedProject ? TeamState.Complete : TeamState.Active,
-            activeAssociatedProject
-        );
+        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds, actualDate);
         team.ValidateTeamData();
-        team.EnsureTeamIsWithinValidPeriod();
-        if (activeAssociatedProject)
-        {
-            team.AssociateProject(projectAssociation!);
-            team.State = TeamState.Complete;
-        }
-        else
-            team.State = TeamState.Active;
+        team.State = TeamState.Active;
         return team;
     }
 

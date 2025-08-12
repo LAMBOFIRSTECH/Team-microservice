@@ -110,7 +110,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                                    |                                                         |
 | Une équipe archivée ne peut plus être modifiée                                     | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
-| Suppression d’une équipe possible uniquement si aucun projet en dépend             | `ProjectService.HasNoDependencies(equipeId)`            |
+| [] Suppression d’une équipe possible uniquement si aucun projet en dépend             | `ProjectService.HasNoDependencies(equipeId)`            |
 |                                                                                    |                                                         |
 |☑️ Changer de responsable est possible seulement si le nouveau est déjà membre      | Pas de promotion externe directe                        |
 ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ Les differents Etat d'une équipe et leur signification
 ---------------------------------------------------------------------------------------------------------------------
 | Règle                                   | Exemple                                                                 |
 |-----------------------------------------|-------------------------------------------------------------------------|
-|Statut de l’équipe (Complète /Incomplète)|                                                                         |
+|☑️ Statut de l’équipe (Complète /Incomplète)|                                                                      |
 |dérivé du nombre de membres et de        | `Etat = (Membres.Count >= 2 && Responsable != null) ? Actif : Incomplet`| 
 |la présence d’un responsable             |                                                                         |
 |                                         |                                                                         |
@@ -166,11 +166,11 @@ Les differents Etat d'une équipe et leur signification
 |--------------------------------------------------------------------------------------------------------- | --------------------------------------|
 |☑️ Un membre ne peut pas être ajouté à une équipe **s’il en a quitté une autre il y a moins de 7 jours** | Délai de “repos” entre deux équipes   |
 |                                                                                                          |                                       |
-| Une équipe inactive depuis plus de 90 jours est archivée automatiquement                                 | Via job planifié dans `EquipeService` |
+|☑️ Une équipe inactive depuis plus de 90 jours est archivée automatiquement                               | Via job planifié dans `EquipeService` |
 |                                                                                                          |                                       |
 | Un membre ne peut pas rester plus de N mois sans changer d’équipe. Eviter l’enfermement                  |                                       |
 |                                                                                                          |                                       |
-| Le délai entre création et lancement du projet ne doit pas dépasser 7 jours                              |                                       |
+|☑️ Le délai entre création et lancement du projet ne doit pas dépasser 7 jours                            |                                       |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 

@@ -125,7 +125,7 @@ public class BackgroundJobService(
         try
         {
             LogHelper.Info(
-                "🚀 Planification du job Hangfire pour récupération des données dans le Microservice Projet",
+                "🚀 Scheduling Hangfire job to retrieve data from the Project Microservice.",
                 log
             );
             string jobId = TryScheduleJob(
@@ -139,7 +139,7 @@ public class BackgroundJobService(
             );
             if (string.IsNullOrEmpty(jobId))
             {
-                LogHelper.Error("❌ La planification du job a échoué. jobId est null.", log);
+                LogHelper.Error("❌ Job scheduling failed. jobId is null.", log);
                 throw new HangFireException(
                     500,
                     "Internal Error",
@@ -149,19 +149,17 @@ public class BackgroundJobService(
             }
 
             LogHelper.Info(
-                "✅ Job Hangfire planifié avec succès pour la récupération des données dans le Microservice Projet",
+                "✅ Hangfire job successfully scheduled to retrieve data from the Project Microservice.",
                 log
             );
         }
         catch (Exception ex)
         {
-            log.LogError(
-                ex,
-                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception"
-            );
-            LogHelper.Error(
-                "❌ Erreur lors de la planification du job Hangfire. Détails de l'exception",
-                log
+            LogHelper.CriticalFailure(
+                log,
+                "❌ Error while scheduling Hangfire job.",
+                "Internal Error",
+                ex
             );
         }
     }

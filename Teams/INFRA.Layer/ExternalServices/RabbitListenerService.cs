@@ -15,13 +15,11 @@ public partial class RabbitListenerService(
     IServiceScopeFactory scopeFactory
 ) : BackgroundService
 {
-    /** Member to Add    | 12345678-90ab-cdef-1234-567890abcdef | Pentester
-        Member to delete | 12345678-90ab-cdef-1234-567890abcdef | Pentester
-        Project Affected
-    **/
+    private const string QueueName = "team_management";
     private IConnection? _connection;
     private IModel? _channel;
 
+    // Pattern: | GUID | TeamName
     [GeneratedRegex(
         @"\|\s*([\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12})\s*\|\s*(.+)",
         RegexOptions.IgnoreCase
@@ -31,118 +29,136 @@ public partial class RabbitListenerService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         LogHelper.Info("🟢 RabbitListenerService started", log);
+
         try
         {
-            var factory = await EstablishConnection();
-            _connection = factory.CreateConnection();
-            _channel = _connection.CreateModel();
-
-            const string queueName = "team_management";
-
-            _channel.QueueDeclare(
-                queue: queueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false
-            );
+            await InitializeRabbitMqConnectionAsync();
+            using var scope = scopeFactory.CreateScope();
+            var backgroundJob = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
 
             var consumer = new EventingBasicConsumer(_channel);
             consumer.Received += (model, ea) =>
             {
-                var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                LogHelper.Info($"Message reçu : {message}", log);
+                var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+                LogHelper.Info($"📩 Message received: {message}", log);
 
-                var match = GuidAndTeamRegex().Match(message);
-
-                if (match.Success && Guid.TryParse(match.Groups[1].Value, out Guid memberId))
-                {
-                    var teamName = match.Groups[2].Value;
-                    try
-                    {
-                        // 👇 Création d'un scope local afin d'éviter les problèmes de dépendances entre cycle de vie scope et singleton
-                        using var scope = scopeFactory.CreateScope();
-                        var backgroundJob =
-                            scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-
-                        if (message.Contains("Member to add", StringComparison.OrdinalIgnoreCase))
-                            backgroundJob.ScheduleAddTeamMemberAsync(memberId);
-                        else if (
-                            message.Contains("Member to delete", StringComparison.OrdinalIgnoreCase)
-                        )
-                            backgroundJob.ScheduleDeleteTeamMemberAsync(memberId, teamName);
-                        else if (
-                            message.Contains("Project Affected", StringComparison.OrdinalIgnoreCase)
-                        )
-                            backgroundJob.ScheduleProjectAssociationAsync();
-                        else
-                        {
-                            LogHelper.Warning("Unrecognized message : {message}", log);
-                            throw new InvalidOperationException("Unrecognized message");
-                        }
-                        _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
-                        LogHelper.Info(
-                            $"Message successfully processed for member {memberId} in team {teamName}",
-                            log
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHelper.Error(
-                            $"Error processing message for member {memberId} in team {teamName}: {ex.Message}",
-                            log
-                        );
-                        LogHelper.CriticalFailure(
-                            log,
-                            "RabbitListenerService",
-                            "Error processing RabbitMQ message",
-                            ex
-                        );
-                        _channel.BasicNack(
-                            deliveryTag: ea.DeliveryTag,
-                            multiple: false,
-                            requeue: false
-                        );
-                    }
-                }
-                else
-                {
-                    LogHelper.Warning($"Malformed message or invalid GUID: {message}", log);
-                    _channel.BasicReject(ea.DeliveryTag, requeue: false);
-                }
+                ProcessMessage(message, ea, backgroundJob);
             };
 
-            _channel.BasicConsume(queue: queueName, autoAck: false, consumer: consumer);
+            _channel.BasicConsume(queue: QueueName, autoAck: false, consumer: consumer);
             LogHelper.Info(
-                $"📡 RabbitMQ consumer started successfully for queue: {queueName}",
+                $"📡 RabbitMQ consumer started successfully for queue: {QueueName}",
                 log
             );
 
+            // Keep service alive while not cancelled
             while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
             {
-                await Task.Delay(1000, stoppingToken); // stop apres avoir consommer
+                await Task.Delay(1000, stoppingToken);
             }
         }
         catch (Exception ex)
         {
-            LogHelper.Error($"❌ Error in RabbitListenerService: {ex.Message}", log);
-            _channel?.Close();
-            _connection?.Close();
-            LogHelper.CriticalFailure(
-                log,
-                "RabbitListenerService",
-                "Exception in RabbitListenerService",
-                ex
-            );
+            HandleServiceError(ex);
         }
+    }
+
+    private void ProcessMessage(
+        string message,
+        BasicDeliverEventArgs ea,
+        IBackgroundJobService backgroundJob
+    )
+    {
+        var match = GuidAndTeamRegex().Match(message);
+
+        try
+        {
+            if (match.Success && Guid.TryParse(match.Groups[1].Value, out Guid memberId))
+            {
+                var teamName = match.Groups[2].Value;
+
+                if (message.Contains("Member to add", StringComparison.OrdinalIgnoreCase))
+                {
+                    backgroundJob.ScheduleAddTeamMemberAsync(memberId);
+                }
+                else if (message.Contains("Member to delete", StringComparison.OrdinalIgnoreCase))
+                {
+                    backgroundJob.ScheduleDeleteTeamMemberAsync(memberId, teamName);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Unrecognized message type");
+                }
+
+                _channel?.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+                LogHelper.Info(
+                    $"✅ Message processed for member {memberId} in team {teamName}",
+                    log
+                );
+            }
+            else if (message.Contains("Project Affected", StringComparison.OrdinalIgnoreCase))
+            {
+                backgroundJob.ScheduleProjectAssociationAsync();
+                _channel?.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+            }
+            else
+            {
+                LogHelper.Warning($"⚠️ Unrecognized message: {message}", log);
+                _channel?.BasicReject(ea.DeliveryTag, requeue: false);
+            }
+        }
+        catch (Exception ex)
+        {
+            HandleMessageError(ex, ea, match.Groups[1].Value);
+        }
+    }
+
+    private async Task InitializeRabbitMqConnectionAsync()
+    {
+        var factory = await EstablishConnection();
+        _connection = factory.CreateConnection();
+        _channel = _connection.CreateModel();
+
+        _channel.QueueDeclare(queue: QueueName, durable: true, exclusive: false, autoDelete: false);
     }
 
     private async Task<ConnectionFactory> EstablishConnection()
     {
         var vault = new HashicorpVaultService(configuration);
         var connectionString = await vault.GetRabbitConnectionStringFromVault();
-        var uri = new Uri("amqp://" + connectionString);
-        return new ConnectionFactory { Uri = uri, DispatchConsumersAsync = false };
+        return new ConnectionFactory
+        {
+            Uri = new Uri("amqp://" + connectionString),
+            DispatchConsumersAsync = false,
+        };
+    }
+
+    private void HandleMessageError(Exception ex, BasicDeliverEventArgs ea, string guidValue)
+    {
+        LogHelper.Error(
+            $"❌ Error processing message. GUID: {guidValue}. Exception: {ex.Message}",
+            log
+        );
+        LogHelper.CriticalFailure(
+            log,
+            "RabbitListenerService",
+            "Error processing RabbitMQ message",
+            ex
+        );
+        _channel?.BasicNack(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+    }
+
+    private void HandleServiceError(Exception ex)
+    {
+        LogHelper.Error($"❌ Error in RabbitListenerService: {ex.Message}", log);
+        _channel?.Close();
+        _connection?.Close();
+        LogHelper.CriticalFailure(
+            log,
+            "RabbitListenerService",
+            "Exception in RabbitListenerService",
+            ex
+        );
     }
 
     public override void Dispose()

@@ -32,3 +32,11 @@ public static class LogHelper
         Exception? ex = null
     ) => logger.LogError(ex, "Rule Violated in {Context} => [{Message}]", context, message);
 }
+
+// 🚫 (interdiction)
+
+// ⚠️ (avertissement)
+
+// ❌ (erreur)
+
+// 🛑 (arrêt)
