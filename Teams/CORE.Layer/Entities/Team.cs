@@ -279,5 +279,4 @@ public class Team
         TeamManagerId = newTeamManagerId;
     }
 
-    // Pour le projet associé sa logique métier doit etre défini ici et non pas dans le service sui orchestre car un projet associé vient changer l'etat de l'agrégat
 }
