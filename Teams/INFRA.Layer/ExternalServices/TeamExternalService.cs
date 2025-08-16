@@ -55,7 +55,9 @@ public class TeamExternalService(
             LogHelper.Warning("No record found in response.", log);
             return null;
         }
-        var data = JsonConvert.DeserializeObject<TransfertMemberDto>(record);
+        var settings = new JsonSerializerSettings();
+        settings.Converters.Add(new UtcDateTimeConverter());
+        var data = JsonConvert.DeserializeObject<TransfertMemberDto>(record, settings);
         return data;
     }
 
@@ -76,7 +78,9 @@ public class TeamExternalService(
             LogHelper.Warning("No record found in response for member deletion.", log);
             return null;
         }
-        var data = JsonConvert.DeserializeObject<DeleteTeamMemberDto>(record);
+        var settings = new JsonSerializerSettings();
+        settings.Converters.Add(new UtcDateTimeConverter());
+        var data = JsonConvert.DeserializeObject<DeleteTeamMemberDto>(record, settings);
         return data;
     }
 
@@ -97,7 +101,29 @@ public class TeamExternalService(
             LogHelper.Warning("No record found in response for project association.", log);
             return null;
         }
-        var data = JsonConvert.DeserializeObject<ProjectAssociationDto>(record);
+        var settings = new JsonSerializerSettings();
+        settings.Converters.Add(new UtcDateTimeConverter());
+        var data = JsonConvert.DeserializeObject<ProjectAssociationDto>(record, settings);
         return data;
+    }
+
+    public class UtcDateTimeConverter : JsonConverter<DateTime>
+    {
+        public override DateTime ReadJson(
+            JsonReader reader,
+            Type objectType,
+            DateTime existingValue,
+            bool hasExistingValue,
+            JsonSerializer serializer
+        )
+        {
+            var dt = (DateTime)reader.Value;
+            return dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+        }
+
+        public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+        {
+            serializer.Serialize(writer, value);
+        }
     }
 }

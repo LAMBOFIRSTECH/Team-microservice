@@ -7,6 +7,7 @@ using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
+using Teams.APP.Layer.UnitOfWork;
 
 namespace Teams.APP.Layer;
 
@@ -32,8 +33,14 @@ public static class DependancyInjection
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
         services.AddScoped<IEmployeeService, EmployeeService>();
-        services.AddScoped<ProjectService>();
+        services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+        services.AddScoped<ProjectService>();
+        // services.AddHostedService<ProjectExpiryChecker>();
+        services.AddSingleton<ProjectExpiryChecker>();
+        services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryChecker>());
+
         // services.AddScoped<IEventHandler<EmployeeCreatedEvent>, ManageTeamEventHandler>();
         // services.AddScoped<IEventHandler<ProjectAssociatedEvent>, ManageTeamEventHandler>();
         AddAuthorizationPolicies(services);

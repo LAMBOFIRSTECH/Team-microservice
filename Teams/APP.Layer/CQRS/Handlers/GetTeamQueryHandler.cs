@@ -3,12 +3,16 @@ using MediatR;
 using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
+using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetTeamQueryHandler(ITeamRepository teamRepository, IMapper mapper)
-    : IRequestHandler<GetTeamQuery, TeamDto>
+public class GetTeamQueryHandler(
+    ITeamRepository teamRepository,
+    IMapper mapper,
+    ILogger<GetTeamQueryHandler> log
+) : IRequestHandler<GetTeamQuery, TeamDto>
 {
     public async Task<TeamDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
@@ -20,6 +24,7 @@ public class GetTeamQueryHandler(ITeamRepository teamRepository, IMapper mapper)
                 "Not Found",
                 "Team ressource not found"
             );
+        LogHelper.Info($"✅ Team state is {team.State} .", log);
         var teamDto = mapper.Map<TeamDto>(team);
         return teamDto;
     }

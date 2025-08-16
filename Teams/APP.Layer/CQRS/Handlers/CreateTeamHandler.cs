@@ -4,6 +4,7 @@ using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
+using Teams.APP.Layer.Services;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
@@ -13,7 +14,8 @@ namespace Teams.APP.Layer.CQRS.Handlers;
 public class CreateTeamHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
-    ILogger<CreateTeamHandler> log
+    ILogger<CreateTeamHandler> log,
+    IServiceProvider _serviceProvider
 ) : IRequestHandler<CreateTeamCommand, TeamDto>
 {
     public async Task<TeamDto> Handle(
@@ -86,13 +88,15 @@ public class CreateTeamHandler(
         }
         await teamRepository.CreateTeamAsync(team);
         LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
+        var checker = _serviceProvider.GetRequiredService<ProjectExpiryChecker>(); // Démarre le timer après création d'une équipe
+        checker.EnsureTimerStarted();
         return mapper.Map<TeamDto>(team);
     }
 
     public static double GetCommonMembersStats(List<Guid> newTeamMembers, List<Team> existingTeams)
     {
         if (newTeamMembers == null || newTeamMembers.Count == 0)
-            throw new DomainException("The new team must have at least one member.");
+            throw new DomainException("The new team must have at least two member.");
 
         if (existingTeams == null || existingTeams.Count == 0)
             return 0; // Pas d'équipes existantes → pas de comparaison

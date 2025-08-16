@@ -1,5 +1,4 @@
 using Hangfire;
-using Serilog;
 using Teams.APP.Layer.Exceptions;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
@@ -120,7 +119,7 @@ public class BackgroundJobService(
     }
 
     [Queue("runner_operation_project")]
-    public void ScheduleProjectAssociationAsync()
+    public void ScheduleProjectAssociationAsync(Guid managerId, string teamName)
     {
         try
         {
@@ -131,7 +130,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.ManageTeamteamProjectAsync(),
+                        () => project.ManageTeamProjectAsync(managerId, teamName),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,

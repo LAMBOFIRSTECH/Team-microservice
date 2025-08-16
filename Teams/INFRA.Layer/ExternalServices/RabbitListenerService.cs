@@ -20,6 +20,9 @@ public partial class RabbitListenerService(
     private IModel? _channel;
 
     // Pattern: | GUID | TeamName
+    // Project affected | GUID | TeamName (eg. Project affected | b14db1e2-026e-4ac9-9739-378720de6f5b | Pentester)
+    // Member to add | GUID | TeamName (eg. Member to add | 12345678-90ab-cdef-1234-567890abcdef | Pentester)
+    // Member to delete | GUID | TeamName (eg. Member to delete | 12345678-90ab-cdef-1234-567890abcdef | Pentester)
     [GeneratedRegex(
         @"\|\s*([\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12})\s*\|\s*(.+)",
         RegexOptions.IgnoreCase
@@ -40,6 +43,16 @@ public partial class RabbitListenerService(
             consumer.Received += (model, ea) =>
             {
                 var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+                if (string.IsNullOrWhiteSpace(message))
+                {
+                    LogHelper.Warning("Received empty message, skipping processing.", log);
+                    _channel?.BasicNack(
+                        deliveryTag: ea.DeliveryTag,
+                        multiple: false,
+                        requeue: false
+                    );
+                    return;
+                }
                 LogHelper.Info($"📩 Message received: {message}", log);
 
                 ProcessMessage(message, ea, backgroundJob);
@@ -73,33 +86,24 @@ public partial class RabbitListenerService(
 
         try
         {
-            if (match.Success && Guid.TryParse(match.Groups[1].Value, out Guid memberId))
+            if (match.Success && Guid.TryParse(match.Groups[1].Value, out Guid identifier))
             {
-                var teamName = match.Groups[2].Value;
-
+                var TeamManagerId = new Guid(match.Groups[1].Value);
+                var teamName = match.Groups[3].Value.Trim();
                 if (message.Contains("Member to add", StringComparison.OrdinalIgnoreCase))
-                {
-                    backgroundJob.ScheduleAddTeamMemberAsync(memberId);
-                }
+                    backgroundJob.ScheduleAddTeamMemberAsync(identifier);
                 else if (message.Contains("Member to delete", StringComparison.OrdinalIgnoreCase))
-                {
-                    backgroundJob.ScheduleDeleteTeamMemberAsync(memberId, teamName);
-                }
+                    backgroundJob.ScheduleDeleteTeamMemberAsync(identifier, teamName);
+                else if (message.Contains("Project affected", StringComparison.OrdinalIgnoreCase))
+                    backgroundJob.ScheduleProjectAssociationAsync(TeamManagerId, teamName);
                 else
-                {
                     throw new InvalidOperationException("Unrecognized message type");
-                }
 
                 _channel?.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
                 LogHelper.Info(
-                    $"✅ Message processed for member {memberId} in team {teamName}",
+                    $"🔔 Message processed for member or manager {identifier} in team {teamName}",
                     log
                 );
-            }
-            else if (message.Contains("Project Affected", StringComparison.OrdinalIgnoreCase))
-            {
-                backgroundJob.ScheduleProjectAssociationAsync();
-                _channel?.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             }
             else
             {

@@ -20,7 +20,7 @@ public class DeleteTeamHandler(ITeamRepository teamRepository, ILogger<DeleteTea
                 "Not Found",
                 "Team ID not found"
             );
-        var result = team.IsProjectHasAnyDependencies();
+        var result = team.IsProjectHasAnyDependencies(team);
         if (result)
         {
             LogHelper.BusinessRuleFailure(

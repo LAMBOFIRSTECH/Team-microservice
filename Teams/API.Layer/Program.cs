@@ -12,6 +12,7 @@ using Teams.INFRA.Layer;
 var builder = WebApplication.CreateBuilder(args);
 SerilogConfiguration.ConfigureLogging(builder.Configuration);
 builder.Host.UseSerilog();
+
 builder
     .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
     .AddJsonFile(
