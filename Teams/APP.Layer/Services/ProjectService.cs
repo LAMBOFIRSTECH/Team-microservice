@@ -66,7 +66,10 @@ public class ProjectService(
         }
         if (existingTeam.State == TeamState.Complete)
         {
-            LogHelper.Warning($"Team {teamProject.TeamName} already has an active project.", log);
+            LogHelper.Warning(
+                $"Team {teamProject.TeamName} already has an active project name's {teamProject.ProjectName}.",
+                log
+            );
             throw new DomainException(
                 $"Team {teamProject.TeamName} already has an active project."
             );
@@ -88,5 +91,4 @@ public class ProjectService(
                 $"Team {projectAssociation.TeamName} and project {projectAssociation.ProjectName} associated at {DateTime.UtcNow}, for manager {projectAssociation.TeamManagerId}."
             )
         );
-
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities;
+using Teams.INFRA.Layer.Persistence.Configurations;
 
 namespace Teams.INFRA.Layer.Persistence;
 
@@ -18,7 +19,7 @@ public class TeamDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Team>().HasKey(t => t.Id);
+        modelBuilder.ApplyConfiguration(new TeamConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 

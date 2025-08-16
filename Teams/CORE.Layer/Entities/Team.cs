@@ -7,22 +7,22 @@ using Teams.CORE.Layer.ValueObjects;
 namespace Teams.CORE.Layer.Entities;
 
 /// <summary>
-/// Active       : Équipe ayant au moins deux membres et un manager.
-/// Incomplete   : Équipe constituée mais sans projet affecté.
-/// Complete     : Équipe active et associée à un projet.
-/// Suspendue    : Équipe active dont le projet est suspendu.
-/// EnRevision   : Équipe suspendue en cours d’évaluation pour réaffectation.
-/// ADesaffecter : Équipe non réaffectée à son projet initial après révision.
-/// Archivee     : Équipe restée incomplète pendant 15 jours.
+/// Active          : Équipe ayant au moins deux membres et un manager.
+/// Incomplete      : Équipe constituée mais sans projet affecté.
+/// Complete        : Équipe active et associée à un projet.
+/// Suspended       : Équipe active dont le projet est suspendu.
+/// UnderReview     : Équipe suspendue en cours d’évaluation pour réaffectation.
+/// ToBeUnassigned  : Équipe non réaffectée à son projet initial après révision.
+/// Archivee        : Équipe restée incomplète pendant 15 jours.
 /// </summary>
 public enum TeamState
 {
     Active = 0,
     Incomplete = 1,
     Complete = 2,
-    Suspendue = 3,
-    EnRevision = 4,
-    ADesaffecter = 5,
+    Suspended = 3,
+    UnderReview = 4,
+    ToBeUnassigned = 5,
     Archivee = 6,
 }
 
@@ -114,19 +114,23 @@ public class Team
                 $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
             );
 
-        if (State != TeamState.Active && State != TeamState.Complete)
+        if (
+            State != TeamState.Active
+            && State != TeamState.Complete
+            && State != TeamState.Suspended
+        )
             throw new DomainException(
-                "Only active or complete teams can been associated to 1 or 5 projects."
+                "Only active or complete team can be associated to 1 or 3 projects."
             );
         if (projectAssociation.ProjectStartDate < TeamCreationDate)
             throw new DomainException(
                 $"Project start date {projectAssociation.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
             );
-        _projectEndDate = projectAssociation.ProjectEndDate;
 
         if (activeAssociatedProject)
         {
             _projectStartDate = projectAssociation.ProjectStartDate;
+            _projectEndDate = projectAssociation.ProjectEndDate;
             var delay = _projectStartDate.Value - TeamCreationDate;
             if (delay.TotalDays > 7)
                 throw new DomainException(
@@ -163,7 +167,7 @@ public class Team
                 return TeamState.Active;
             // Projet expiré → désaffectée
             if (_projectEndDate <= GetLocalDateTime())
-                return TeamState.ADesaffecter;
+                return TeamState.ToBeUnassigned; // Suspendu plutot
             // Trop vieux → archivé (pas encore implémenté)
             // if ((GetLocalDateTime() - LastActivityDate).TotalDays > ValidityPeriodInDays)
             //     return TeamState.Archivee;
@@ -244,7 +248,7 @@ public class Team
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be suspended.");
 
-        State = TeamState.Suspendue;
+        State = TeamState.Suspended;
     }
 
     public void ChangeTeamManager(Guid newTeamManagerId)

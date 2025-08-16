@@ -117,6 +117,10 @@ public class TeamExternalService(
             JsonSerializer serializer
         )
         {
+            if (reader.Value == null)
+            {
+                throw new JsonSerializationException("DateTime value is null.");
+            }
             var dt = (DateTime)reader.Value;
             return dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
         }

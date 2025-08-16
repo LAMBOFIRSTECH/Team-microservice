@@ -47,23 +47,25 @@ public class ProjectExpiryChecker : IHostedService, IDisposable
 
         using var scope = _scopeFactory.CreateScope();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
-
         var now = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
         var teams = await teamRepository.GetAllTeamsAsync();
-        _log.LogInformation($"Numbers of teams {teams.Count}...");
         var expiredTeams = teams
-            .Where(t => t.ProjectEndDate.HasValue && t.ProjectEndDate.Value <= now)
+            .Where(t => t.ProjectEndDate.HasValue && t.ProjectEndDate.Value < now)
             .ToList();
-        var ateam = teams.Where(t => t.Name.Equals("Pentester")).FirstOrDefault();
-        var titi = ateam != null ? $"{ateam.ProjectEndDate} + toto" : "ateam is null + toto";
-        _log.LogInformation($"Debut de la boucle {titi}");
-
         foreach (var team in expiredTeams)
         {
-            _log.LogInformation("Disassociating project from team {TeamName}", team.Name);
+            _log.LogInformation(
+                "Team {Name} | EndDate={EndDate} | Now={Now} | Expired={Expired} | State ={State}",
+                team.Name,
+                team.ProjectEndDate?.ToString() ?? "null",
+                now,
+                team.ProjectEndDate.HasValue && team.ProjectEndDate.Value < now,
+                team.State
+            );
             team.RemoveProjectFromTeamWhenExpired(true);
             team.RecalculateState();
             await teamRepository.UpdateTeamAsync(team);
+            LogHelper.Info($"Project has been dissociated correctly from team {team.Name}", _log);
         }
     }
 
