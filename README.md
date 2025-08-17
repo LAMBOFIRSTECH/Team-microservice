@@ -16,6 +16,7 @@
 - **MediatR**
 - **FluentValidation**
 - **AutoMapper**
+- **AutoDispatcher**
 - **Entity Framework Core**
 - **JWT Auth**
 - **OpenTelemetry**
@@ -34,27 +35,29 @@
 - 📄 `Controllers/TeamController.cs`
 
 **DTOs**  
-- 📄 `DTOs/TeamDto.cs`  
+- 📄 `DTOs/ChangeManagerDto.cs`
+- 📄 `DTOs/DeleteTeamMemberDto.cs`
+- 📄 `DTOs/TeamDto.cs`
 - 📄 `DTOs/TeamRequestDto.cs`
 
 **Middlewares**  
-- 📄 `Middlewares/ExceptionHandlerMiddleware.cs`  
-- 📄 `Middlewares/HandlerException.cs`  
-- 📄 `Middlewares/JwtBearerAuthenticationMiddleware.cs`  
+- 📄 `Middlewares/ExceptionHandlerMiddleware.cs`
+- 📄 `Middlewares/HandlerException.cs`
+- 📄 `Middlewares/JwtBearerAuthenticationMiddleware.cs`
 - 📄 `Middlewares/RequestLoggingMiddleware.cs`
 
 **Mappings**  
-- 📄 `Mappings/ProjectAssociationMapper.cs`  
-- 📄 `Mappings/TeamProfile.cs`  
-- 📄 `Mappings/TeamTransfertMapper.cs`  
+- 📄 `Mappings/ProjectAssociationMapper.cs`
+- 📄 `Mappings/TeamProfile.cs`
+- 📄 `Mappings/TeamTransfertMapper.cs`
 - 📄 `Mappings/ValidationErrorMapper.cs`
 
 **Shared.Logging**  
 - 📄 `Shared.Logging/SerilogConfiguration.cs`
 
 **Autres**  
-- 📄 `DependancyInjection.cs`  
-- 📄 `Program.cs`  
+- 📄 `DependancyInjection.cs`
+- 📄 `Program.cs`
 - 📄 `appsettings.Development.json`
 
 ---
@@ -62,52 +65,57 @@
 ## 🧠 APP.Layer
 
 **CQRS / Commands**  
-- 📄 `CQRS/Commands/CreateTeamCommand.cs`  
-- 📄 `CQRS/Commands/DeleteTeamCommand.cs`  
-- 📄 `CQRS/Commands/DeleteTeamMemberCommand.cs`  
-- 📄 `CQRS/Commands/UpdateTeamCommand.cs`  
+- 📄 `CQRS/Commands/CreateTeamCommand.cs`
+- 📄 `CQRS/Commands/DeleteTeamCommand.cs`
+- 📄 `CQRS/Commands/DeleteTeamMemberCommand.cs`
+- 📄 `CQRS/Commands/UpdateTeamCommand.cs`
 - 📄 `CQRS/Commands/UpdateTeamManagerCommand.cs`
 
-**CQRS / Events**  
-- 📄 `CQRS/Events/EmployeeCreatedEvent.cs`  
-- 📄 `CQRS/Events/ProjectAssociatedEvent.cs`
-
 **CQRS / Handlers**  
-- 📄 `CQRS/Handlers/CreateTeamHandler.cs`  
-- 📄 `CQRS/Handlers/DeleteTeamHandler.cs`  
-- 📄 `CQRS/Handlers/DeleteTeamMemberHandler.cs`  
-- 📄 `CQRS/Handlers/GetAllTeamsQueryHandler.cs`  
-- 📄 `CQRS/Handlers/GetTeamQueryHandler.cs`  
-- 📄 `CQRS/Handlers/GetTeamsByManagerQueryHandler.cs`  
-- 📄 `CQRS/Handlers/GetTeamsByMemberQueryHandler.cs`  
-- 📄 `CQRS/Handlers/UpdateTeamHandler.cs`  
+- 📄 `CQRS/Handlers/CreateTeamHandler.cs`
+- 📄 `CQRS/Handlers/DeleteTeamHandler.cs`
+- 📄 `CQRS/Handlers/DeleteTeamMemberHandler.cs`
+- 📄 `CQRS/Handlers/GetAllTeamsQueryHandler.cs`
+- 📄 `CQRS/Handlers/GetTeamQueryHandler.cs`
+- 📄 `CQRS/Handlers/GetTeamsByManagerQueryHandler.cs`
+- 📄 `CQRS/Handlers/GetTeamsByMemberQueryHandler.cs`
+- 📄 `CQRS/Handlers/UpdateTeamHandler.cs`
 - 📄 `CQRS/Handlers/UpdateTeamManagerHandler.cs`
 
 **CQRS / Queries**  
-- 📄 `CQRS/Queries/GetAllTeamsQuery.cs`  
-- 📄 `CQRS/Queries/GetTeamQuery.cs`  
-- 📄 `CQRS/Queries/GetTeamsByManagerQuery.cs`  
+- 📄 `CQRS/Queries/GetAllTeamsQuery.cs`
+- 📄 `CQRS/Queries/GetTeamQuery.cs`
+- 📄 `CQRS/Queries/GetTeamsByManagerQuery.cs`
 
 **CQRS / Validators**  
-- 📄 `CQRS/Validators/AddTeamMemberRecordValidator.cs`  
-- 📄 `CQRS/Validators/CreateTeamCommandValidator.cs`  
-- 📄 `CQRS/Validators/DeleteTeamCommandValidator.cs`  
-- 📄 `CQRS/Validators/ProjectRecordValidator.cs`  
-- 📄 `CQRS/Validators/UpdateTeamCommandValidator.cs`  
+- 📄 `CQRS/Validators/AddTeamMemberRecordValidator.cs`
+- 📄 `CQRS/Validators/CreateTeamCommandValidator.cs`
+- 📄 `CQRS/Validators/DeleteTeamCommandValidator.cs`
+- 📄 `CQRS/Validators/ProjectRecordValidator.cs`
+- 📄 `CQRS/Validators/UpdateTeamCommandValidator.cs`
 - 📄 `CQRS/Validators/UpdateTeamManagerValidator.cs`
+
+**EventNotification**
+- `EventNotification/DomainEventNotification.cs`
 
 **Helpers**  
 - 📄 `Helpers/LogHeper.cs`
 
 **Interfaces**  
-- 📄 `Interfaces/IBackgroundJobService.cs`  
-- 📄 `Interfaces/IEmployeeService.cs`  
+- 📄 `Interfaces/IBackgroundJobService.cs`
+- 📄 `Interfaces/IEmployeeService.cs`
 - 📄 `Interfaces/IRedisCacheService.cs`
+- 📄 `Interfaces/IProjectExpiryScheduler.cs`
+- 📄 `Interfaces/ITeamStateUnitOfWork.cs`
 
 **Services**  
-- 📄 `Services/BackgroundJobService.cs`  
-- 📄 `Services/EmployeeService.cs`  
+- 📄 `Services/BackgroundJobService.cs`
+- 📄 `Services/EmployeeService.cs`
 - 📄 `Services/ProjectService.cs`
+- 📄 `Services/ProjectExpiryScheduler.cs`
+
+**UnitOfWork**
+- 📄 `UnitOfWork/TeamStateUnitOfWork.cs`
 
 **Autres**  
 - 📄 `DependancyInjection.cs`
@@ -119,6 +127,12 @@
 **BusinessExceptions**  
 - 📄 `BusinessExceptions/DomainException.cs`
 
+**CoreEvents**
+- 📄 `CoreEvents/EmployeeNotification.cs`
+- 📄 `CoreEvents/IDomainEvent.cs`
+- 📄 `CoreEvents/ProjectAssociatedNotification.cs`
+- 📄 `CoreEvents/ProjectDatesChangedEvent.cs`
+
 **Entities**  
 - 📄 `Entities/Team.cs`
 
@@ -126,12 +140,12 @@
 - 📄 `Interfaces/ITeamRepository.cs`
 
 **Models**  
-- 📄 `Models/Message.cs`  
-- 📄 `Models/TeamMemberAction.cs`  
+- 📄 `Models/Message.cs`
+- 📄 `Models/TeamMemberAction.cs`
 - 📄 `Models/ValidationErrorResponse.cs`
 
 **ValueObjects**  
-- 📄 `ValueObjects/ProjectAssociation.cs`  
+- 📄 `ValueObjects/ProjectAssociation.cs`
 - 📄 `ValueObjects/TransfertMember.cs`
 
 ---
@@ -142,18 +156,21 @@
 - 📄 `DependancyInjection.cs`
 
 **ExternalServices**  
-- 📄 `ExternalServices/RabbitListenerService.cs`  
-- 📄 `ExternalServices/RedisCacheService.cs`  
+- 📄 `ExternalServices/RabbitListenerService.cs`
+- 📄 `ExternalServices/RedisCacheService.cs`
 - 📄 `ExternalServices/TeamExternalService.cs`
 
 **ExternalServicesDtos**  
-- 📄 `ExternalServicesDtos/ProjectAssociationDto.cs`  
+- 📄 `ExternalServicesDtos/ProjectAssociationDto.cs`
 - 📄 `ExternalServicesDtos/TransfertMemberDto.cs`
 
+**Dispatchers**  
+- 📄 `Dispatchers/DomainEventDispatcher.cs`
+
 **Persistence**  
-- 📂 `Persistence/Migration/` *(contenu non détaillé)*  
-- 📂 `Persistence/Repositories/`  
-  - 📄 `TeamRepository.cs`  
+- 📂 `Persistence/Migration/` *(contenu non détaillé)*
+- 📄 `Persistence/Repositories/TeamRepository.cs`
+- 📄 `Persistence/Configurations/TeamConfiguration.cs`
 - 📄 `Persistence/TeamDbContext.cs`
 
 ## 📘 Légende
