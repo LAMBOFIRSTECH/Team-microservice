@@ -41,7 +41,7 @@ public class TeamDbContext : DbContext
         unitOfWork.RecalculateTeamStates(teams);
         var entitiesWithEvents = ChangeTracker
             .Entries()
-            .Where(e => e.Entity is Team t && t.DomainEvents.Any())
+            .Where(e => e.Entity is Team t && t.DomainEvents.Count > 0)
             .Select(e => (Team)e.Entity)
             .ToList();
 

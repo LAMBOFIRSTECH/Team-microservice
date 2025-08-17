@@ -4,7 +4,6 @@ using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
-using Teams.APP.Layer.Services;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
@@ -14,8 +13,7 @@ namespace Teams.APP.Layer.CQRS.Handlers;
 public class CreateTeamHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
-    ILogger<CreateTeamHandler> log,
-    IServiceProvider _serviceProvider
+    ILogger<CreateTeamHandler> log
 ) : IRequestHandler<CreateTeamCommand, TeamDto>
 {
     public async Task<TeamDto> Handle(
@@ -88,8 +86,6 @@ public class CreateTeamHandler(
         }
         await teamRepository.CreateTeamAsync(team);
         LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
-        // var checker = _serviceProvider.GetRequiredService<ProjectExpiryScheduler>(); // Démarre le timer après création d'une équipe
-        // // checker.EnsureTimerStarted();
         return mapper.Map<TeamDto>(team);
     }
 

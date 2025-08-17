@@ -1,5 +1,3 @@
-// using MediatR;
-
 namespace Teams.CORE.Layer.CoreEvents;
 
 public class ProjectDatesChangedEvent : IDomainEvent

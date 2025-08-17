@@ -78,8 +78,6 @@ public class ProjectExpiryScheduler(
 
             LogHelper.Info($"✅ Project has been dissociated correctly from team {team.Name}", _log);
         }
-
-        // Replanifie le prochain déclenchement
         await ScheduleNextCheckAsync();
     }
 

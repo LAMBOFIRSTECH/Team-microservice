@@ -179,7 +179,7 @@ public class Team
                 return TeamState.Active;
             // Projet expiré → désaffectée
             if (_projectEndDate <= GetLocalDateTime())
-                return TeamState.Suspended; // Suspendu plutot
+                return TeamState.ToBeUnassigned; // Suspendu plutot
             // Trop vieux → archivé (pas encore implémenté)
             // if ((GetLocalDateTime() - LastActivityDate).TotalDays > ValidityPeriodInDays)
             //     return TeamState.Archivee;

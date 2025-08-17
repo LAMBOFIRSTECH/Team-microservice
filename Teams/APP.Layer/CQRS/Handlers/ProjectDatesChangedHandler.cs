@@ -5,13 +5,9 @@ using Teams.CORE.Layer.CoreEvents;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class ProjectDatesChangedHandler
+public class ProjectDatesChangedHandler(IProjectExpiryScheduler _scheduler)
     : INotificationHandler<DomainEventNotification<ProjectDatesChangedEvent>>
 {
-    private readonly IProjectExpiryScheduler _scheduler;
-
-    public ProjectDatesChangedHandler(IProjectExpiryScheduler scheduler) => _scheduler = scheduler;
-
     public async Task Handle(
         DomainEventNotification<ProjectDatesChangedEvent> notification,
         CancellationToken ct

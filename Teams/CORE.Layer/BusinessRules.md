@@ -190,9 +190,9 @@ Les differents Etat d'une équipe et leur signification
 -----------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                               | Exemple                                                   |
 |-------------------------------------------------------------------- | --------------------------------------------------------- |
-| Une équipe ne peut être affectée à un projet que si elle est active | `ProjetService.ValiderAffectation(EquipeId)`              |
+|☑️ Une équipe ne peut être affectée à un projet que si elle est active | `ProjetService.ValiderAffectation(EquipeId)`              |
 |                                                                     |                                                           |
-| Un projet ne peut commencer que si au moins une équipe est affectée | Règle côté `ProjetService` mais dépend de `EquipeService` |
+|☑️ Un projet ne peut commencer que si au moins une équipe est affectée | Règle côté `ProjetService` mais dépend de `EquipeService` |
 -----------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -222,7 +222,7 @@ Les differents Etat d'une équipe et leur signification
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                         | Exemple                                             |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| Une équipe doit être désaffectée automatiquement si un projet est terminé                     | Trigger métier dans `EquipeService` ou job planifié |
+|☑️ Une équipe doit être désaffectée automatiquement si tous les projets sont terminés         | Trigger métier dans `EquipeService` ou job planifié |
 |                                                                                               |                                                     |
 | Le changement de statut d’un projet (actif → suspendu) entraîne la mise en veille de l’équipe | `Equipe.Etat = Suspendue` si projet suspendu        |
 -------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ Les differents Etat d'une équipe et leur signification
 | ------------------------------------------------------------------------------------------------ | --------------------------------------------- |
 | Toute modification de la composition d’une équipe doit être tracée                               | `AuditLogService.LogEquipeChange(...)`        |
 |                                                                                                  |                                               |
-| Seuls les utilisateurs authentifiés avec rôle "Manager" peuvent visualiser les équipes complètes | Restriction par `ClaimsPrincipal` ou `Policy` |
+|☑️ Seuls les utilisateurs authentifiés avec rôle "Manager" peuvent visualiser les équipes complètes | Restriction par `ClaimsPrincipal` ou `Policy` |
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
