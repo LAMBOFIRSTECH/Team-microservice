@@ -1,0 +1,10 @@
+using System;
+
+namespace Teams.APP.Layer.Interfaces;
+
+public interface IProjectExpiryScheduler
+{
+    Task RescheduleAsync(CancellationToken ct = default);
+    Task StartAsync(CancellationToken ct);
+    Task StopAsync(CancellationToken ct);
+}

@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
@@ -59,6 +60,13 @@ public class Team
 
     public void RecalculateState() => State = ComputedState;
 
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    private void AddDomainEvent(IDomainEvent @event) => _domainEvents.Add(@event);
+
+    public void ClearDomainEvents() => _domainEvents.Clear();
+
     public Team() { } // Pour EF
 
     private Team(
@@ -95,7 +103,10 @@ public class Team
             );
 
         if (activeAssociatedProject)
+        {
             RecalculateState();
+            AddDomainEvent(new ProjectDatesChangedEvent(Id));
+        }
     }
 
     public void AttachProjectToTeam(
@@ -137,6 +148,7 @@ public class Team
                     $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
                 );
             RecalculateState();
+            AddDomainEvent(new ProjectDatesChangedEvent(Id));
         }
     }
 
@@ -167,7 +179,7 @@ public class Team
                 return TeamState.Active;
             // Projet expiré → désaffectée
             if (_projectEndDate <= GetLocalDateTime())
-                return TeamState.ToBeUnassigned; // Suspendu plutot
+                return TeamState.Suspended; // Suspendu plutot
             // Trop vieux → archivé (pas encore implémenté)
             // if ((GetLocalDateTime() - LastActivityDate).TotalDays > ValidityPeriodInDays)
             //     return TeamState.Archivee;

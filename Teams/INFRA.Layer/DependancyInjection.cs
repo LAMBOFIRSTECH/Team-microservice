@@ -13,8 +13,8 @@ using RabbitMQ.Client.Events;
 using StackExchange.Redis;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
-using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Interfaces;
+using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Persistence;
 using Teams.INFRA.Layer.Persistence.Repositories;
@@ -36,9 +36,9 @@ public static class DependancyInjection
 
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
-        // services.AddScoped<EmployeeCreatedEventHandler>();
         services.AddScoped<TeamExternalService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+        services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddHostedService<RabbitListenerService>();
         services.AddHangfire(config => config.UseMemoryStorage());
         services.AddHangfireServer();

@@ -37,8 +37,12 @@ public static class DependancyInjection
         services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ProjectService>();
-        services.AddSingleton<ProjectExpiryChecker>();
-        services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryChecker>());
+        services.AddSingleton<ProjectExpiryScheduler>();
+        services.AddSingleton<IProjectExpiryScheduler>(sp =>
+            sp.GetRequiredService<ProjectExpiryScheduler>()
+        );
+        services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
+
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);
         return services;

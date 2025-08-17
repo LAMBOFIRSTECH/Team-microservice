@@ -88,8 +88,8 @@ public class CreateTeamHandler(
         }
         await teamRepository.CreateTeamAsync(team);
         LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
-        var checker = _serviceProvider.GetRequiredService<ProjectExpiryChecker>(); // Démarre le timer après création d'une équipe
-        checker.EnsureTimerStarted();
+        // var checker = _serviceProvider.GetRequiredService<ProjectExpiryScheduler>(); // Démarre le timer après création d'une équipe
+        // // checker.EnsureTimerStarted();
         return mapper.Map<TeamDto>(team);
     }
 
