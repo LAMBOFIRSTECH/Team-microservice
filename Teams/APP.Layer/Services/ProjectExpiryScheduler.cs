@@ -12,18 +12,12 @@ public class ProjectExpiryScheduler(
     private Timer? _timer;
     private DateTime? _nextProjectDateExpiration;
 
-    // =============================
-    // 🟢 Start
-    // =============================
     public async Task StartAsync(CancellationToken ct)
     {
         LogHelper.Info("🚀 ProjectExpiryChecker starting...", _log);
         await ScheduleNextCheckAsync();
     }
 
-    // =============================
-    // 🛑 Stop
-    // =============================
     public Task StopAsync(CancellationToken ct)
     {
         LogHelper.Info("🛑 ProjectExpiryChecker stopping timer...", _log);
@@ -37,17 +31,11 @@ public class ProjectExpiryScheduler(
         _timer?.Dispose();
     }
 
-    // =============================
-    // 🔄 Replanification manuelle
-    // =============================
     public async Task RescheduleAsync(CancellationToken ct)
     {
         await ScheduleNextCheckAsync();
     }
 
-    // =============================
-    // ⚡ Main processing logic
-    // =============================
     private async Task CheckExpiredProjects()
     {
         LogHelper.Info($"⏱ Running CheckExpiredProjects at {DateTime.Now}", _log);
@@ -81,9 +69,6 @@ public class ProjectExpiryScheduler(
         await ScheduleNextCheckAsync();
     }
 
-    // =============================
-    // 📅 Schedule next execution
-    // =============================
     private async Task ScheduleNextCheckAsync()
     {
         using var scope = _scopeFactory.CreateScope();
