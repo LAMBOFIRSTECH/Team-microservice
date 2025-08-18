@@ -72,7 +72,7 @@ public class ProjectExpiryScheduler(
                 team.State
             );
 
-            team.RemoveProjectFromTeamWhenExpired(true);
+            team.RemoveProjectsIfExpiredOrSuspended(true);
             team.RecalculateState();
             await teamRepository.UpdateTeamAsync(team);
 
@@ -91,7 +91,6 @@ public class ProjectExpiryScheduler(
 
         var now = DateTime.Now;
         var teams = await teamRepository.GetAllTeamsAsync();
-
         _nextProjectDateExpiration = teams
             .Where(t => t.ProjectEndDate.HasValue && t.ProjectEndDate.Value > now)
             .Min(t => t.ProjectEndDate);

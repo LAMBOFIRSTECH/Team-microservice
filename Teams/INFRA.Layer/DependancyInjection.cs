@@ -56,7 +56,8 @@ public static class DependancyInjection
         "default",
         "runner_operation_add_new_member",
         "runner_operation_delete_new_member",
-        "runner_operation_project",
+        "runner_operation_add_project",
+        "runner_operation_remove_project",
     };
 
     private static IServiceCollection ManageRedisCacheMemory(

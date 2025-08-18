@@ -118,8 +118,53 @@ public class BackgroundJobService(
         }
     }
 
-    [Queue("runner_operation_project")]
-    public void ScheduleProjectAssociationAsync(Guid managerId, string teamName)
+    [Queue("runner_operation_add_project")]
+    public void ScheduleAddProjectToTeamAsync(Guid managerId, string teamName)
+    {
+        try
+        {
+            LogHelper.Info(
+                "🚀 Scheduling Hangfire job to retrieve data from the Project Microservice.",
+                log
+            );
+            string jobId = TryScheduleJob(
+                () =>
+                    BackgroundJob.Schedule(
+                        () => project.ManageTeamProjectAsync(managerId, teamName),
+                        TimeSpan.FromSeconds(10)
+                    ),
+                retryCount: 3,
+                delay: TimeSpan.FromSeconds(5)
+            );
+            if (string.IsNullOrEmpty(jobId))
+            {
+                LogHelper.Error("❌ Job scheduling failed. jobId is null.", log);
+                throw new HangFireException(
+                    500,
+                    "Internal Error",
+                    "❌ La planification du job a échoué",
+                    "jobId est null."
+                );
+            }
+
+            LogHelper.Info(
+                "✅ Hangfire job successfully scheduled to retrieve data from the Project Microservice.",
+                log
+            );
+        }
+        catch (Exception ex)
+        {
+            LogHelper.CriticalFailure(
+                log,
+                "❌ Error while scheduling Hangfire job.",
+                "Internal Error",
+                ex
+            );
+        }
+    }
+
+    [Queue("runner_operation_remove_project")]
+    public void ScheduleRemoveProjectToTeamAsync(Guid managerId, string teamName)
     {
         try
         {

@@ -1,10 +1,8 @@
 using AutoMapper;
 using FluentValidation;
-using MediatR;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.ValueObjects;
@@ -18,8 +16,7 @@ public class ProjectService(
     TeamExternalService teamExternalService,
     ILogger<ProjectService> log,
     IValidator<ProjectAssociationDto> projectRecordValidator,
-    IMapper mapper,
-    IMediator _mediator
+    IMapper mapper
 ) : IProjectService
 {
     public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
@@ -46,7 +43,6 @@ public class ProjectService(
             LogHelper.CriticalFailure(log, "Data validation", $"{validationResult}", null);
             throw new DomainException("Project association data are invalid");
         }
-
         var teamProject = mapper.Map<ProjectAssociation>(dto);
 
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
@@ -66,29 +62,42 @@ public class ProjectService(
         }
         if (existingTeam.State == TeamState.Complete)
         {
-            LogHelper.Warning(
-                $"Team {teamProject.TeamName} already has an active project name's {teamProject.ProjectName}.",
-                log
-            );
-            throw new DomainException(
-                $"Team {teamProject.TeamName} already has an active project."
-            );
+            foreach (var item in teamProject.Details)
+            {
+                LogHelper.Warning(
+                    $"Team {teamProject.TeamName} already has an active project name's [ {item.ProjectName} ].",
+                    log
+                );
+                throw new DomainException(
+                    $"Team {teamProject.TeamName} already has an active project."
+                );
+            }
         }
-        existingTeam.AttachProjectToTeam(teamProject, true);
-        await teamRepository.UpdateTeamAsync(existingTeam);
-        LogHelper.Info(
-            $"🔗📁👥 Team {teamProject.TeamName} has been attached to [{teamProject.ProjectName}] project successfully.",
-            log
-        );
-        await SendProjectNotification(teamProject);
+        var projectState = teamProject.Details.Any(p => p.State == ProjectState.Active);
+        if (!projectState)
+        {
+            await RemoveTeamProjectAsync(existingTeam, teamProject);
+        }
+        await AddTeamProjectAsync(existingTeam, teamProject);
     }
 
-    public async Task SendProjectNotification(ProjectAssociation projectAssociation) =>
-        await _mediator.Publish(
-            new ProjectAssociatedNotification(
-                projectAssociation.ProjectName,
-                projectAssociation.ProjectEndDate,
-                $"Team {projectAssociation.TeamName} and project {projectAssociation.ProjectName} associated at {DateTime.UtcNow}, for manager {projectAssociation.TeamManagerId}."
-            )
+    private async Task AddTeamProjectAsync(Team existingTeam, ProjectAssociation project)
+    {
+        existingTeam.AttachProjectToTeam(project, true);
+        await teamRepository.UpdateTeamAsync(existingTeam);
+        LogHelper.Info(
+            $"🔗 📁 👥 Team {project.TeamName} has been attached to [{project.Details.Count}] project(s) successfully. ",
+            log
         );
+    }
+
+    private async Task RemoveTeamProjectAsync(Team existingTeam, ProjectAssociation project)
+    {
+        existingTeam.RemoveProjectsIfExpiredOrSuspended(false);
+        await teamRepository.UpdateTeamAsync(existingTeam);
+        LogHelper.Info(
+            $"✅ Team 🧑‍🤝‍🧑 {project.TeamName} successfully removed from 🗂️ {project.Details.Count} project(s).",
+            log
+        );
+    }
 }

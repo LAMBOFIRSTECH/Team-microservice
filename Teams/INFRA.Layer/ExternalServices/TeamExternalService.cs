@@ -8,9 +8,9 @@ using Teams.INFRA.Layer.ExternalServicesDtos;
 namespace Teams.INFRA.Layer.ExternalServices;
 
 public class TeamExternalService(
-    HttpClient httpClient,
-    IConfiguration configuration,
-    ILogger<TeamExternalService> log
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<TeamExternalService> _log
 )
 {
     /**
@@ -22,28 +22,56 @@ public class TeamExternalService(
         "AffectationStatus": {
             "IsTransferAllowed": true,
             "LeaveDate": "2025-07-03T12:34:56Z"
-      }
+        }
     }
-
-      {
+    
+    {
         "TeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
         "TeamName": "Pentester",
-        "ProjectName": "Burp suite Analysis",
-        "ProjectStartDate": "2025-08-14T10:00:00Z",
-        "ProjectEndDate": "2025-08-30T10:00:00Z",
-        "ProjectState": {
-            "State": "Active"
-        }
-   }
-
+        "Details" : [
+            {
+               "ProjectName": "Tests de Phishing et d'Ingénierie Sociale",
+               "ProjectStartDate": "2025-08-14T10:00:00Z",
+               "ProjectEndDate": "2025-08-30T10:00:00Z",
+                "ProjectState": {
+                  "State": "Suspended"
+                }
+            }
+        ]
+    }
+    
+    A terme projet affecté
+    {
+        "TeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
+        "TeamName": "Pentester",
+        "Details" : [
+            {
+                "ProjectName": "Burp suite Analysis",
+                "ProjectStartDate": "2025-08-18T10:00:00Z",
+                "ProjectEndDate": "2025-08-18T10:00:00Z",
+                "ProjectState": {
+                    "State": "Active"
+                }
+            },
+            {
+                "ProjectName": "Test de Sécurité des API",
+                "ProjectStartDate": "2025-08-18T14:00:00Z",
+                "ProjectEndDate": "2025-08-18T14:00:00Z",
+                "ProjectState": {
+                    "State": "Active"
+                }
+            }
+        ]
+    }
+    
     **/
 
     public async Task<TransfertMemberDto?> RetrieveNewMemberToAddInRedisAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
+        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            LogHelper.Warning("No new member to add in Redis.", log);
+            LogHelper.Warning("No new member to add in Redis.", _log);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -52,7 +80,7 @@ public class TeamExternalService(
         var record = root["record"]?.ToString();
         if (record is null)
         {
-            LogHelper.Warning("No record found in response.", log);
+            LogHelper.Warning("No record found in response.", _log);
             return null;
         }
         var settings = new JsonSerializerSettings();
@@ -63,10 +91,10 @@ public class TeamExternalService(
 
     public async Task<DeleteTeamMemberDto?> RetrieveMemberToDeleteAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalsApi:Employee:Url"]);
+        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Employee:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            LogHelper.Warning("No member to delete.", log);
+            LogHelper.Warning("No member to delete.", _log);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -75,7 +103,7 @@ public class TeamExternalService(
         var record = root["record"]?.ToString();
         if (record is null)
         {
-            LogHelper.Warning("No record found in response for member deletion.", log);
+            LogHelper.Warning("No record found in response for member deletion.", _log);
             return null;
         }
         var settings = new JsonSerializerSettings();
@@ -86,10 +114,10 @@ public class TeamExternalService(
 
     public async Task<ProjectAssociationDto?> RetrieveProjectAssociationDataAsync()
     {
-        var response = await httpClient.GetAsync(configuration["ExternalsApi:Project:Url"]);
+        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Project:Url"]);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            LogHelper.Warning("No project association data found.", log);
+            LogHelper.Warning("No project association data found.", _log);
             return null;
         }
         response.EnsureSuccessStatusCode();
@@ -98,7 +126,7 @@ public class TeamExternalService(
         var record = root["record"]?.ToString();
         if (record is null)
         {
-            LogHelper.Warning("No record found in response for project association.", log);
+            LogHelper.Warning("No record found in response for project association.", _log);
             return null;
         }
         var settings = new JsonSerializerSettings();
@@ -125,9 +153,10 @@ public class TeamExternalService(
             return dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
         }
 
-        public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
-        {
-            serializer.Serialize(writer, value);
-        }
+        public override void WriteJson(
+            JsonWriter writer,
+            DateTime value,
+            JsonSerializer serializer
+        ) => serializer.Serialize(writer, value);
     }
 }

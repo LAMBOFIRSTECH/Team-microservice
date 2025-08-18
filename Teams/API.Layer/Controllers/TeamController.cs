@@ -7,7 +7,6 @@ using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.CQRS.Queries;
-using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 
 namespace Teams.API.Layer.Controllers;
@@ -15,11 +14,11 @@ namespace Teams.API.Layer.Controllers;
 [ApiController]
 [Route("teams")]
 public class TeamController(
-    IMediator mediator,
-    IValidator<CreateTeamCommand> createTeamValidator,
-    IValidator<UpdateTeamCommand> updateTeamValidator,
-    IValidator<UpdateTeamManagerCommand> updateTeamManagerValidator,
-    IEmployeeService employeeService
+    IMediator _mediator,
+    IValidator<CreateTeamCommand> _createTeamValidator,
+    IValidator<UpdateTeamCommand> _updateTeamValidator,
+    IValidator<UpdateTeamManagerCommand> _updateTeamManagerValidator,
+    IEmployeeService _employeeService
 // ILogger<TeamController> logger
 ) : ControllerBase
 {
@@ -44,7 +43,7 @@ public class TeamController(
     public async Task<ActionResult<List<TeamDto>>> GetAllTeams()
     {
         var query = new GetAllTeamsQuery();
-        var teams = await mediator.Send(query);
+        var teams = await _mediator.Send(query);
         return Ok(teams);
     }
 
@@ -70,7 +69,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamDto>> GetTeam(Guid teamId)
     {
-        var team = await mediator.Send(new GetTeamQuery(teamId));
+        var team = await _mediator.Send(new GetTeamQuery(teamId));
         return Ok(team);
     }
 
@@ -104,7 +103,7 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var teams = await mediator.Send(
+        var teams = await _mediator.Send(
             new GetTeamsByManagerQuery(managerId, includeMembers),
             cancellationToken
         );
@@ -152,7 +151,7 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var validationResult = await updateTeamManagerValidator.ValidateAsync(
+        var validationResult = await _updateTeamManagerValidator.ValidateAsync(
             command,
             cancellationToken
         );
@@ -161,7 +160,7 @@ public class TeamController(
             var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
             return BadRequest(errorResponse);
         }
-        await mediator.Send(command, cancellationToken);
+        await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
 
@@ -196,7 +195,7 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var teams = await mediator.Send(
+        var teams = await _mediator.Send(
             new GetTeamsByMemberQuery(memberId, includeMembers),
             cancellationToken
         );
@@ -230,7 +229,7 @@ public class TeamController(
         if (memberId == Guid.Empty)
             return BadRequest("Member ID cannot be empty.");
 
-        var result = await employeeService.InsertNewTeamMemberIntoDbAsync(memberId);
+        var result = await _employeeService.InsertNewTeamMemberIntoDbAsync(memberId);
         if (!result)
         {
             return NotFound($"Member with ID {memberId} not found in any cache team.");
@@ -264,13 +263,13 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TeamDto>> CreateTeam([FromBody] CreateTeamCommand command)
     {
-        var validationResult = await createTeamValidator.ValidateAsync(command);
+        var validationResult = await _createTeamValidator.ValidateAsync(command);
         if (!validationResult.IsValid)
         {
             var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
             return BadRequest(errorResponse);
         }
-        var createdTeam = await mediator.Send(command);
+        var createdTeam = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetTeam), new { teamId = createdTeam.Id }, createdTeam);
     }
 
@@ -312,13 +311,13 @@ public class TeamController(
     {
         if (teamId != command.Id)
             return BadRequest("Team ID in the URL does not match the ID in the request body.");
-        var validationResult = await updateTeamValidator.ValidateAsync(command, cancellationToken);
+        var validationResult = await _updateTeamValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
             var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
             return BadRequest(errorResponse);
         }
-        var team = await mediator.Send(command, cancellationToken);
+        var team = await _mediator.Send(command, cancellationToken);
         return Ok(team);
     }
 
@@ -352,7 +351,7 @@ public class TeamController(
             return BadRequest("Request data cannot be null.");
         if (string.IsNullOrWhiteSpace(deleteTeamMemberDto.TeamName))
             return BadRequest("Team name must be provided.");
-        await employeeService.DeleteTeamMemberAsync(
+        await _employeeService.DeleteTeamMemberAsync(
             deleteTeamMemberDto.MemberId,
             deleteTeamMemberDto.TeamName
         );
@@ -379,7 +378,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteTeam(Guid teamId)
     {
-        await mediator.Send(new DeleteTeamCommand(teamId, null!));
+        await _mediator.Send(new DeleteTeamCommand(teamId, null!));
         return NoContent();
     }
 }

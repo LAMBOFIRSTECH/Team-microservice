@@ -10,7 +10,7 @@ public interface IDomainEventDispatcher
     Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken ct = default);
 }
 
-public class DomainEventDispatcher(IMediator mediator) : IDomainEventDispatcher
+public class DomainEventDispatcher(IMediator _mediator) : IDomainEventDispatcher
 {
     public async Task DispatchAsync(
         IEnumerable<IDomainEvent> events,
@@ -21,7 +21,7 @@ public class DomainEventDispatcher(IMediator mediator) : IDomainEventDispatcher
         {
             var notifType = typeof(DomainEventNotification<>).MakeGenericType(@event.GetType());
             var notification = (INotification)Activator.CreateInstance(notifType, @event)!;
-            await mediator.Publish(notification, ct);
+            await _mediator.Publish(notification, ct);
         }
     }
 }

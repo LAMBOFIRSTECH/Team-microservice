@@ -95,7 +95,9 @@ public partial class RabbitListenerService(
                 else if (message.Contains("Member to delete", StringComparison.OrdinalIgnoreCase))
                     backgroundJob.ScheduleDeleteTeamMemberAsync(identifier, teamName);
                 else if (message.Contains("Project affected", StringComparison.OrdinalIgnoreCase))
-                    backgroundJob.ScheduleProjectAssociationAsync(TeamManagerId, teamName);
+                    backgroundJob.ScheduleAddProjectToTeamAsync(TeamManagerId, teamName);
+                else if (message.Contains("Project suspended", StringComparison.OrdinalIgnoreCase))
+                    backgroundJob.ScheduleAddProjectToTeamAsync(TeamManagerId, teamName);
                 else
                     throw new InvalidOperationException("Unrecognized message type");
 

@@ -1,5 +1,4 @@
 using FluentValidation;
-using Mono.TextTemplating;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.CQRS.Validators;
@@ -20,34 +19,61 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
             .MaximumLength(100)
             .WithMessage("Team name cannot exceed 100 characters.");
 
-        RuleFor(x => x.ProjectName)
-            .NotEmpty()
-            .WithMessage("project name can be empty.")
-            .MaximumLength(100)
-            .WithMessage("Project name cannot exceed 100 characters.");
-        ;
-        RuleFor(x => x.ProjectStartDate)
-            .NotEmpty()
-            .WithMessage("Project start date cannot be empty.")
-            .Must(date => date != DateTime.MinValue)
-            .WithMessage("Project start date must be a valid date.")
-            .Must(date => date >= DateTime.UtcNow)
-            .WithMessage("Project start date cannot be in the past.");
+        RuleForEach(x => x.Details).NotNull().WithMessage("project details can be empty.");
 
-        RuleFor(x => x.ProjectEndDate)
-            .NotEmpty()
-            .WithMessage("Project end date cannot be empty.")
-            .Must(date => date != DateTime.MinValue)
-            .WithMessage("Project end date must be a valid date.")
-            .Must(date => date >= DateTime.UtcNow)
-            .WithMessage("Project end date cannot be in the past.")
-            .Must((dto, endDate) => endDate > dto.ProjectStartDate)
-            .WithMessage("Project end date must be after the project start date.");
+        RuleForEach(x => x.Details)
+            .ChildRules(detail =>
+            {
+                detail
+                    .RuleFor(x => x.ProjectName)
+                    .NotEmpty()
+                    .WithMessage("Project name can be empty.")
+                    .MaximumLength(100)
+                    .WithMessage("Project name cannot exceed 100 characters.");
+            });
 
-        RuleFor(x => x.ProjectState).NotNull().WithMessage("Project state object cannot be null.");
+        RuleForEach(x => x.Details)
+            .ChildRules(detail =>
+            {
+                detail
+                    .RuleFor(x => x.ProjectStartDate)
+                    .NotEmpty()
+                    .WithMessage("Project start date cannot be empty.")
+                    .Must(date => date != DateTime.MinValue)
+                    .WithMessage("Project start date must be a valid date.")
+                    .Must(date => date >= DateTime.UtcNow)
+                    .WithMessage("Project start date cannot be in the past.");
+            });
+        RuleForEach(x => x.Details)
+            .ChildRules(detail =>
+            {
+                detail
+                    .RuleFor(x => x.ProjectEndDate)
+                    .NotEmpty()
+                    .WithMessage("Project end date cannot be empty.")
+                    .Must(date => date != DateTime.MinValue)
+                    .WithMessage("Project end date must be a valid date.")
+                    .Must(date => date >= DateTime.UtcNow)
+                    .WithMessage("Project end date cannot be in the past.")
+                    .Must((dto, endDate) => endDate > dto.ProjectStartDate)
+                    .WithMessage("Project end date must be after the project start date.");
+            });
+        RuleForEach(x => x.Details)
+            .ChildRules(detail =>
+            {
+                detail
+                    .RuleFor(x => x.ProjectState)
+                    .NotNull()
+                    .WithMessage("Project state object cannot be null.");
+            });
 
-        RuleFor(x => x.ProjectState.State)
-            .IsInEnum()
-            .WithMessage("Project state must be a valid enum value.");
+        RuleForEach(x => x.Details)
+            .ChildRules(detail =>
+            {
+                detail
+                    .RuleFor(x => x.ProjectState.State)
+                    .IsInEnum()
+                    .WithMessage("Project state must be a valid enum value.");
+            });
     }
 }

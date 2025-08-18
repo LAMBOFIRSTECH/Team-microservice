@@ -7,12 +7,12 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class DeleteTeamHandler(ITeamRepository teamRepository, ILogger<DeleteTeamHandler> log)
+public class DeleteTeamHandler(ITeamRepository _teamRepository, ILogger<DeleteTeamHandler> _log)
     : IRequestHandler<DeleteTeamCommand>
 {
     public async Task Handle(DeleteTeamCommand command, CancellationToken cancellationToken)
     {
-        var team = await teamRepository.GetTeamByIdAsync(command.Id)!;
+        var team = await _teamRepository.GetTeamByIdAsync(command.Id)!;
         if (team == null)
             throw new HandlerException(
                 404,
@@ -24,7 +24,7 @@ public class DeleteTeamHandler(ITeamRepository teamRepository, ILogger<DeleteTea
         if (result)
         {
             LogHelper.BusinessRuleFailure(
-                log,
+                _log,
                 "Delete Team",
                 $"🚫 The team {team.Name} has been associated to 1 or more projects.",
                 null
@@ -34,7 +34,7 @@ public class DeleteTeamHandler(ITeamRepository teamRepository, ILogger<DeleteTea
                 $"The team {team.Name} has been associated to 1 or more projects."
             );
         }
-        await teamRepository.DeleteTeamAsync(command.Id);
-        LogHelper.Info($"✅ Team with Name {team.Name} has been deleted successfully.", log);
+        await _teamRepository.DeleteTeamAsync(command.Id);
+        LogHelper.Info($"✅ Team with Name {team.Name} has been deleted successfully.", _log);
     }
 }

@@ -9,15 +9,22 @@ public class ProjectProfile : Profile
     public ProjectProfile()
     {
         CreateMap<ProjectStateDto, ProjectState>().ConvertUsing(src => src.State);
+        CreateMap<DetailDto, Detail>()
+            .ConvertUsing(src => new Detail(
+                src.ProjectName,
+                src.ProjectStartDate,
+                src.ProjectEndDate,
+                src.ProjectState.State
+            ));
 
         CreateMap<ProjectAssociationDto, ProjectAssociation>()
-            .ConstructUsing(dto => new ProjectAssociation(
-                dto.TeamManagerId,
-                dto.TeamName,
-                dto.ProjectName,
-                dto.ProjectStartDate,
-                dto.ProjectEndDate,
-                dto.ProjectState.State
-            ));
+            .ConstructUsing(
+                (dto, context) =>
+                    new ProjectAssociation(
+                        dto.TeamManagerId,
+                        dto.TeamName,
+                        context.Mapper.Map<List<Detail>>(dto.Details)
+                    )
+            );
     }
 }

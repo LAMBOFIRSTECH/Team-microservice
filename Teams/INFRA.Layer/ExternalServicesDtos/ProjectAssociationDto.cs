@@ -10,11 +10,15 @@ public record ProjectStateDto(
         ProjectState State
 );
 
-public record ProjectAssociationDto(
-    [property: JsonProperty(Required = Required.Always)] Guid TeamManagerId,
-    [property: JsonProperty(Required = Required.Always)] string TeamName,
+public record DetailDto(
     [property: JsonProperty(Required = Required.Always)] string ProjectName,
     [property: JsonProperty(Required = Required.Always)] DateTime ProjectStartDate,
     [property: JsonProperty(Required = Required.Always)] DateTime ProjectEndDate,
     [property: JsonProperty(Required = Required.Always)] ProjectStateDto ProjectState
+);
+
+public record ProjectAssociationDto(
+    [property: JsonProperty(Required = Required.Always)] Guid TeamManagerId,
+    [property: JsonProperty(Required = Required.Always)] string TeamName,
+    [property: JsonProperty(Required = Required.Always)] List<DetailDto> Details
 );

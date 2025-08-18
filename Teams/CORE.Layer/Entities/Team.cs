@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using Teams.CORE.Layer.BusinessExceptions;
@@ -8,10 +7,10 @@ using Teams.CORE.Layer.ValueObjects;
 namespace Teams.CORE.Layer.Entities;
 
 /// <summary>
-/// Active          : Équipe ayant au moins deux membres et un manager.
+/// Active          : Équipe ayant au moins trois membres et un manager (manager étant aussi un membre).
 /// Incomplete      : Équipe constituée mais sans projet affecté.
 /// Complete        : Équipe active et associée à un projet.
-/// Suspended       : Équipe active dont le projet est suspendu.
+/// Suspended       : Équipe active dont tous les projets sont suspendus.
 /// UnderReview     : Équipe suspendue en cours d’évaluation pour réaffectation.
 /// ToBeUnassigned  : Équipe non réaffectée à son projet initial après révision.
 /// Archivee        : Équipe restée incomplète pendant 15 jours.
@@ -29,7 +28,6 @@ public enum TeamState
 
 public class Team
 {
-    // [Key]
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public Guid TeamManagerId { get; private set; }
@@ -95,23 +93,24 @@ public class Team
         return false;
     }
 
-    public void RemoveProjectFromTeamWhenExpired(bool activeAssociatedProject)
+    public void RemoveProjectsIfExpiredOrSuspended(bool hasActiveAssociation)
     {
         if (State != TeamState.Complete && State != TeamState.Active)
             throw new DomainException(
                 "Only active or complete teams can be disassociated from a project."
             );
 
-        if (activeAssociatedProject)
+        if (!hasActiveAssociation)
         {
-            RecalculateState();
-            AddDomainEvent(new ProjectDatesChangedEvent(Id));
+            throw new DomainException("C'est ici qu'on va retirer le projet à l'équipe.");
         }
+        RecalculateState();
+        AddDomainEvent(new ProjectDatesChangedEvent(Id));
     }
 
     public void AttachProjectToTeam(
         ProjectAssociation projectAssociation,
-        bool activeAssociatedProject
+        bool hasActiveAssociation
     )
     {
         if (projectAssociation == null)
@@ -133,29 +132,41 @@ public class Team
             throw new DomainException(
                 "Only active or complete team can be associated to 1 or 3 projects."
             );
-        if (projectAssociation.ProjectStartDate < TeamCreationDate)
-            throw new DomainException(
-                $"Project start date {projectAssociation.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
-            );
-
-        if (activeAssociatedProject)
+        foreach (var d in projectAssociation.Details)
         {
-            _projectStartDate = projectAssociation.ProjectStartDate;
-            _projectEndDate = projectAssociation.ProjectEndDate;
-            var delay = _projectStartDate.Value - TeamCreationDate;
-            if (delay.TotalDays > 7)
+            if (d.ProjectStartDate < TeamCreationDate)
                 throw new DomainException(
-                    $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
+                    $"Project start date {d.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
                 );
-            RecalculateState();
-            AddDomainEvent(new ProjectDatesChangedEvent(Id));
+            if (hasActiveAssociation)
+            {
+                _projectStartDate = d.ProjectStartDate;
+                _projectEndDate = d.ProjectEndDate;
+                var delay = _projectStartDate.Value - TeamCreationDate;
+                if (delay.TotalDays > 7)
+                    throw new DomainException(
+                        $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
+                    );
+                RecalculateState();
+                AddDomainEvent(new ProjectDatesChangedEvent(Id));
+            }
         }
+    }
+
+    public void Suspend()
+    {
+        if (State != TeamState.Active)
+            throw new DomainException("Only active teams can be suspended.");
+
+        State = TeamState.Suspended;
     }
 
     private void ValidateTeamData()
     {
-        if (MembersIds.Count < 2)
-            throw new DomainException("A team must have at least 2 members.");
+        if (MembersIds.Count < 3)
+            throw new DomainException(
+                "A team must have at least 3 members including team manager."
+            );
 
         if (MembersIds.Count > 10)
             throw new DomainException("A team cannot have more than 10 members.");
@@ -172,7 +183,7 @@ public class Team
         get
         {
             // Pas assez de membres → incomplet
-            if (MembersIds.Count < 2)
+            if (MembersIds.Count < 3)
                 return TeamState.Incomplete;
             // Pas de projet → équipe juste active mais pas complète
             if (!_projectStartDate.HasValue || !_projectEndDate.HasValue)
@@ -255,14 +266,6 @@ public class Team
         ActiveAssociatedProject = false;
     }
 
-    public void Suspend()
-    {
-        if (State != TeamState.Active)
-            throw new DomainException("Only active teams can be suspended.");
-
-        State = TeamState.Suspended;
-    }
-
     public void ChangeTeamManager(Guid newTeamManagerId)
     {
         if (newTeamManagerId == Guid.Empty)
@@ -273,6 +276,4 @@ public class Team
 
         TeamManagerId = newTeamManagerId;
     }
-
-    // Pour le projet associé sa logique métier doit etre défini ici et non pas dans le service sui orchestre car un projet associé vient changer l'etat de l'agrégat
 }

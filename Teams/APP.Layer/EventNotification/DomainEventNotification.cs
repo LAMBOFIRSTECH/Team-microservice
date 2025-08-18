@@ -8,5 +8,5 @@ public class DomainEventNotification<TDomainEvent> : INotification
 {
     public TDomainEvent DomainEvent { get; }
 
-    public DomainEventNotification(TDomainEvent domainEvent) => DomainEvent = domainEvent;
+    public DomainEventNotification(TDomainEvent _domainEvent) => DomainEvent = _domainEvent;
 }

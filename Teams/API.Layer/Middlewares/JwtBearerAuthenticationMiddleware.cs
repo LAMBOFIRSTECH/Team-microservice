@@ -12,7 +12,7 @@ namespace Teams.API.Layer.Middlewares;
 
 public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearerOptions>
 {
-    private readonly IConfiguration configuration;
+    private readonly IConfiguration _configuration;
 
     public JwtBearerAuthenticationMiddleware(
         IConfiguration configuration,
@@ -22,7 +22,7 @@ public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearer
     )
         : base(options, log, encoder)
     {
-        this.configuration = configuration;
+        _configuration = configuration;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -54,7 +54,7 @@ public class JwtBearerAuthenticationMiddleware : AuthenticationHandler<JwtBearer
             }
             var tokenHandler = new JwtSecurityTokenHandler();
             var validationParameters = Options.TokenValidationParameters;
-            var vault = new HashicorpVaultService(configuration);
+            var vault = new HashicorpVaultService(_configuration);
             validationParameters.IssuerSigningKey = await vault.GetJwtSigningKeyFromVaultServer();
             var principal = tokenHandler.ValidateToken(
                 jwtToken,
