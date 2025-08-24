@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.CodeAnalysis;
 using Newtonsoft.Json;
 using Teams.CORE.Layer.BusinessExceptions;
@@ -41,6 +42,12 @@ public class Team
         set => MemberIdSerialized = JsonConvert.SerializeObject(value);
     }
 
+    [NotMapped]
+    public Dictionary<TeamState, string> StateMappings =>
+        Enum.GetValues(typeof(TeamState))
+            .Cast<TeamState>()
+            .ToDictionary(state => state, state => "Mature");
+
     public TeamState State { get; private set; } = TeamState.Incomplete;
     public bool ActiveAssociatedProject { get; private set; } = false;
     public DateTime TeamCreationDate { get; private set; }
@@ -51,7 +58,10 @@ public class Team
     private DateTime? _projectEndDate;
     public DateTime? ProjectStartDate => _projectStartDate;
     public DateTime? ProjectEndDate => _projectEndDate;
-    private const int ValidityPeriodInDays = 90;
+    private const int ValidityPeriodInDays = 40;
+
+    [NotMapped]
+    public DateTime ExpirationDate => TeamCreationDate.AddSeconds(ValidityPeriodInDays);
 
     public static DateTime GetLocalDateTime() =>
         DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
@@ -93,64 +103,15 @@ public class Team
         return false;
     }
 
-    public void RemoveProjectsIfExpiredOrSuspended(bool hasActiveAssociation)
+    public void Maturity()
     {
-        if (State != TeamState.Complete && State != TeamState.Active)
-            throw new DomainException(
-                "Only active or complete teams can be disassociated from a project."
-            );
+        if (State != TeamState.Active && State != TeamState.Complete)
+            throw new DomainException("Only active or complete teams can be mature.");
 
-        if (!hasActiveAssociation)
-        {
-            throw new DomainException("C'est ici qu'on va retirer le projet à l'équipe.");
-        }
-        RecalculateState();
-        AddDomainEvent(new ProjectDatesChangedEvent(Id));
-    }
+        if ((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= 30)
+            _ = StateMappings[State];
 
-    public void AttachProjectToTeam(
-        ProjectAssociation projectAssociation,
-        bool hasActiveAssociation
-    )
-    {
-        if (projectAssociation == null)
-            throw new DomainException("Project associated data cannot be null.");
-
-        if (
-            projectAssociation.TeamManagerId != TeamManagerId
-            || projectAssociation.TeamName != Name
-        )
-            throw new DomainException(
-                $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
-            );
-
-        if (
-            State != TeamState.Active
-            && State != TeamState.Complete
-            && State != TeamState.Suspended
-        )
-            throw new DomainException(
-                "Only active or complete team can be associated to 1 or 3 projects."
-            );
-        foreach (var d in projectAssociation.Details)
-        {
-            if (d.ProjectStartDate < TeamCreationDate)
-                throw new DomainException(
-                    $"Project start date {d.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
-                );
-            if (hasActiveAssociation)
-            {
-                _projectStartDate = d.ProjectStartDate;
-                _projectEndDate = d.ProjectEndDate;
-                var delay = _projectStartDate.Value - TeamCreationDate;
-                if (delay.TotalDays > 7)
-                    throw new DomainException(
-                        $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
-                    );
-                RecalculateState();
-                AddDomainEvent(new ProjectDatesChangedEvent(Id));
-            }
-        }
+        AddDomainEvent(new TeamMaturityEvent(Id));
     }
 
     public void Suspend()
@@ -197,20 +158,23 @@ public class Team
 
             // // Problèmes de perf → en révision (pas encore implémenté)
             // if (AverageProductivity < 0.4 || TauxTurnover > 0.5)
-            //     return TeamState.EnRevision;
+            //     return TeamState.UnderReview;
 
             // Tout va bien → équipe complète
             return TeamState.Complete;
         }
     }
 
-    private void EnsureTeamIsWithinValidPeriod()
+    public void EnsureTeamIsWithinValidPeriod()
     {
-        if (TeamCreationDate.AddDays(ValidityPeriodInDays) <= GetLocalDateTime())
-        {
-            State = TeamState.Archivee;
-            throw new DomainException($"Team has exceeded the 90-day validity period.Is too old.");
-        }
+        if (State != TeamState.Active)
+            throw new DomainException("Only active teams can be archived.");
+
+        if (GetLocalDateTime() < ExpirationDate)
+            throw new DomainException("Team has not yet exceeded the validity period.");
+
+        State = TeamState.Archivee;
+        AddDomainEvent(new TeamArchiveEvent(Id));
     }
 
     public void AddMember(Guid memberId)
@@ -234,6 +198,62 @@ public class Team
         MembersIds.Remove(memberId);
     }
 
+    public void RemoveProjectsIfExpiredOrSuspended(bool hasActiveAssociation)
+    {
+        if (State != TeamState.Complete && State != TeamState.Active)
+            throw new DomainException(
+                "Only active or complete teams can be disassociated from a project."
+            );
+
+        if (!hasActiveAssociation)
+        {
+            throw new DomainException("C'est ici qu'on va retirer le projet à l'équipe.");
+        }
+        RecalculateState();
+        AddDomainEvent(new ProjectDateChangedEvent(Id));
+    }
+
+    public void AttachProjectToTeam(
+        ProjectAssociation projectAssociation,
+        bool hasActiveAssociation
+    )
+    {
+        if (projectAssociation == null)
+            throw new DomainException("Project associated data cannot be null.");
+
+        if (
+            projectAssociation.TeamManagerId != TeamManagerId
+            || projectAssociation.TeamName != Name
+        )
+            throw new DomainException(
+                $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
+            );
+
+        if (State != TeamState.Active && State != TeamState.Complete)
+            throw new DomainException(
+                "Only active or complete team can be associated to 1 or 3 projects."
+            );
+        foreach (var d in projectAssociation.Details)
+        {
+            if (d.ProjectStartDate < TeamCreationDate)
+                throw new DomainException(
+                    $"Project start date {d.ProjectStartDate} cannot be earlier than team creation date {TeamCreationDate}"
+                );
+            if (hasActiveAssociation)
+            {
+                _projectStartDate = d.ProjectStartDate;
+                _projectEndDate = d.ProjectEndDate;
+                var delay = _projectStartDate.Value - TeamCreationDate;
+                if (delay.TotalDays > 7)
+                    throw new DomainException(
+                        $"Project start date {_projectStartDate.Value} must be within 7 days of team creation date {TeamCreationDate}."
+                    );
+                RecalculateState();
+                AddDomainEvent(new ProjectDateChangedEvent(Id));
+            }
+        }
+    }
+
     public static Team Create(
         string name,
         Guid teamManagerId,
@@ -246,6 +266,7 @@ public class Team
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds, actualDate);
         team.ValidateTeamData();
         team.State = TeamState.Active;
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
 

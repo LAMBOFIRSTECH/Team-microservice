@@ -44,7 +44,6 @@ public class ProjectService(
             throw new DomainException("Project association data are invalid");
         }
         var teamProject = mapper.Map<ProjectAssociation>(dto);
-
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             teamProject.TeamName,
             teamProject.TeamManagerId
@@ -75,9 +74,7 @@ public class ProjectService(
         }
         var projectState = teamProject.Details.Any(p => p.State == ProjectState.Active);
         if (!projectState)
-        {
             await RemoveTeamProjectAsync(existingTeam, teamProject);
-        }
         await AddTeamProjectAsync(existingTeam, teamProject);
     }
 

@@ -1,3 +1,3 @@
 namespace Teams.CORE.Layer.CoreEvents;
 
-public class EmployeeNotification { }
+// public class EmployeeNotification { }

@@ -7,5 +7,7 @@ public interface IBackgroundJobService
     void ScheduleAddTeamMemberAsync(Guid memberId);
     void ScheduleDeleteTeamMemberAsync(Guid memberId, string teamName);
     void ScheduleAddProjectToTeamAsync(Guid managerId, string teamName);
+    void ScheduleRemoveProjectToTeamAsync(Guid managerId, string teamName);
+    
     // Task DisAffectedProjectToTeam();
 }

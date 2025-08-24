@@ -2,10 +2,9 @@ using Newtonsoft.Json;
 
 namespace Teams.INFRA.Layer.ExternalServicesDtos;
 
-// Pourquoi c'est un record ?? adapté pour les DTOs
-// car immuable et facile à sérialiser/désérialiser.
 public record AffectationStatus(
     [property: JsonProperty(Required = Required.Always)] bool IsTransferAllowed,
+    [property: JsonProperty(Required = Required.Always)] string ContratType,
     [property: JsonProperty(Required = Required.Always)] DateTime LeaveDate
 );
 

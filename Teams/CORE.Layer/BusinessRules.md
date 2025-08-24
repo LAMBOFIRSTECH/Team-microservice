@@ -133,38 +133,38 @@ Les differents Etat d'une équipe et leur signification
 
 
 6. Règles de dérivation métier
----------------------------------------------------------------------------------------------------------------------
-| Règle                                   | Exemple                                                                 |
-|-----------------------------------------|-------------------------------------------------------------------------|
-|☑️ Statut de l’équipe (Complète /Incomplète)|                                                                      |
-|dérivé du nombre de membres et de        | `Etat = (Membres.Count >= 2 && Responsable != null) ? Actif : Incomplet`| 
-|la présence d’un responsable             |                                                                         |
-|                                         |                                                                         |
-| Taux d'engagement de l’équipe           | % de membres actifs dans des projets                                    |
-|                                         |                                                                         |
-| Équipe "mature" si > 6 mois d'existence | `DateTime.Now - DateCreation >= 180 jours`                              |
----------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------
+| Règle                                       | Exemple                                                                 |
+|---------------------------------------------|-------------------------------------------------------------------------|
+|☑️ Statut de l’équipe (Complète /Incomplète)|                                                                          |
+|dérivé du nombre de membres et de            | `Etat = (Membres.Count >= 2 && Responsable != null) ? Actif : Incomplet`| 
+|la présence d’un responsable                 |                                                                         |
+|                                             |                                                                         |
+| Taux d'engagement de l’équipe               | % de membres actifs dans des projets                                    |
+|                                             |                                                                         |
+|☑️ Équipe "mature" si > 6 mois d'existence   | `DateTime.Now - DateCreation >= 180 jours`                              |
+-------------------------------------------------------------------------------------------------------------------------
 
 
 7. Règles d’accès métier / autorisation
----------------------------------------------------------------------------------------------------------------------------
-| Règle                                                                              | Exemple                            |
-|------------------------------------------------------------------------------------|------------------------------------|
-|☑️ Seul un responsable peut modifier les membres                                    | Autorisation métier, non technique |
-|                                                                                     |                                   |
-|☑️ Seuls les administrateurs peuvent supprimer une équipe                           | Protection de la suppression       |
-|                                                                                    |                                     |
-|☑️ Seuls les admins ou les managers peuvent ajouter un membre dans une équipe       | Protection de l'ajout              |
-|                                                                                    |                                     |
-|☑️ Seul un membre qui n'est pas un **team manager** peut être supprimé d'une équipe | Protection de la suppression       |
----------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                               | Exemple                            |
+|-------------------------------------------------------------------------------------|------------------------------------|
+|☑️ Seul un responsable peut modifier les membres                                     | Autorisation métier, non technique |
+|                                                                                     |                                    |
+|☑️ Seuls les administrateurs peuvent supprimer une équipe                            | Protection de la suppression       |
+|                                                                                     |                                     |
+|☑️ Seuls les admins ou les managers peuvent ajouter un membre dans une équipe        | Protection de l'ajout              |
+|                                                                                     |                                     |
+|☑️ Seul un membre qui n'est pas un **team manager** peut être supprimé d'une équipe  | Protection de la suppression       |
+-----------------------------------------------------------------------------------------------------------------------------
 
 
 8. Règles temporelles / périodiques (dictionnaire ou cache dans l'implémentation)
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                                    | Exemple                               |
 |--------------------------------------------------------------------------------------------------------- | --------------------------------------|
-|☑️ Un membre ne peut pas être ajouté à une équipe **s’il en a quitté une autre il y a moins de 7 jours** | Délai de “repos” entre deux équipes   |
+|☑️ Un membre ne peut pas être ajouté à une équipe **s’il en a quitté une autre il y a moins de 7 jours**  | Délai de “repos” entre deux équipes   |
 |                                                                                                          |                                       |
 |☑️ Une équipe inactive depuis plus de 90 jours est archivée automatiquement                               | Via job planifié dans `EquipeService` |
 |                                                                                                          |                                       |
@@ -177,7 +177,7 @@ Les differents Etat d'une équipe et leur signification
 9.  Règles d’intégrité métier
 -----------------------------------------------------------------------------------------------------------
 | Règle                                                     | Détails                                     |
-|---------------------------------------------------------  | --------------------------------------------|
+|-----------------------------------------------------------| --------------------------------------------|
 |☑️ Tous les membres doivent exister dans `EmployeeService` | Validé à l’ajout                            |
 |                                                           |                                             |
 |☑️ Une équipe ne peut être affectée à un projet inexistant | `ProjectService` doit valider l’affectation |
@@ -264,7 +264,7 @@ Les differents Etat d'une équipe et leur signification
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                                         | Exemple                                              |
 | --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Les membres d’une équipe doivent être sous contrat valide (CDI, CDD, etc.) à la date courante | Vérifié via un service RH externe (`ContratService`) |
+| Les membres d’une équipe doivent être sous contrat valide (CDI, CDD) à la date courante       | Vérifié via un service RH externe (`ContratService`) |
 |                                                                                               |                                                      |
-| Impossible d’ajouter un stagiaire en tant que responsable                                     | `if (membre.TypeContrat == "Stagiaire") => throw`    |
+|☑️ Impossible d’ajouter un stagiaire ou un CDD en tant que responsable                         | `if (membre.TypeContrat == "Stagiaire") => throw`    |
 --------------------------------------------------------------------------------------------------------------------------------------------------------

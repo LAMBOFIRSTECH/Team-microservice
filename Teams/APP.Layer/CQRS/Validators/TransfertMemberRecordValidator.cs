@@ -30,6 +30,12 @@ public class TransfertMemberRecordValidator : AbstractValidator<TransfertMemberD
             .Equal(true)
             .WithMessage("Transfer is not allowed for this member");
 
+        RuleFor(x => x.AffectationStatus.ContratType)
+            .NotEmpty()
+            .WithMessage("Contrat cannot be empty.")
+            .MaximumLength(20)
+            .WithMessage("Contrat type cannot exceed 20 characters.");
+
         RuleFor(x => x.AffectationStatus.LeaveDate)
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Leave date must be in the past or present");

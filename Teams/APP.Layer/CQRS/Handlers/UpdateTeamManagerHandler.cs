@@ -55,6 +55,33 @@ public class UpdateTeamManagerHandler(
             );
             throw new DomainException("A manager cannot manage more than 3 teams.");
         }
+        if (team.TeamManagerId == command.NewTeamManagerId)
+        {
+            LogHelper.BusinessRuleFailure(
+                logger,
+                "Update Team Manager",
+                "🚫 The new manager is already the current manager of the team.",
+                null
+            );
+            throw new DomainException(
+                "The new manager is already the current manager of the team."
+            );
+        }
+        if (
+            command.ContratType.Equals("Stagiaire", StringComparison.OrdinalIgnoreCase)
+            || command.ContratType.Equals("CDD", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            LogHelper.BusinessRuleFailure(
+                logger,
+                "Update Team Manager",
+                $"🚫 The member with contrat type {command.ContratType} cannot be assigned as a team manager.",
+                null
+            );
+            throw new DomainException(
+                $"🚫 The member with contrat type {command.ContratType} cannot be assigned as a team manager."
+            );
+        }
         try
         {
             team.ChangeTeamManager(command.NewTeamManagerId);

@@ -14,6 +14,7 @@ public class TransfertMemberProfile : Profile
         >()
             .ConstructUsing(dto => new Teams.CORE.Layer.ValueObjects.AffectationStatus(
                 dto.IsTransferAllowed,
+                dto.ContratType,
                 dto.LeaveDate
             ));
 

@@ -40,9 +40,9 @@ public class TeamController(
     [HttpGet]
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<TeamDto>>> GetAllTeams()
+    public async Task<ActionResult<List<TeamDto>>> GetAllTeams([FromQuery] bool onlyMature = false)
     {
-        var query = new GetAllTeamsQuery();
+        var query = new GetAllTeamsQuery { OnlyMature = onlyMature };
         var teams = await _mediator.Send(query);
         return Ok(teams);
     }
@@ -124,6 +124,7 @@ public class TeamController(
     ///    "Name": "Pentester",
     ///    "OldTeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
     ///    "NewTeamManagerId": "9a57d8f7-56f4-47d9-a429-5f4f34e9bc83"
+    ///     "ContratType": "Stagiaire"
     /// }
     /// The request body should contain the team name, the ID of the current team manager,
     /// and the ID of the new team manager.

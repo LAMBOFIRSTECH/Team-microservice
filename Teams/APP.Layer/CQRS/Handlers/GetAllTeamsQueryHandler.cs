@@ -20,6 +20,12 @@ public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<Te
     )
     {
         var teams = await teamRepository.GetAllTeamsAsync();
+        if (request.OnlyMature)
+        {
+            var now = DateTime.UtcNow;
+            teams = teams.Where(t => (now - t.TeamCreationDate).TotalSeconds >= 30).ToList();
+        }
+
         var teamDtos = teams
             .Select(team => new TeamDto
             {

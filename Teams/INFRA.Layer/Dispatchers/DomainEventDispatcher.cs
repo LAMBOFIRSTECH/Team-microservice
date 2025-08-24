@@ -1,4 +1,3 @@
-using System;
 using MediatR;
 using Teams.APP.Layer.EventNotification;
 using Teams.CORE.Layer.CoreEvents;

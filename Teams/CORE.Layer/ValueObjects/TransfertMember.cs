@@ -3,11 +3,13 @@ namespace Teams.CORE.Layer.ValueObjects;
 public class AffectationStatus
 {
     public bool IsTransferAllowed { get; }
+    public string ContratType { get; }
     public DateTime LeaveDate { get; }
 
-    public AffectationStatus(bool isTransferAllowed, DateTime leaveDate)
+    public AffectationStatus(bool isTransferAllowed, string contratType, DateTime leaveDate)
     {
         IsTransferAllowed = isTransferAllowed;
+        ContratType = contratType;
         LeaveDate = leaveDate;
     }
 }

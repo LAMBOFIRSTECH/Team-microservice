@@ -1,6 +1,5 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Serilog;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.ExternalServicesDtos;
@@ -14,13 +13,14 @@ public class TeamExternalService(
 )
 {
     /**
-    https://jsonbin.io/quick-store/
+   https://jsonbin.io/app/bins
     {
         "MemberTeamId": "12345678-90ab-cdef-1234-567890abcdef",
         "SourceTeam": "Equipe de sécurité (Security Team)",
         "DestinationTeam": "Pentester",
         "AffectationStatus": {
             "IsTransferAllowed": true,
+            "ContratType": "CDI",
             "LeaveDate": "2025-07-03T12:34:56Z"
         }
     }
@@ -65,14 +65,13 @@ public class TeamExternalService(
     }
     
     **/
-
-    public async Task<TransfertMemberDto?> RetrieveNewMemberToAddInRedisAsync()
+    private async Task<string> GetContent(HttpRequestMessage request)
     {
-        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Employee:Url"]);
+        var response = await _httpClient.SendAsync(request);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            LogHelper.Warning("No new member to add in Redis.", _log);
-            return null;
+            LogHelper.Warning("No data found.", _log);
+            return null!;
         }
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
@@ -81,8 +80,22 @@ public class TeamExternalService(
         if (record is null)
         {
             LogHelper.Warning("No record found in response.", _log);
-            return null;
+            return null!;
         }
+        return record;
+    }
+
+    public async Task<TransfertMemberDto?> RetrieveNewMemberToAddInRedisAsync()
+    {
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            _configuration["ExternalsApi:Employee:Url"]
+        );
+        request.Headers.Add(
+            "X-Master-Key",
+            _configuration["ExternalsApi:Employee:Headers:X-Access-Key"]
+        );
+        var record = await GetContent(request);
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new UtcDateTimeConverter());
         var data = JsonConvert.DeserializeObject<TransfertMemberDto>(record, settings);
@@ -91,21 +104,15 @@ public class TeamExternalService(
 
     public async Task<DeleteTeamMemberDto?> RetrieveMemberToDeleteAsync()
     {
-        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Employee:Url"]);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            LogHelper.Warning("No member to delete.", _log);
-            return null;
-        }
-        response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
-        var root = JObject.Parse(content);
-        var record = root["record"]?.ToString();
-        if (record is null)
-        {
-            LogHelper.Warning("No record found in response for member deletion.", _log);
-            return null;
-        }
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            _configuration["ExternalsApi:Employee:Url"]
+        );
+        request.Headers.Add(
+            "X-Master-Key",
+            _configuration["ExternalsApi:Employee:Headers:X-Access-Key"]
+        );
+        var record = await GetContent(request);
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new UtcDateTimeConverter());
         var data = JsonConvert.DeserializeObject<DeleteTeamMemberDto>(record, settings);
@@ -114,21 +121,15 @@ public class TeamExternalService(
 
     public async Task<ProjectAssociationDto?> RetrieveProjectAssociationDataAsync()
     {
-        var response = await _httpClient.GetAsync(_configuration["ExternalsApi:Project:Url"]);
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            LogHelper.Warning("No project association data found.", _log);
-            return null;
-        }
-        response.EnsureSuccessStatusCode();
-        var content = await response.Content.ReadAsStringAsync();
-        var root = JObject.Parse(content);
-        var record = root["record"]?.ToString();
-        if (record is null)
-        {
-            LogHelper.Warning("No record found in response for project association.", _log);
-            return null;
-        }
+        var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            _configuration["ExternalsApi:Project:Url"]
+        );
+        request.Headers.Add(
+            "X-Master-Key",
+            _configuration["ExternalsApi:Project:Headers:X-Access-Key"]
+        );
+        var record = await GetContent(request);
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new UtcDateTimeConverter());
         var data = JsonConvert.DeserializeObject<ProjectAssociationDto>(record, settings);

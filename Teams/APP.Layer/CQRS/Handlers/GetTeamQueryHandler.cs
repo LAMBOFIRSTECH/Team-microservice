@@ -24,7 +24,7 @@ public class GetTeamQueryHandler(
                 "Not Found",
                 "Team ressource not found"
             );
-        LogHelper.Info($"✅ Team state is {team.State} .", log);
+        LogHelper.Info($"✅ Team state is {team.State} and {team.StateMappings[team.State]}.", log);
         var teamDto = mapper.Map<TeamDto>(team);
         return teamDto;
     }

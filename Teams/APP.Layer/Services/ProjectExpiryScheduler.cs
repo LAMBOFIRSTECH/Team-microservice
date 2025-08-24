@@ -7,7 +7,7 @@ namespace Teams.APP.Layer.Services;
 public class ProjectExpiryScheduler(
     IServiceScopeFactory _scopeFactory,
     ILogger<ProjectExpiryScheduler> _log
-) : IHostedService, IDisposable, IProjectExpiryScheduler
+) : IHostedService, IDisposable, IProjectExpirySchedule
 {
     private Timer? _timer;
     private DateTime? _nextProjectDateExpiration;
