@@ -7,7 +7,6 @@ using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
-using Teams.APP.Layer.UnitOfWork;
 
 namespace Teams.APP.Layer;
 
@@ -34,7 +33,6 @@ public static class DependancyInjection
         });
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IProjectService, ProjectService>();
-        services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ProjectService>();
         services.AddSingleton<ProjectExpiryScheduler>();

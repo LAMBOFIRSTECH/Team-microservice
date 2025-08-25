@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities;
 using Teams.INFRA.Layer.Dispatchers;
+using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence.Configurations;
 
 namespace Teams.INFRA.Layer.Persistence;

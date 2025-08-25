@@ -2,7 +2,7 @@ namespace Teams.API.Layer.DTOs;
 
 public class TeamRequestDto
 {
-    public Guid Id { get; }
+    public Guid Id { get; set; }
     public string? Name { get; }
     public Guid TeamManagerId { get; }
     public List<Guid> MemberId { get; } = new();

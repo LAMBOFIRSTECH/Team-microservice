@@ -15,8 +15,10 @@ using Teams.APP.Layer.Services;
 using Teams.CORE.Layer.Interfaces;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
+using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence;
 using Teams.INFRA.Layer.Persistence.Repositories;
+using Teams.INFRA.Layer.UnitOfWork;
 
 namespace Teams.INFRA.Layer;
 
@@ -36,6 +38,7 @@ public static class DependancyInjection
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
         services.AddScoped<TeamExternalService>();
+        services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddHostedService<RabbitListenerService>();

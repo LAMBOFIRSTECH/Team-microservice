@@ -1,7 +1,7 @@
-using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities;
+using Teams.INFRA.Layer.Interfaces;
 
-namespace Teams.APP.Layer.UnitOfWork;
+namespace Teams.INFRA.Layer.UnitOfWork;
 
 public class TeamStateUnitOfWork : ITeamStateUnitOfWork
 {
