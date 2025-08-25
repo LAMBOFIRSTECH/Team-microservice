@@ -17,7 +17,7 @@ public class GetTeamQueryHandler(
     public async Task<TeamDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
         var team =
-            await teamRepository.GetTeamByIdAsync(request.Id)!
+            await teamRepository.GetTeamByIdAsync(request.Id, cancellationToken)!
             ?? throw new HandlerException(
                 404,
                 $"Team with ID {request.Id} not found.",

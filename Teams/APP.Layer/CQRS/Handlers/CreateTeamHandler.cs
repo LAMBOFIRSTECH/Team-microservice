@@ -24,7 +24,7 @@ public class CreateTeamHandler(
         CancellationToken cancellationToken
     )
     {
-        var existingTeams = await teamRepository.GetAllTeamsAsync();
+        var existingTeams = await teamRepository.GetAllTeamsAsync(cancellationToken);
         if (existingTeams.Any(t => t.Name.Equals(command.Name, StringComparison.OrdinalIgnoreCase)))
         {
             LogHelper.BusinessRuleFailure(
@@ -87,7 +87,7 @@ public class CreateTeamHandler(
             LogHelper.BusinessRuleFailure(log, "Team creation ", $"{ex.Message}", null);
             throw new HandlerException(400, ex.Message, "Bad Request", "Domain Validation Error");
         }
-        await teamRepository.CreateTeamAsync(team);
+        await teamRepository.CreateTeamAsync(team, cancellationToken);
         LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
         foreach (var domainEvent in team.DomainEvents)
         {

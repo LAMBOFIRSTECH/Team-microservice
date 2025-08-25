@@ -51,7 +51,10 @@ public class EmployeeService(
         return true;
     }
 
-    public async Task AddTeamMemberIntoRedisCacheAsync(Guid memberId)
+    public async Task AddTeamMemberIntoRedisCacheAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default
+    )
     {
         var transfertMemberDto = await teamExternalService.RetrieveNewMemberToAddInRedisAsync();
 
@@ -185,9 +188,17 @@ public class EmployeeService(
         }
     }
 
-    public async Task DeleteTeamMemberAsync(Guid memberId, string teamName)
+    public async Task DeleteTeamMemberAsync(
+        Guid memberId,
+        string teamName,
+        CancellationToken cancellationToken = default
+    )
     {
-        var teamMember = await teamRepository.GetTeamByNameAndMemberIdAsync(memberId, teamName)!;
+        var teamMember = await teamRepository.GetTeamByNameAndMemberIdAsync(
+            memberId,
+            teamName,
+            cancellationToken
+        )!;
         if (teamMember == null)
         {
             LogHelper.Error($"Cannot found team member {memberId} in team {teamName}.", log);
@@ -196,7 +207,7 @@ public class EmployeeService(
         try
         {
             await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Remove, teamMember);
-            await teamRepository.DeleteTeamMemberAsync();
+            await teamRepository.DeleteTeamMemberAsync(cancellationToken);
         }
         catch (DomainException ex)
         {
@@ -204,10 +215,13 @@ public class EmployeeService(
         }
     }
 
-    public async Task<bool> InsertNewTeamMemberIntoDbAsync(Guid memberId)
+    public async Task<bool> InsertNewTeamMemberIntoDbAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default
+    )
     {
         var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId);
-        var teamMember = await teamRepository.GetTeamByNameAsync(teamName);
+        var teamMember = await teamRepository.GetTeamByNameAsync(teamName, cancellationToken);
         if (teamMember == null)
         {
             LogHelper.Error(
@@ -219,7 +233,7 @@ public class EmployeeService(
         try
         {
             await ManageTeamMemberAsync(memberId, teamName, TeamMemberAction.Add, teamMember);
-            await teamRepository.SaveAsync();
+            await teamRepository.SaveAsync(cancellationToken);
             return true;
         }
         catch (DomainException ex)

@@ -5,21 +5,15 @@ using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
-public class GetAllTeamsQueryHandler : IRequestHandler<GetAllTeamsQuery, List<TeamDto>>
+public class GetAllTeamsQueryHandler(ITeamRepository teamRepository)
+    : IRequestHandler<GetAllTeamsQuery, List<TeamDto>>
 {
-    private readonly ITeamRepository teamRepository;
-
-    public GetAllTeamsQueryHandler(ITeamRepository teamRepository)
-    {
-        this.teamRepository = teamRepository;
-    }
-
     public async Task<List<TeamDto>> Handle(
         GetAllTeamsQuery request,
         CancellationToken cancellationToken
     )
     {
-        var teams = await teamRepository.GetAllTeamsAsync();
+        var teams = await teamRepository.GetAllTeamsAsync(cancellationToken);
         if (request.OnlyMature)
         {
             var now = DateTime.UtcNow;

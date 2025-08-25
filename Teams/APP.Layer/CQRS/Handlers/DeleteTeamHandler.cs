@@ -12,7 +12,7 @@ public class DeleteTeamHandler(ITeamRepository _teamRepository, ILogger<DeleteTe
 {
     public async Task Handle(DeleteTeamCommand command, CancellationToken cancellationToken)
     {
-        var team = await _teamRepository.GetTeamByIdAsync(command.Id)!;
+        var team = await _teamRepository.GetTeamByIdAsync(command.Id, cancellationToken);
         if (team == null)
             throw new HandlerException(
                 404,
@@ -34,7 +34,7 @@ public class DeleteTeamHandler(ITeamRepository _teamRepository, ILogger<DeleteTe
                 $"The team {team.Name} has been associated to 1 or more projects."
             );
         }
-        await _teamRepository.DeleteTeamAsync(command.Id);
+        await _teamRepository.DeleteTeamAsync(command.Id, cancellationToken);
         LogHelper.Info($"✅ Team with Name {team.Name} has been deleted successfully.", _log);
     }
 }

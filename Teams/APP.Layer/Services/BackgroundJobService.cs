@@ -8,7 +8,8 @@ namespace Teams.APP.Layer.Services;
 public class BackgroundJobService(
     IEmployeeService employeeService,
     ProjectService project,
-    ILogger<BackgroundJobService> log
+    ILogger<BackgroundJobService> log,
+    CancellationToken cancellationToken = default
 ) : IBackgroundJobService
 {
     public string TryScheduleJob(Func<string> scheduleJobAction, int retryCount, TimeSpan delay)
@@ -37,7 +38,11 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => employeeService.AddTeamMemberIntoRedisCacheAsync(memberId),
+                        () =>
+                            employeeService.AddTeamMemberIntoRedisCacheAsync(
+                                memberId,
+                                cancellationToken
+                            ),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,
@@ -83,7 +88,12 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => employeeService.DeleteTeamMemberAsync(memberId, teamName),
+                        () =>
+                            employeeService.DeleteTeamMemberAsync(
+                                memberId,
+                                teamName,
+                                cancellationToken
+                            ),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,

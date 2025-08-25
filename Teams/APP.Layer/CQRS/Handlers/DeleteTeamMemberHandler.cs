@@ -11,7 +11,10 @@ public class DeleteTeamMemberHandler(ITeamRepository teamRepository)
 {
     public async Task Handle(DeleteTeamMemberCommand command, CancellationToken cancellationToken)
     {
-        var teams = await teamRepository.GetTeamsByMemberIdAsync(command.MemberId)!;
+        var teams = await teamRepository.GetTeamsByMemberIdAsync(
+            command.MemberId,
+            cancellationToken
+        );
         if (teams == null)
             throw HandlerException.NotFound(
                 $"A team with the MemberId '{command.MemberId}' not found.",
@@ -31,7 +34,6 @@ public class DeleteTeamMemberHandler(ITeamRepository teamRepository)
         {
             throw HandlerException.BadRequest(ex.Message, "Domain validation failed");
         }
-        await teamRepository.UpdateTeamAsync(teamMember); // Il faut persister la suppression
-        // await teamRepository.DeleteTeamMemberAsync(teamMemberId);
+        await teamRepository.UpdateTeamAsync(teamMember, cancellationToken);
     }
 }

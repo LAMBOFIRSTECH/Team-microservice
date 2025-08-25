@@ -4,17 +4,31 @@ namespace Teams.CORE.Layer.Interfaces;
 
 public interface ITeamRepository
 {
-    Task<List<Team>> GetAllTeamsAsync();
-    Task<Team?> GetTeamByIdAsync(Guid teamId);
-    Task<Team?> GetTeamByNameAsync(string teamName);
-    Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId);
-    Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId, string teamName);
-    Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId);
-    Task<Team?> GetTeamByNameAndTeamManagerIdAsync(string teamName, Guid teamManager);
-    Task<Team> CreateTeamAsync(Team team);
-    Task AddTeamMemberAsync();
-    Task UpdateTeamAsync(Team team);
-    Task DeleteTeamAsync(Guid teamId);
-    Task DeleteTeamMemberAsync();
-    Task SaveAsync();
+    Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default);
+    Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);
+    Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default);
+    Task<List<Team>> GetTeamsByMemberIdAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default
+    );
+    Task<Team?> GetTeamByNameAndMemberIdAsync(
+        Guid memberId,
+        string teamName,
+        CancellationToken cancellationToken = default
+    );
+    Task<List<Team>> GetTeamsByManagerIdAsync(
+        Guid managerId,
+        CancellationToken cancellationToken = default
+    );
+    Task<Team?> GetTeamByNameAndTeamManagerIdAsync(
+        string teamName,
+        Guid teamManager,
+        CancellationToken cancellationToken = default
+    );
+    Task<Team> CreateTeamAsync(Team team, CancellationToken cancellationToken = default);
+    Task AddTeamMemberAsync(CancellationToken cancellationToken = default);
+    Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default);
+    Task DeleteTeamAsync(Guid teamId, CancellationToken cancellationToken = default);
+    Task DeleteTeamMemberAsync(CancellationToken cancellationToken = default);
+    Task SaveAsync(CancellationToken cancellationToken = default);
 }

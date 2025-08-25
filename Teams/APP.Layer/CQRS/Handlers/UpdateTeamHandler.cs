@@ -16,7 +16,7 @@ public class UpdateTeamHandler(ITeamRepository teamRepository, IMapper mapper)
         CancellationToken cancellationToken
     )
     {
-        var existingTeam = await teamRepository.GetTeamByIdAsync(command.Id)!;
+        var existingTeam = await teamRepository.GetTeamByIdAsync(command.Id, cancellationToken);
         if (existingTeam == null)
         {
             throw new HandlerException(
@@ -34,13 +34,7 @@ public class UpdateTeamHandler(ITeamRepository teamRepository, IMapper mapper)
         {
             throw HandlerException.BadRequest(ex.Message, "Validation Error");
         }
-        await teamRepository.UpdateTeamAsync(existingTeam);
+        await teamRepository.UpdateTeamAsync(existingTeam, cancellationToken);
         return mapper.Map<TeamRequestDto>(existingTeam);
-
-        // existingTeam.Name = command.Name!;
-        // existingTeam.TeamManagerId = command.TeamManagerId;
-        // existingTeam.MemberId = command.MemberId;
-        // await teamRepository.UpdateTeamAsync(existingTeam);
-        // return mapper.Map<TeamRequestDto>(existingTeam);
     }
 }

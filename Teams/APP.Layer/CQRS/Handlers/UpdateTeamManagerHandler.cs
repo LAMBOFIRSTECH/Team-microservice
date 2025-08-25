@@ -19,9 +19,10 @@ public class UpdateTeamManagerHandler(
     {
         var team = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             command.Name!,
-            command.OldTeamManagerId
+            command.OldTeamManagerId,
+            cancellationToken
         )!;
-        var existingTeams = await teamRepository.GetAllTeamsAsync();
+        var existingTeams = await teamRepository.GetAllTeamsAsync(cancellationToken);
         if (existingTeams == null)
         {
             LogHelper.Error(" ❌ No teams found in the repository.", logger);
@@ -94,7 +95,7 @@ public class UpdateTeamManagerHandler(
         {
             throw HandlerException.BadRequest(ex.Message, "Validation Error");
         }
-        await teamRepository.UpdateTeamAsync(team);
+        await teamRepository.UpdateTeamAsync(team, cancellationToken);
         return Unit.Value;
     }
 }

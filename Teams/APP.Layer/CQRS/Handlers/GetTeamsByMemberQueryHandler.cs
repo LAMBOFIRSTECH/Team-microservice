@@ -14,7 +14,10 @@ public class GetTeamsByMemberQueryHandler(ITeamRepository teamRepository)
         CancellationToken cancellationToken
     )
     {
-        var teams = await teamRepository.GetTeamsByMemberIdAsync(request.MemberId);
+        var teams = await teamRepository.GetTeamsByMemberIdAsync(
+            request.MemberId,
+            cancellationToken
+        );
         if (teams == null || teams.Count.Equals(0))
             throw new HandlerException(
                 404,
