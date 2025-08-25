@@ -3,6 +3,7 @@
 
 - **DDD (Domain-Driven Design)** : séparation claire du métier, de l'infrastructure et de l’application.
 - **CQRS (Command Query Responsibility Segregation)** : distinction entre commandes (écriture) et requêtes (lecture).
+- **Domain Event** : chaque evènement important du domain est géré via le domain event.
 - **MediatR** : gestion centralisée des commandes, requêtes et événements.
 - **Automapper** : mappage entre DTOs et entités.
 - **FluentValidation** : validation métier.
@@ -17,8 +18,10 @@
 - **FluentValidation**
 - **AutoMapper**
 - **AutoDispatcher**
+- **Wrapper**
 - **Entity Framework Core**
 - **JWT Auth**
+- **Hashicorp Vault**
 - **OpenTelemetry**
 - **Swagger**
 
