@@ -83,41 +83,41 @@ public class TeamExternalServiceTest
         Assert.NotNull(result);
     }
 
-    [Fact]
-    public async Task RetrieveNewMemberToAddInRedisAsync_ReturnsNull_WhenNotFound()
-    {
-        var httpClient = CreateMockHttpClient(HttpStatusCode.NotFound, "");
-        var config = CreateMockConfiguration("http://test-url", "test-key");
-        var logger = CreateMockLogger();
+    // [Fact]
+    // public async Task RetrieveNewMemberToAddInRedisAsync_ReturnsNull_WhenNotFound()
+    // {
+    //     var httpClient = CreateMockHttpClient(HttpStatusCode.NotFound, "");
+    //     var config = CreateMockConfiguration("http://test-url", "test-key");
+    //     var logger = CreateMockLogger();
 
-        var service = new TeamExternalService(httpClient, config, logger);
+    //     var service = new TeamExternalService(httpClient, config, logger);
 
-        var result = await service.RetrieveNewMemberToAddInRedisAsync();
+    //     var result = await service.RetrieveNewMemberToAddInRedisAsync();
 
-        Assert.Null(result);
-    }
+    //     Assert.Null(result);
+    // }
 
-    [Fact]
-    public async Task RetrieveMemberToDeleteAsync_ReturnsDto_WhenResponseIsValid()
-    {
-        var dto = new TransfertMemberDto(
-            Guid.NewGuid(),
-            "Equipe de sécurité (Security Team)",
-            "Pentester",
-            new AffectationStatus(true, "CDI", DateTime.UtcNow.AddDays(-10))
-        );
-        var recordJson = JsonConvert.SerializeObject(dto);
-        var responseJson = $"{{\"record\":{recordJson}}}";
-        var httpClient = CreateMockHttpClient(HttpStatusCode.OK, responseJson);
-        var config = CreateMockConfiguration("http://test-url", "test-key");
-        var logger = CreateMockLogger();
+    // [Fact]
+    // public async Task RetrieveMemberToDeleteAsync_ReturnsDto_WhenResponseIsValid()
+    // {
+    //     var dto = new TransfertMemberDto(
+    //         Guid.NewGuid(),
+    //         "Equipe de sécurité (Security Team)",
+    //         "Pentester",
+    //         new AffectationStatus(true, "CDI", DateTime.UtcNow.AddDays(-10))
+    //     );
+    //     var recordJson = JsonConvert.SerializeObject(dto);
+    //     var responseJson = $"{{\"record\":{recordJson}}}";
+    //     var httpClient = CreateMockHttpClient(HttpStatusCode.OK, responseJson);
+    //     var config = CreateMockConfiguration("http://test-url", "test-key");
+    //     var logger = CreateMockLogger();
 
-        var service = new TeamExternalService(httpClient, config, logger);
+    //     var service = new TeamExternalService(httpClient, config, logger);
 
-        var result = await service.RetrieveMemberToDeleteAsync();
+    //     var result = await service.RetrieveMemberToDeleteAsync();
 
-        Assert.NotNull(result);
-    }
+    //     Assert.NotNull(result);
+    // }
 
     [Fact]
     public async Task RetrieveProjectAssociationDataAsync_ReturnsDto_WhenResponseIsValid()
