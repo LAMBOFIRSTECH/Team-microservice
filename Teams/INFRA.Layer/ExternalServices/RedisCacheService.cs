@@ -1,17 +1,59 @@
-using System.Reflection.Metadata.Ecma335;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
+using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
-public class RedisCacheService(IDistributedCache cache, ILogger<RedisCacheService> log)
-    : IRedisCacheService
+public class RedisCacheService(
+    IDistributedCache cache,
+    ITeamRepository teamRepository,
+    ILogger<RedisCacheService> log
+) : IRedisCacheService
 {
     private string GetKey(string key) => $"DevCache:{key}";
 
     // HGET DevCache:12345678-90ab-cdef-1234-567890abcdef data
+
+    public async Task StoreArchivedTeamInRedisAsync(
+        Team team,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var cacheKey = $"DevCache:{team.Id}"; // a terme mettre le nom de l'équipe
+
+        try
+        {
+            var cachedData = await cache.GetStringAsync(cacheKey, cancellationToken);
+            if (cachedData is not null)
+            {
+                LogHelper.Warning($"Key already exists in Redis: {cacheKey}", log);
+                throw new InvalidOperationException();
+            }
+
+            var serializedTeam = JsonConvert.SerializeObject(team, Formatting.None);
+            await cache.SetStringAsync(
+                cacheKey,
+                serializedTeam,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30),
+                },
+                cancellationToken
+            );
+
+            LogHelper.Info($"✅ Team {team.Name} stored in Redis with key {cacheKey}", log);
+            await teamRepository.DeleteTeamAsync(team.Id, cancellationToken);
+            LogHelper.Info($"✅ Team {team.Name} has been delete from DataBase successfully.", log);
+        }
+        catch (Exception ex)
+        {
+            LogHelper.Error($"❌ Failed to store team {team.Name} in Redis: {ex.Message}", log);
+            throw;
+        }
+    }
 
     public async Task StoreNewTeamMemberInformationsInRedisAsync(Guid memberId, string teamName)
     {

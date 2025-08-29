@@ -28,7 +28,7 @@ public class DeleteTeamMemberHandler(ITeamRepository teamRepository)
             );
         try
         {
-            teamMember.DeleteTeamMemberSafely(command.MemberId);
+            teamMember.RemoveMemberSafely(command.MemberId);
         }
         catch (DomainException ex)
         {

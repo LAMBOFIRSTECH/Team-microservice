@@ -9,10 +9,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     public async Task<Team?> GetTeamByIdAsync(
         Guid teamId,
         CancellationToken cancellationToken = default
-    ) =>
-        await teamDbContext
-            .Teams.AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken); // AsNoTracking() pour lecture seule, sans intention de modifier
+    ) => await teamDbContext.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken); // AsNoTracking() pour lecture seule, sans intention de modifier
 
     public async Task<Team?> GetTeamByNameAsync(
         string teamName,
@@ -23,8 +20,17 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
             cancellationToken
         );
 
-    public async Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default) =>
-        await teamDbContext.Teams.ToListAsync(cancellationToken);
+    public async Task<List<Team>> GetAllTeamsAsync(
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = false
+    )
+    {
+        var query = teamDbContext.Teams.AsQueryable();
+        if (asNoTracking)
+            query = query.AsNoTracking();
+
+        return await query.ToListAsync(cancellationToken);
+    }
 
     public async Task<List<Team>> GetTeamsByManagerIdAsync(
         Guid managerId,

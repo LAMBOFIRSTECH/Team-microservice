@@ -179,7 +179,7 @@ public class EmployeeService(
                         $"Member '{memberId}' does not exist in team '{teamName}'."
                     );
                 }
-                team.DeleteTeamMemberSafely(memberId);
+                team.RemoveMemberSafely(memberId);
                 await teamRepository.SaveAsync();
                 break;
 

@@ -4,7 +4,10 @@ namespace Teams.CORE.Layer.Interfaces;
 
 public interface ITeamRepository
 {
-    Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default);
+    Task<List<Team>> GetAllTeamsAsync(
+        CancellationToken cancellationToken = default,
+        bool asNoTracking = false
+    );
     Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);
     Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default);
     Task<List<Team>> GetTeamsByMemberIdAsync(

@@ -58,10 +58,10 @@ public class Team
     private DateTime? _projectEndDate;
     public DateTime? ProjectStartDate => _projectStartDate;
     public DateTime? ProjectEndDate => _projectEndDate;
-    private const int ValidityPeriodInDays = 40;
+    private const int ValidityPeriodInDays = 90;
 
     [NotMapped]
-    public DateTime ExpirationDate => TeamCreationDate.AddSeconds(ValidityPeriodInDays);
+    public DateTime ExpirationDate => TeamCreationDate.AddDays(ValidityPeriodInDays);
 
     public static DateTime GetLocalDateTime() =>
         DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
@@ -151,12 +151,14 @@ public class Team
                 return TeamState.Active;
             // Projet expiré → désaffectée
             if (_projectEndDate <= GetLocalDateTime())
-                return TeamState.ToBeUnassigned; // Suspendu plutot
+                return TeamState.ToBeUnassigned; // À revoir
+            if (IsTeamExpired())
+                return TeamState.Archivee;
             // Trop vieux → archivé (pas encore implémenté)
             // if ((GetLocalDateTime() - LastActivityDate).TotalDays > ValidityPeriodInDays)
             //     return TeamState.Archivee;
 
-            // // Problèmes de perf → en révision (pas encore implémenté)
+            // Problèmes de perf → en révision (pas encore implémenté)
             // if (AverageProductivity < 0.4 || TauxTurnover > 0.5)
             //     return TeamState.UnderReview;
 
@@ -165,12 +167,12 @@ public class Team
         }
     }
 
-    public void EnsureTeamIsWithinValidPeriod()
-    {
-        if (State != TeamState.Active)
-            throw new DomainException("Only active teams can be archived.");
+    public bool IsTeamExpired() =>
+        GetLocalDateTime() >= ExpirationDate && State != TeamState.Archivee;
 
-        if (GetLocalDateTime() < ExpirationDate)
+    public void ArchiveTeam()
+    {
+        if (!IsTeamExpired())
             throw new DomainException("Team has not yet exceeded the validity period.");
 
         State = TeamState.Archivee;
@@ -187,7 +189,7 @@ public class Team
         MembersIds = members;
     }
 
-    public void DeleteTeamMemberSafely(Guid memberId)
+    public void RemoveMemberSafely(Guid memberId)
     {
         if (memberId == TeamManagerId)
             throw new DomainException("Cannot remove the team manager from the team.");
@@ -273,7 +275,7 @@ public class Team
     public void UpdateTeam(string newName, Guid newManagerId, List<Guid> newMemberIds)
     {
         ValidateTeamData();
-        EnsureTeamIsWithinValidPeriod();
+        // EnsureTeamIsWithinValidPeriod();
         bool isSameName = Name.Equals(newName, StringComparison.OrdinalIgnoreCase);
         bool sameMembers = MembersIds.SequenceEqual(newMemberIds);
         bool sameManager = TeamManagerId.Equals(newManagerId);
