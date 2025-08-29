@@ -10,8 +10,6 @@ using Teams.APP.Layer;
 using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
-SerilogConfiguration.ConfigureLogging(builder.Configuration);
-builder.Host.UseSerilog();
 
 builder
     .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
@@ -21,6 +19,7 @@ builder
         reloadOnChange: false
     )
     .AddEnvironmentVariables();
+
 foreach (var kvp in builder.Configuration.AsEnumerable())
 {
     if (kvp.Value?.StartsWith("${") == true && kvp.Value.EndsWith("}"))
@@ -34,7 +33,12 @@ foreach (var kvp in builder.Configuration.AsEnumerable())
     }
 }
 
-// Ajouter les services via les DI respectives
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 builder.Services.AddApiDI(builder.Configuration);
 builder.Services.AddApplicationDI(builder.Configuration);
 builder.Services.AddInfrastructureDI(builder.Configuration);
@@ -54,7 +58,9 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
             || string.IsNullOrEmpty(certificatePassword)
             || !File.Exists(certificateFile)
         )
+        {
             throw new InvalidOperationException("Le certificat serveur est requis pour HTTPS.");
+        }
 
         var serverCertificate = new X509Certificate2(certificateFile, certificatePassword);
         httpsOptions.ServerCertificate = serverCertificate;
@@ -72,15 +78,17 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
                 );
 
             var caCert = new X509Certificate2(caCertFile);
-            var chain2 = new X509Chain();
-            chain2.ChainPolicy = new X509ChainPolicy
+            var chain2 = new X509Chain
             {
-                RevocationMode = X509RevocationMode.NoCheck,
-                RevocationFlag = X509RevocationFlag.ExcludeRoot,
-                TrustMode = X509ChainTrustMode.CustomRootTrust,
+                ChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = X509RevocationMode.NoCheck,
+                    RevocationFlag = X509RevocationFlag.ExcludeRoot,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+                },
             };
             chain2.ChainPolicy.CustomTrustStore.Add(caCert);
-            return chain2 != null && chain2.Build(cert);
+            return chain2.Build(cert);
         };
     });
 });
@@ -91,58 +99,72 @@ builder.Services.AddRouting();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
-builder.Services.AddLogging();
 
 var app = builder.Build();
-app.Map(
-    "/team-management",
-    teamApp =>
-    {
-        teamApp.UseRouting();
-        teamApp.UseAuthentication();
-        teamApp.UseAuthorization();
-        teamApp.UseMiddleware<ExceptionHandlerMiddleware>();
-        teamApp.UseMiddleware<RequestLoggingMiddleware>();
-
-        teamApp.UseEndpoints(endpoints =>
+try
+{
+    Log.Information("🚀 Application starting up");
+    // Pipeline de l’app
+    app.Map(
+        "/team-management",
+        teamApp =>
         {
-            endpoints.MapControllers();
-            endpoints.MapHealthChecks("/health");
-            endpoints.MapGet(
-                "/version",
-                async context =>
+            teamApp.UseRouting();
+            teamApp.UseAuthentication();
+            teamApp.UseAuthorization();
+            teamApp.UseMiddleware<ExceptionHandlerMiddleware>();
+            teamApp.UseMiddleware<RequestLoggingMiddleware>();
+
+            teamApp.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHealthChecks("/health");
+                endpoints.MapGet(
+                    "/version",
+                    async context =>
+                    {
+                        var version =
+                            app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
+                        await context.Response.WriteAsync(version);
+                    }
+                );
+            });
+
+            // Hangfire Dashboard sécurisé
+            var HangFireConfig = app.Configuration.GetSection("HangfireCredentials");
+            teamApp.UseHangfireDashboard(
+                "/hangfire",
+                new DashboardOptions()
                 {
-                    var version =
-                        app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
-                    await context.Response.WriteAsync(version);
+                    DashboardTitle = "Hangfire Dashboard for Lamboft Inc ",
+                    Authorization = new[]
+                    {
+                        new BasicAuthAuthorizationFilter(
+                            new BasicAuthAuthorizationFilterOptions
+                            {
+                                Users = new[]
+                                {
+                                    new BasicAuthAuthorizationUser
+                                    {
+                                        Login = HangFireConfig["UserName"],
+                                        PasswordClear = HangFireConfig["HANGFIRE_PASSWORD"],
+                                    },
+                                },
+                            }
+                        ),
+                    },
                 }
             );
-        });
+        }
+    );
 
-        var HangFireConfig = app.Configuration.GetSection("HangfireCredentials");
-        teamApp.UseHangfireDashboard(
-            "/hangfire",
-            new DashboardOptions()
-            {
-                DashboardTitle = "Hangfire Dashboard for Lamboft Inc ",
-                Authorization = new[]
-                {
-                    new BasicAuthAuthorizationFilter(
-                        new BasicAuthAuthorizationFilterOptions
-                        {
-                            Users = new[]
-                            {
-                                new BasicAuthAuthorizationUser
-                                {
-                                    Login = HangFireConfig["UserName"],
-                                    PasswordClear = HangFireConfig["HANGFIRE_PASSWORD"],
-                                },
-                            },
-                        }
-                    ),
-                },
-            }
-        );
-    }
-);
-await app.RunAsync();
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "❌ Application failed to start");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

@@ -12,59 +12,6 @@ public class TeamExternalService(
     ILogger<TeamExternalService> _log
 )
 {
-    /**
-   https://jsonbin.io/app/bins
-    {
-        "MemberTeamId": "12345678-90ab-cdef-1234-567890abcdef",
-        "SourceTeam": "Equipe de sécurité (Security Team)",
-        "DestinationTeam": "Pentester",
-        "AffectationStatus": {
-            "IsTransferAllowed": true,
-            "ContratType": "CDI",
-            "LeaveDate": "2025-07-03T12:34:56Z"
-        }
-    }
-    
-    {
-        "TeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
-        "TeamName": "Pentester",
-        "Details" : [
-            {
-               "ProjectName": "Tests de Phishing et d'Ingénierie Sociale",
-               "ProjectStartDate": "2025-08-14T10:00:00Z",
-               "ProjectEndDate": "2025-08-30T10:00:00Z",
-                "ProjectState": {
-                  "State": "Suspended"
-                }
-            }
-        ]
-    }
-    
-    A terme projet affecté
-    {
-        "TeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
-        "TeamName": "Pentester",
-        "Details" : [
-            {
-                "ProjectName": "Burp suite Analysis",
-                "ProjectStartDate": "2025-08-18T10:00:00Z",
-                "ProjectEndDate": "2025-08-18T10:00:00Z",
-                "ProjectState": {
-                    "State": "Active"
-                }
-            },
-            {
-                "ProjectName": "Test de Sécurité des API",
-                "ProjectStartDate": "2025-08-18T14:00:00Z",
-                "ProjectEndDate": "2025-08-18T14:00:00Z",
-                "ProjectState": {
-                    "State": "Active"
-                }
-            }
-        ]
-    }
-    
-    **/
     private async Task<string> GetContent(HttpRequestMessage request)
     {
         var response = await _httpClient.SendAsync(request);

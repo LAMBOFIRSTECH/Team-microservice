@@ -19,12 +19,6 @@ public partial class RabbitListenerService(
     private IConnection? _connection;
     private IModel? _channel;
 
-    // Pattern: | GUID | TeamName
-    // Project affected | GUID | TeamName (eg. Project affected | b14db1e2-026e-4ac9-9739-378720de6f5b | Pentester)
-    // Member to add | GUID | TeamName (eg. Member to add | 12345678-90ab-cdef-1234-567890abcdef | Pentester)
-    // Member to delete | GUID | TeamName (eg. Member to delete | 12345678-90ab-cdef-1234-567890abcdef | Pentester)
-    // Project affected | GUID | TeamName (eg. Project affected | a22b89a7-01ab-40d8-8904-b5f1ceadbd90 | Security Architect)
-    // Member to add | GUID | TeamName (eg. Member to add | 12345678-90ab-cdef-1234-567890abcdef | Security Architect)
     [GeneratedRegex(
         @"\|\s*([\da-f]{8}(-[\da-f]{4}){3}-[\da-f]{12})\s*\|\s*(.+)",
         RegexOptions.IgnoreCase

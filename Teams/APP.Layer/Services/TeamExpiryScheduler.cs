@@ -1,6 +1,6 @@
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.Services;
@@ -47,8 +47,18 @@ public class TeamExpiryScheduler(
         var teams = await teamRepository.GetAllTeamsAsync(ct, asNoTracking: true);
         var expiredTeams = teams.Where(t => t.IsTeamExpired()).ToList();
 
-        foreach (var team in expiredTeams)
+        foreach (var team in teams)
         {
+            if (team.IsProjectHasAnyDependencies(team))
+            {
+                LogHelper.Warning(
+                    $"⚠️ Team {team.Name} cannot be archived because it has active projects.",
+                    _log
+                );
+                throw new DomainException(
+                    $"The team {team.Name} cannot be archived because it has active projects."
+                );
+            }
             team.ArchiveTeam();
             await teamRepository.UpdateTeamAsync(team, ct);
             LogHelper.Info($"Archiving team {team.Name}...", _log);
@@ -83,7 +93,7 @@ public class TeamExpiryScheduler(
             delay = TimeSpan.Zero;
 
         LogHelper.Info(
-            $"▶️  Next check scheduled for {_nextTeamExpiration} (in {delay.TotalDays}s)",
+            $"▶️  Next check scheduled for {_nextTeamExpiration} (in {delay.TotalSeconds}s)",
             _log
         );
 

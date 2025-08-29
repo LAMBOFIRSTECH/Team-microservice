@@ -256,7 +256,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                                             |                                                     |
 |☑️ Un responsable ne peut pas géré > 3 équipes en parallèle                                  | `Responsable.LimiteChargeGestion`                   |
 |                                                                                             |                                                     |
-| Une équipe ne peut être suspendue qu’après la date de lancement                             |                                                     |
+|☑️ Une équipe ne peut être suspendue qu’après la date de lancement                           |                                                     |
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 
 

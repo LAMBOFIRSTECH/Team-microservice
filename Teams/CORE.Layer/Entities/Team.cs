@@ -58,10 +58,10 @@ public class Team
     private DateTime? _projectEndDate;
     public DateTime? ProjectStartDate => _projectStartDate;
     public DateTime? ProjectEndDate => _projectEndDate;
-    private const int ValidityPeriodInDays = 90;
+    private const int ValidityPeriodInDays = 30;
 
     [NotMapped]
-    public DateTime ExpirationDate => TeamCreationDate.AddDays(ValidityPeriodInDays);
+    public DateTime ExpirationDate => TeamCreationDate.AddSeconds(ValidityPeriodInDays);
 
     public static DateTime GetLocalDateTime() =>
         DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
@@ -275,7 +275,7 @@ public class Team
     public void UpdateTeam(string newName, Guid newManagerId, List<Guid> newMemberIds)
     {
         ValidateTeamData();
-        // EnsureTeamIsWithinValidPeriod();
+        IsTeamExpired();
         bool isSameName = Name.Equals(newName, StringComparison.OrdinalIgnoreCase);
         bool sameMembers = MembersIds.SequenceEqual(newMemberIds);
         bool sameManager = TeamManagerId.Equals(newManagerId);
