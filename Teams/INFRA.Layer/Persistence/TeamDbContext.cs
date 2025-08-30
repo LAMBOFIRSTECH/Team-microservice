@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Teams.CORE.Layer.Entities;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.Interfaces;
@@ -27,6 +28,8 @@ public class TeamDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new TeamConfiguration());
+        new TeamConfiguration().CustomTypeMapping(modelBuilder);
+
         modelBuilder.Entity<Team>().Ignore(t => t.DomainEvents);
         base.OnModelCreating(modelBuilder);
     }

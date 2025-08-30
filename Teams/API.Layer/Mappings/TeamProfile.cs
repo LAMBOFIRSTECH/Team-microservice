@@ -11,5 +11,10 @@ public class TeamProfile : Profile
         CreateMap<Team, TeamDto>();
         CreateMap<Team, TeamRequestDto>();
         CreateMap<Team, ChangeManagerDto>();
+        CreateMap<Team, TeamDetailsDto>()
+            .ForMember(
+                dest => dest.MembersId,
+                opt => opt.MapFrom(src => src.MembersIds.Select(m => m.Equals(Guid.Empty)).ToList())
+            );
     }
 }

@@ -8,11 +8,11 @@ public class CreateTeamCommand : IRequest<TeamDto>
 {
     public string? Name { get; set; }
     public Guid TeamManagerId { get; set; }
-    public List<Guid> MembersId { get; } = new();
+    public HashSet<Guid> MembersId { get; } = new();
 
     public CreateTeamCommand() { }
 
-    public CreateTeamCommand(string name, Guid teamManagerId, List<Guid> membersId)
+    public CreateTeamCommand(string name, Guid teamManagerId, HashSet<Guid> membersId)
     {
         Name = name;
         TeamManagerId = teamManagerId;

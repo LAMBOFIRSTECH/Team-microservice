@@ -71,7 +71,7 @@ public class TeamController(
     [Consumes(MediaTypeNames.Application.Json)]
     [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TeamDto>> GetTeam(
+    public async Task<ActionResult<TeamDetailsDto>> GetTeam(
         Guid teamId,
         CancellationToken cancellationToken = default
     )

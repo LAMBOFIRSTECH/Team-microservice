@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
+using Teams.INFRA.Layer.Persistence.EFQueries;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
@@ -57,8 +58,19 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken = default
     )
     {
-        var listOfteams = await teamDbContext.Teams!.ToListAsync(cancellationToken);
-        var teams = listOfteams.Where(m => m.MembersIds.Contains(memberId)).ToList();
+        // var listOfteams = await teamDbContext.Teams!.ToListAsync(cancellationToken);
+        // var teams = listOfteams.Where(m => m.MembersIds.Contains(memberId)).ToList();
+        return await teamDbContext
+            .Teams.WhereMembersContain(memberId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Team>> GetTeamsByMemberAsync(
+        Guid memberId,
+        CancellationToken ct
+    )
+    {
+        var teams = await teamDbContext.Teams.WhereMembersContain(memberId).ToListAsync(ct);
         return teams;
     }
 

@@ -3,7 +3,7 @@ using Teams.API.Layer.DTOs;
 
 namespace Teams.APP.Layer.CQRS.Queries;
 
-public class GetTeamQuery : IRequest<TeamDto>
+public class GetTeamQuery : IRequest<TeamDetailsDto>
 {
     public Guid Id { get; }
 

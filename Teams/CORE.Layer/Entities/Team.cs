@@ -30,17 +30,9 @@ public enum TeamState
 public class Team
 {
     public Guid Id { get; private set; }
-    public string Name { get; private set; } = string.Empty;
+    public string Name { get; private set; }
     public Guid TeamManagerId { get; private set; }
-    public string? MemberIdSerialized { get; set; } = string.Empty;
-    public List<Guid> MembersIds
-    {
-        get =>
-            string.IsNullOrEmpty(MemberIdSerialized)
-                ? new List<Guid>()
-                : JsonConvert.DeserializeObject<List<Guid>>(MemberIdSerialized) ?? new List<Guid>();
-        set => MemberIdSerialized = JsonConvert.SerializeObject(value);
-    }
+    public HashSet<Guid> MembersIds { get; set; } = new HashSet<Guid>();
 
     [NotMapped]
     public Dictionary<TeamState, string> StateMappings =>
@@ -81,7 +73,7 @@ public class Team
         Guid id,
         string name,
         Guid teamManagerId,
-        List<Guid> memberIds,
+        HashSet<Guid> memberIds,
         DateTime creationDate,
         TeamState state = TeamState.Incomplete,
         bool activeAssociatedProject = false
@@ -225,7 +217,7 @@ public class Team
 
         if (
             projectAssociation.TeamManagerId != TeamManagerId
-            || projectAssociation.TeamName != Name
+            || projectAssociation.TeamName != Name.ToString()
         )
             throw new DomainException(
                 $"Project associated with team {projectAssociation.TeamName} does not match current team {Name}."
@@ -259,7 +251,7 @@ public class Team
     public static Team Create(
         string name,
         Guid teamManagerId,
-        List<Guid> memberIds,
+        HashSet<Guid> memberIds,
         DateTime? creationDate = null
     )
     {
@@ -272,11 +264,11 @@ public class Team
         return team;
     }
 
-    public void UpdateTeam(string newName, Guid newManagerId, List<Guid> newMemberIds)
+    public void UpdateTeam(string newName, Guid newManagerId, HashSet<Guid> newMemberIds)
     {
         ValidateTeamData();
         IsTeamExpired();
-        bool isSameName = Name.Equals(newName, StringComparison.OrdinalIgnoreCase);
+        bool isSameName = Name.ToString().Equals(newName, StringComparison.OrdinalIgnoreCase);
         bool sameMembers = MembersIds.SequenceEqual(newMemberIds);
         bool sameManager = TeamManagerId.Equals(newManagerId);
         if (isSameName && sameMembers && sameManager)
@@ -285,7 +277,7 @@ public class Team
         Name = newName;
         TeamManagerId = newManagerId;
         MembersIds.Clear();
-        MembersIds.AddRange(newMemberIds);
+        MembersIds.UnionWith(newMemberIds);
         ActiveAssociatedProject = false;
     }
 

@@ -101,7 +101,10 @@ public class CreateTeamHandler(
         return mapper.Map<TeamDto>(team);
     }
 
-    public static double GetCommonMembersStats(List<Guid> newTeamMembers, List<Team> existingTeams)
+    public static double GetCommonMembersStats(
+        HashSet<Guid> newTeamMembers,
+        List<Team> existingTeams
+    )
     {
         if (newTeamMembers == null || newTeamMembers.Count == 0)
             throw new DomainException("The new team must have at least two member.");

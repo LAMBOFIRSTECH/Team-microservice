@@ -13,9 +13,12 @@ public class GetTeamQueryHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
     ILogger<GetTeamQueryHandler> log
-) : IRequestHandler<GetTeamQuery, TeamDto>
+) : IRequestHandler<GetTeamQuery, TeamDetailsDto>
 {
-    public async Task<TeamDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
+    public async Task<TeamDetailsDto> Handle(
+        GetTeamQuery request,
+        CancellationToken cancellationToken
+    )
     {
         var team =
             await teamRepository.GetTeamByIdAsync(request.Id, cancellationToken)
@@ -34,7 +37,7 @@ public class GetTeamQueryHandler(
             );
         team.Maturity();
         LogHelper.Info($"✅ Team state is {team.State} and {team.StateMappings[team.State]}.", log);
-        var teamDto = mapper.Map<TeamDto>(team);
+        var teamDto = mapper.Map<TeamDetailsDto>(team);
         return teamDto;
     }
 }
