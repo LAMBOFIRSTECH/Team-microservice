@@ -28,8 +28,6 @@ public class TeamDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new TeamConfiguration());
-        new TeamConfiguration().CustomTypeMapping(modelBuilder);
-
         modelBuilder.Entity<Team>().Ignore(t => t.DomainEvents);
         base.OnModelCreating(modelBuilder);
     }

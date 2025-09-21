@@ -20,7 +20,7 @@ public class DeleteTeamMemberHandler(ITeamRepository teamRepository)
                 $"A team with the MemberId '{command.MemberId}' not found.",
                 "Team ID not found"
             );
-        var teamMember = teams.FirstOrDefault(t => t.Name == command.TeamName);
+        var teamMember = teams.FirstOrDefault(t => t.Name.Value == command.TeamName);
         if (teamMember == null)
             throw HandlerException.NotFound(
                 $"A team with the name '{command.TeamName}' not found.",

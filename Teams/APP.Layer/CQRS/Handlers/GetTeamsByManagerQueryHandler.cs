@@ -28,10 +28,10 @@ public class GetTeamsByManagerQueryHandler(ITeamRepository teamRepository)
         var teamDtos = teams
             .Select(team => new TeamRequestDto(
                 team.Id,
-                team.TeamManagerId,
-                team.Name,
-                request.IncludeMembers,
-                team.MembersIds.ToList()
+                team.TeamManagerId.Value,
+                team.Name.Value,
+                team.MembersIds.Select(m=> m.Value).ToHashSet(),
+                request.IncludeMembers
             ))
             .ToList();
         return teamDtos;

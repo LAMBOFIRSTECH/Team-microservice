@@ -24,9 +24,9 @@ public class GetAllTeamsQueryHandler(ITeamRepository teamRepository)
             .Select(team => new TeamDto
             {
                 Id = team.Id,
-                Name = team.Name,
-                TeamManagerId = team.TeamManagerId,
-                MembersId = team.MembersIds.ToList(),
+                Name = team.Name.Value,
+                TeamManagerId = team.TeamManagerId.Value,
+                MembersId = team.MembersIds.Select(m=>m.Value).ToHashSet(),
             })
             .ToList();
         return teamDtos;

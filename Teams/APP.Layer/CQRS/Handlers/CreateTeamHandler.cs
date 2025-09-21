@@ -19,27 +19,29 @@ public class CreateTeamHandler(
     IMediator _mediator
 ) : IRequestHandler<CreateTeamCommand, TeamDto>
 {
+    private const string value = "Team creation";
+
     public async Task<TeamDto> Handle(
         CreateTeamCommand command,
         CancellationToken cancellationToken
     )
     {
         var existingTeams = await teamRepository.GetAllTeamsAsync(cancellationToken);
-        if (existingTeams.Any(t => t.Name.Equals(command.Name, StringComparison.OrdinalIgnoreCase)))
+        if (existingTeams.Any(t => t.Name.Value.Equals(command.Name, StringComparison.OrdinalIgnoreCase)))
         {
             LogHelper.BusinessRuleFailure(
                 log,
-                "Team creation",
+                value,
                 $"🚫 A team with the name '{command.Name}' already exists.",
                 null
             );
             throw new DomainException($"A team with the name '{command.Name}' already exists.");
         }
-        if (existingTeams.Count(t => t.TeamManagerId == command.TeamManagerId) > 3)
+        if (existingTeams.Count(t => t.TeamManagerId.Value == command.TeamManagerId) > 3)
         {
             LogHelper.BusinessRuleFailure(
                 log,
-                "Team creation",
+                value,
                 "🚫 A manager cannot manage more than 3 teams.",
                 null
             );
@@ -49,14 +51,14 @@ public class CreateTeamHandler(
         if (
             existingTeams.Any(t =>
                 t.MembersIds.Count == command.MembersId.Count
-                && !t.MembersIds.Except(command.MembersId).Any()
-                && t.TeamManagerId == command.TeamManagerId
+                && !t.MembersIds.Select(m => m.Value).Except(command.MembersId).Any()
+                && t.TeamManagerId.Value == command.TeamManagerId
             )
         )
         {
             LogHelper.BusinessRuleFailure(
                 log,
-                "Team creation",
+                value,
                 "🚫 A team with exactly the same members and manager already exists.",
                 null
             );
@@ -69,7 +71,7 @@ public class CreateTeamHandler(
         {
             LogHelper.BusinessRuleFailure(
                 log,
-                "Team creation",
+                value,
                 "🚫 Cannot create a team with more than 50% common members with existing teams.",
                 null
             );
@@ -80,7 +82,7 @@ public class CreateTeamHandler(
         Team team;
         try
         {
-            team = Team.Create(command.Name!, command.TeamManagerId, command.MembersId, null);
+            team = Team.Create(command.Name!, command.TeamManagerId, command.MembersId);
         }
         catch (DomainException ex)
         {
@@ -103,21 +105,21 @@ public class CreateTeamHandler(
 
     public static double GetCommonMembersStats(
         HashSet<Guid> newTeamMembers,
-        List<Team> existingTeams
+        List<Team> existingTeams // un hashset peut etre
     )
     {
         if (newTeamMembers == null || newTeamMembers.Count == 0)
             throw new DomainException("The new team must have at least two member.");
 
         if (existingTeams == null || existingTeams.Count == 0)
-            return 0; // Pas d'équipes existantes → pas de comparaison
+            return 0;
 
         double maxPercent = 0;
 
         foreach (var existingTeam in existingTeams)
         {
-            var common = existingTeam.MembersIds.Intersect(newTeamMembers).Count();
-            var universe = existingTeam.MembersIds.Union(newTeamMembers).Count();
+            var common = existingTeam.MembersIds.Select(m => m.Value).Intersect(newTeamMembers).Count();
+            var universe = existingTeam.MembersIds.Select(m => m.Value).Union(newTeamMembers).Count();
             double percent = (double)common / universe * 100;
 
             if (percent > maxPercent)

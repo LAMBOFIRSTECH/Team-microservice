@@ -69,7 +69,7 @@ public class TeamController(
     [AllowAnonymous]
     [HttpGet("{teamId:guid}")]
     [Consumes(MediaTypeNames.Application.Json)]
-    [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TeamDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamDetailsDto>> GetTeam(
         Guid teamId,
@@ -77,6 +77,25 @@ public class TeamController(
     )
     {
         var team = await _mediator.Send(new GetTeamQuery(teamId), cancellationToken);
+        return Ok(team);
+    }
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="teamId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    [AllowAnonymous]
+    [HttpGet("stats")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType(typeof(TeamStatsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<TeamDetailsDto>> GetTeamStats(
+        [FromQuery] Guid teamId,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var team = await _mediator.Send(new GetTeamStatsQuery(teamId), cancellationToken);
         return Ok(team);
     }
 

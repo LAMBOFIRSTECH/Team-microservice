@@ -19,7 +19,7 @@ public class ProjectService(
     IMapper mapper
 ) : IProjectService
 {
-    public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
+    public async Task<ProjectAssociation> GetProjectAssociationDataAsync(Guid? managerId, string teamName)
     {
         var dto = await teamExternalService.RetrieveProjectAssociationDataAsync();
         if (dto == null)
@@ -43,7 +43,12 @@ public class ProjectService(
             LogHelper.CriticalFailure(log, "Data validation", $"{validationResult}", null);
             throw new DomainException("Project association data are invalid");
         }
-        var teamProject = mapper.Map<ProjectAssociation>(dto);
+        return mapper.Map<ProjectAssociation>(dto);
+
+    }
+    public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
+    {
+        var teamProject = await GetProjectAssociationDataAsync(managerId, teamName);
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             teamProject.TeamName,
             teamProject.TeamManagerId

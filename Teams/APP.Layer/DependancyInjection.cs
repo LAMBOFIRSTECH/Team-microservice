@@ -104,7 +104,7 @@ public static class DependancyInjection
                     .AddHttpClientInstrumentation()
                     .AddOtlpExporter(otlpOptions =>
                     {
-                        var endpoint = new Uri($"http://{ipAddress}:{port}");
+                        var endpoint = new Uri($"https://{ipAddress}:{port}");
                         otlpOptions.Endpoint = endpoint;
                         otlpOptions.Protocol = OpenTelemetry
                             .Exporter

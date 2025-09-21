@@ -30,7 +30,7 @@ public class Detail
 public class ProjectAssociation
 {
     public Guid TeamManagerId { get; }
-    public string TeamName { get; }
+    public string TeamName { get; } // changer ça plustard use le Vo
     public List<Detail> Details { get; }
 
     public ProjectAssociation(Guid teamManagerId, string teamName, List<Detail> details)

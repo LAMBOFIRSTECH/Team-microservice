@@ -34,9 +34,8 @@ public partial class RabbitListenerService(
             await InitializeRabbitMqConnectionAsync();
             using var scope = scopeFactory.CreateScope();
             var backgroundJob = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-
-            var consumer = new EventingBasicConsumer(_channel);
-            consumer.Received += (model, ea) =>
+            var consumer = new AsyncEventingBasicConsumer(_channel);
+            consumer.Received += async (model, ea) =>
             {
                 var message = Encoding.UTF8.GetString(ea.Body.ToArray());
                 if (string.IsNullOrWhiteSpace(message))
@@ -59,8 +58,6 @@ public partial class RabbitListenerService(
                 $"📡 RabbitMQ consumer started successfully for queue: {QueueName}",
                 log
             );
-
-            // Keep service alive while not cancelled
             while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
             {
                 await Task.Delay(1000, stoppingToken);
@@ -126,12 +123,17 @@ public partial class RabbitListenerService(
 
     private async Task<ConnectionFactory> EstablishConnection()
     {
-        var vault = new HashicorpVaultService(configuration);
-        var connectionString = await vault.GetRabbitConnectionStringFromVault();
+        var rabbitSection = configuration.GetSection("RabbitMQ");
+        string connectionString = $"{rabbitSection["UserName"]}:{rabbitSection["Password"]}@{rabbitSection["ConnectionString"]}";
+        await Task.Delay(500);
         return new ConnectionFactory
         {
             Uri = new Uri("amqp://" + connectionString),
-            DispatchConsumersAsync = false,
+            DispatchConsumersAsync = true,
+            Ssl = new SslOption
+            {
+                Enabled = false
+            }
         };
     }
 

@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.CodeAnalysis;
-using Newtonsoft.Json;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.ValueObjects;
@@ -30,9 +29,12 @@ public enum TeamState
 public class Team
 {
     public Guid Id { get; private set; }
-    public string Name { get; private set; }
-    public Guid TeamManagerId { get; private set; }
-    public HashSet<Guid> MembersIds { get; set; } = new HashSet<Guid>();
+    private TeamName _name;
+    public TeamName Name => _name;
+    private MemberId _teamManagerId;
+    public MemberId TeamManagerId => _teamManagerId;
+    private readonly HashSet<MemberId> _members = new();
+    public IReadOnlyCollection<MemberId> MembersIds => _members;
 
     [NotMapped]
     public Dictionary<TeamState, string> StateMappings =>
@@ -40,8 +42,8 @@ public class Team
             .Cast<TeamState>()
             .ToDictionary(state => state, state => "Mature");
 
-    public TeamState State { get; private set; } = TeamState.Incomplete;
-    public bool ActiveAssociatedProject { get; private set; } = false;
+    public TeamState State { get; private set; } = TeamState.Active;
+    public bool ActiveAssociatedProject { get; private set; }
     public DateTime TeamCreationDate { get; private set; }
     public DateTime LastActivityDate { get; set; }
     public double AverageProductivity { get; private set; }
@@ -50,10 +52,9 @@ public class Team
     private DateTime? _projectEndDate;
     public DateTime? ProjectStartDate => _projectStartDate;
     public DateTime? ProjectEndDate => _projectEndDate;
-    private const int ValidityPeriodInDays = 30;
-
-    [NotMapped]
+    private const int ValidityPeriodInDays = 300;
     public DateTime ExpirationDate => TeamCreationDate.AddSeconds(ValidityPeriodInDays);
+
 
     public static DateTime GetLocalDateTime() =>
         DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
@@ -67,28 +68,31 @@ public class Team
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 
+#pragma warning disable CS8618
     public Team() { } // Pour EF
+#pragma warning restore CS8618
+
 
     private Team(
         Guid id,
         string name,
         Guid teamManagerId,
-        HashSet<Guid> memberIds,
+        IEnumerable<Guid> members,
         DateTime creationDate,
-        TeamState state = TeamState.Incomplete,
+        TeamState state = TeamState.Active,
         bool activeAssociatedProject = false
     )
     {
         Id = id;
-        Name = name;
-        TeamManagerId = teamManagerId;
-        MembersIds = memberIds;
-        State = state;
+        _name = TeamName.Create(name);
+        _teamManagerId = new MemberId(teamManagerId);
+        _members = members.Select(m => new MemberId(m)).ToHashSet();
+        State = TeamState.Incomplete;
         ActiveAssociatedProject = activeAssociatedProject;
         TeamCreationDate = creationDate;
     }
 
-    public bool IsProjectHasAnyDependencies(Team team)
+    public bool IsProjectHasAnyDependencies(Team team) // ça c'est suspet
     {
         if (team.State == TeamState.Complete)
             return true;
@@ -116,18 +120,19 @@ public class Team
 
     private void ValidateTeamData()
     {
-        if (MembersIds.Count < 3)
+         
+        if (_members.Count < 3)
             throw new DomainException(
                 "A team must have at least 3 members including team manager."
             );
 
-        if (MembersIds.Count > 10)
+        if (_members.Count > 10)
             throw new DomainException("A team cannot have more than 10 members.");
 
-        if (MembersIds.Distinct().Count() != MembersIds.Count)
+        if (_members.Distinct().Count() != _members.Count)
             throw new DomainException("Team members must be unique.");
 
-        if (!MembersIds.Contains(TeamManagerId))
+        if (!_members.Contains(_teamManagerId))
             throw new DomainException("The team manager must be one of the team members.");
     }
 
@@ -136,7 +141,7 @@ public class Team
         get
         {
             // Pas assez de membres → incomplet
-            if (MembersIds.Count < 3)
+            if (_members.Count < 3)
                 return TeamState.Incomplete;
             // Pas de projet → équipe juste active mais pas complète
             if (!_projectStartDate.HasValue || !_projectEndDate.HasValue)
@@ -173,23 +178,29 @@ public class Team
 
     public void AddMember(Guid memberId)
     {
-        var members = MembersIds;
-        if (members.Contains(memberId))
+        var vo = new MemberId(memberId);
+        if (_members.Contains(vo))
             throw new DomainException("Member already exists in the team.");
 
-        members.Add(memberId);
-        MembersIds = members;
+        if (_members.Count > 10)
+            throw new DomainException("A team cannot have more than 10 members.");
+
+        _members.Add(vo);
+        AddDomainEvent(new TeamMemberAddedEvent(Id, memberId)); // Use dans le handler d'ajout de membres
     }
 
     public void RemoveMemberSafely(Guid memberId)
     {
-        if (memberId == TeamManagerId)
+        var vo = new MemberId(memberId);
+        if (vo == _teamManagerId)
             throw new DomainException("Cannot remove the team manager from the team.");
-
-        if (!MembersIds.Contains(memberId))
+        if (!_members.Contains(vo))
             throw new DomainException("Member not found in the team.");
+        if (_members.Count == 3)
+            throw new DomainException("A team cannot have least than 3 members.");
 
-        MembersIds.Remove(memberId);
+        _members.Remove(vo);
+        AddDomainEvent(new TeamMemberRemoveEvent(Id, memberId));  // Use dans le handler de la suppression de membres
     }
 
     public void RemoveProjectsIfExpiredOrSuspended(bool hasActiveAssociation)
@@ -216,7 +227,7 @@ public class Team
             throw new DomainException("Project associated data cannot be null.");
 
         if (
-            projectAssociation.TeamManagerId != TeamManagerId
+            new MemberId(projectAssociation.TeamManagerId) != _teamManagerId
             || projectAssociation.TeamName != Name.ToString()
         )
             throw new DomainException(
@@ -251,44 +262,43 @@ public class Team
     public static Team Create(
         string name,
         Guid teamManagerId,
-        HashSet<Guid> memberIds,
-        DateTime? creationDate = null
+        IEnumerable<Guid> memberIds
     )
     {
-        var actualDate = creationDate ?? GetLocalDateTime();
-
-        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds, actualDate);
+        var actualDate = GetLocalDateTime();
+        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), actualDate);
         team.ValidateTeamData();
         team.State = TeamState.Active;
         team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
 
-    public void UpdateTeam(string newName, Guid newManagerId, HashSet<Guid> newMemberIds)
+    public void UpdateTeam(string newName, Guid newManagerId, IEnumerable<Guid> newMemberIds)
     {
         ValidateTeamData();
         IsTeamExpired();
-        bool isSameName = Name.ToString().Equals(newName, StringComparison.OrdinalIgnoreCase);
-        bool sameMembers = MembersIds.SequenceEqual(newMemberIds);
+        bool isSameName = _name.Equals(TeamName.Create(newName));
+        bool sameMembers = _members.SequenceEqual(newMemberIds.Select(m => new MemberId(m)).ToHashSet());
         bool sameManager = TeamManagerId.Equals(newManagerId);
         if (isSameName && sameMembers && sameManager)
             throw new DomainException("No changes detected in the team details.");
 
-        Name = newName;
-        TeamManagerId = newManagerId;
-        MembersIds.Clear();
-        MembersIds.UnionWith(newMemberIds);
+        _name = TeamName.Create(newName);
+        _teamManagerId = new MemberId(newManagerId);
+        _members.Clear();
+        _members.UnionWith(newMemberIds.Select(m => new MemberId(m)).ToHashSet());
         ActiveAssociatedProject = false;
     }
 
     public void ChangeTeamManager(Guid newTeamManagerId)
     {
+        var ManagerId = new MemberId(newTeamManagerId);
         if (newTeamManagerId == Guid.Empty)
-            throw new DomainException("New team manager ID cannot be empty.");
+            throw new DomainException("New team manager ID cannot be empty."); // A revoir
 
-        if (!MembersIds.Contains(newTeamManagerId))
+        if (!_members.Contains(ManagerId))
             throw new DomainException("New team manager must be a member of the team.");
 
-        TeamManagerId = newTeamManagerId;
+        _teamManagerId = ManagerId;
     }
 }

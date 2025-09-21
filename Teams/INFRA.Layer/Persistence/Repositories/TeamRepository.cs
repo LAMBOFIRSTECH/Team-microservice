@@ -17,7 +17,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken = default
     ) =>
         await teamDbContext.Teams.FirstOrDefaultAsync(
-            t => t.Name.Equals(teamName),
+            t => t.Name.Value.Equals(teamName),
             cancellationToken
         );
 
@@ -39,7 +39,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     )
     {
         var teams = await teamDbContext
-            .Teams!.Where(m => m.TeamManagerId == managerId)
+            .Teams!.Where(t => t.TeamManagerId.Value == managerId)
             .ToListAsync(cancellationToken);
         return teams;
     }
@@ -50,7 +50,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken = default
     ) =>
         await teamDbContext
-            .Teams!.Where(t => t.Name == teamName && t.TeamManagerId.Equals(teamManager))
+            .Teams!.Where(t => t.Name.Value == teamName && t.TeamManagerId.Value.Equals(teamManager))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<List<Team>> GetTeamsByMemberIdAsync(
@@ -58,8 +58,6 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken = default
     )
     {
-        // var listOfteams = await teamDbContext.Teams!.ToListAsync(cancellationToken);
-        // var teams = listOfteams.Where(m => m.MembersIds.Contains(memberId)).ToList();
         return await teamDbContext
             .Teams.WhereMembersContain(memberId)
             .ToListAsync(cancellationToken);
@@ -80,7 +78,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken
     ) =>
         await teamDbContext
-            .Teams!.Where(t => t.Name == teamName && t.MembersIds.Contains(memberId))
+            .Teams!.Where(t => t.Name.Value == teamName && t.MembersIds.Select(m=> m.Value).Contains(memberId))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<Team> CreateTeamAsync(

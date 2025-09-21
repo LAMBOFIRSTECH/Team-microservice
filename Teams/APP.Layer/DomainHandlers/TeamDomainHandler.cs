@@ -20,7 +20,7 @@ public class TeamDomainHandler(
         INotificationHandler<DomainEventNotification<TeamMaturityEvent>>,
         INotificationHandler<DomainEventNotification<ProjectDateChangedEvent>>
 {
-    private async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken ct)
+    private async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
@@ -34,7 +34,7 @@ public class TeamDomainHandler(
 
     public async Task Handle(
         DomainEventNotification<TeamCreatedEvent> notification,
-        CancellationToken ct
+        CancellationToken ct = default
     )
     {
         _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
@@ -43,7 +43,7 @@ public class TeamDomainHandler(
 
     public async Task Handle(
         DomainEventNotification<TeamArchiveEvent> notification,
-        CancellationToken ct
+        CancellationToken ct = default
     )
     {
         LogHelper.Info(
@@ -55,7 +55,7 @@ public class TeamDomainHandler(
 
     public async Task Handle(
         DomainEventNotification<TeamMaturityEvent> notification,
-        CancellationToken ct
+        CancellationToken ct = default
     )
     {
         LogHelper.Info(
@@ -67,7 +67,7 @@ public class TeamDomainHandler(
 
     public async Task Handle(
         DomainEventNotification<ProjectDateChangedEvent> notification,
-        CancellationToken ct
+        CancellationToken ct = default
     )
     {
         LogHelper.Info("🔄 ProjectDateChangedEvent received, rescheduling...", _log);

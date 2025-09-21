@@ -14,8 +14,8 @@ public class GetAllTeamsQuery : IRequest<List<TeamDto>>
     /// </remarks>
     public Guid Id { get; }
     public Guid TeamManagerId { get; }
-    public string Name { get; set; } = string.Empty;
-    public List<Guid> MemberId { get; set; }
+    public string Name { get; set; }
+    public IEnumerable<Guid> MemberId { get; set; }
 
     /// <summary>
     /// Si true, ne renvoie que les équipes matures
@@ -32,7 +32,7 @@ public class GetAllTeamsQuery : IRequest<List<TeamDto>>
     public GetAllTeamsQuery(
         Guid identifier,
         Guid teamManagerId,
-        List<Guid> memberId,
+        IEnumerable<Guid> memberId,
         string name = "",
         bool onlyMature = false
     )

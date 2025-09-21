@@ -197,15 +197,17 @@ Les differents Etat d'une équipe et leur signification
 
 
 11. Règles de cohérence transversales
-----------------------------------------------------------------------------------------------------------------------------------------
-| Règle                                                                   | Exemple                                                    |
-| ----------------------------------------------------------------------- | ---------------------------------------------------------- |
-|☑️ Une équipe ne peut avoir un nom déjà utilisé                          | `TeamRepository.NameAlreadyExists(name)`                   |
-|                                                                         |                                                            |
-|☑️ Le responsable ne peut être supprimé tant qu’il n’est pas remplacé    | `if (membreId == ResponsableId) throw BusinessException`   |
-|                                                                         |                                                            |
-|☑️ Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`|
-----------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+| Règle                                                                   | Exemple                                                                      |
+| ----------------------------------------------------------------------- | -----------------------------------------------------------------------------|
+|☑️ Une équipe ne peut avoir un nom déjà utilisé                          | `TeamRepository.NameAlreadyExists(name)`                                     |
+|                                                                         |                                                                              |
+|☑️ Le responsable ne peut être supprimé tant qu’il n’est pas remplacé    | `if (membreId == ResponsableId) throw BusinessException`                    |
+|                                                                         |                                                                              |
+|☑️ Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`               |
+|                                                                         |                                                                              |
+|Une équipe-associée-projet ne peut etre supprimée if `ExpirationDate > ValidityPeriodInDays `| update la date expiration de 30 jours                   |
+---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 12. Règles de performance 

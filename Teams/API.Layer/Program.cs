@@ -5,12 +5,12 @@ using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Serilog;
 using Teams.API.Layer;
 using Teams.API.Layer.Middlewares;
-using Teams.API.Layer.Shared.Logging;
 using Teams.APP.Layer;
 using Teams.INFRA.Layer;
 
-var builder = WebApplication.CreateBuilder(args);
 
+
+var builder = WebApplication.CreateBuilder(args);
 builder
     .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer"))
     .AddJsonFile(
@@ -19,19 +19,6 @@ builder
         reloadOnChange: false
     )
     .AddEnvironmentVariables();
-
-foreach (var kvp in builder.Configuration.AsEnumerable())
-{
-    if (kvp.Value?.StartsWith("${") == true && kvp.Value.EndsWith("}"))
-    {
-        var envVarName = kvp.Value.Trim(new char[] { '$', '{', '}' });
-        var envValue = Environment.GetEnvironmentVariable(envVarName);
-        if (!string.IsNullOrEmpty(envValue))
-        {
-            builder.Configuration[kvp.Key] = envValue;
-        }
-    }
-}
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -43,7 +30,6 @@ builder.Services.AddApiDI(builder.Configuration);
 builder.Services.AddApplicationDI(builder.Configuration);
 builder.Services.AddInfrastructureDI(builder.Configuration);
 
-// Configuration HTTPS et certificats
 var kestrelSection = builder.Configuration.GetSection("Kestrel:EndPoints:Https");
 var certificateFile = kestrelSection["Certificate:File"];
 var certificatePassword = kestrelSection["Certificate:CertPassword"];
@@ -68,7 +54,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
         httpsOptions.ClientCertificateMode = Enum.Parse<ClientCertificateMode>(
             kestrelSection["ClientCertificateMode"] ?? "RequireCertificate",
             ignoreCase: true
-        );
+        ); // a remettre en place RequireCertificate
 
         httpsOptions.ClientCertificateValidation = (cert, chain, errors) =>
         {
@@ -104,7 +90,6 @@ var app = builder.Build();
 try
 {
     Log.Information("🚀 Application starting up");
-    // Pipeline de l’app
     app.Map(
         "/team-management",
         teamApp =>

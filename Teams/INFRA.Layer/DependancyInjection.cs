@@ -63,23 +63,24 @@ public static class DependancyInjection
     };
 
     private static IServiceCollection ManageRedisCacheMemory(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
+   this IServiceCollection services,
+   IConfiguration configuration
+)
     {
         var Config = configuration.GetSection("CacheSettings");
-        var clientCertificate = new X509Certificate2(
-            Config["Redis:ConfigurationOptions:Certificate:File-pfx"]!,
-            Config["Redis:ConfigurationOptions:Certificate:REDISCLI_AUTH"],
-            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet
-        );
+        var certPath = Config["Redis:ConfigurationOptions:Certificate:File-pfx"];
+        var Password = Environment.GetEnvironmentVariable("REDISCLI_AUTH")
+               ?? Config["Redis:ConfigurationOptions:Certificate:REDISCLI_AUTH"];
+        if (string.IsNullOrEmpty(certPath))
+            throw new Exception("No path  existing for redis client certificate");
 
+        var clientCertificate = new X509Certificate2(certPath, Password, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
         var options = new ConfigurationOptions
         {
             EndPoints = { Config["Redis:ConnectionString"]! },
             Ssl = true,
-            SslHost = "redis.infra.docker",
-            Password = Config["Redis:ConfigurationOptions:Certificate:REDISCLI_AUTH"],
+            SslHost = "172.29.0.2",
+            Password = Password,
             AbortOnConnectFail = false,
             SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
             AllowAdmin = true,

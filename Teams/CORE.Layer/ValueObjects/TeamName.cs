@@ -1,5 +1,5 @@
-using System;
 using System.Text.RegularExpressions;
+using Teams.API.Layer.Middlewares;
 
 namespace Teams.CORE.Layer.ValueObjects;
 
@@ -14,12 +14,14 @@ public class TeamName
 
     public static TeamName Create(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            throw new ArgumentException("Team name cannot be empty.");
 
         if (!Regex.IsMatch(value, @"^[\p{L}\s\-']+$"))
-            throw new ArgumentException("Team name contains invalid characters.");
-
+            throw new HandlerException(
+                   500,
+                   "Team name contains invalid characters.",
+                   "Entry format",
+                   "Data validation error"
+               );
         return new TeamName(value.Trim());
     }
 

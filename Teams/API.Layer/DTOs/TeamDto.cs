@@ -5,15 +5,18 @@ public class TeamDto
     public Guid Id { get; set; }
     public string? Name { get; set; }
     public Guid TeamManagerId { get; set; }
-    public List<Guid> MembersId { get; set; } = new();
+    public IEnumerable<Guid> MembersId { get; set; }
 
+#pragma warning disable CS8618 
     public TeamDto() { }
+#pragma warning restore CS8618
+
 
     public TeamDto(
         Guid managerId,
         string teamName,
-        bool includeMembers = false,
-        List<Guid>? memberIds = null
+        IEnumerable<Guid> memberIds,
+        bool includeMembers = false
     )
     {
         TeamManagerId = managerId;

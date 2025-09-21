@@ -26,7 +26,7 @@ public static class HashSetJsonExtensions
         }
         else
         {
-            return query.AsEnumerable().Where(e => e.MembersIds.Contains(guid)).AsQueryable();
+            return query.AsEnumerable().Where(e => e.MembersIds.Select(m => m.Value).Contains(guid)).AsQueryable();
         }
     }
 
@@ -34,7 +34,7 @@ public static class HashSetJsonExtensions
     public static bool JsonbContainsGuid(string jsonArray, Guid guid)
     {
         throw new NotImplementedException(
-            "Cette méthode sert uniquement à générer du SQL côté serveur (PostgreSQL)."
+            "We use this method to manage SQL on  (PostgreSQL)."
         );
     }
 
@@ -42,7 +42,7 @@ public static class HashSetJsonExtensions
     public static bool SqlServerJsonContains(string jsonArray, string guid)
     {
         throw new NotImplementedException(
-            "Cette méthode sert uniquement à générer du SQL côté serveur (SQL Server)."
+            "We use this method to manage SQL on (SQL Server)."
         );
     }
 }

@@ -46,7 +46,7 @@ public class UpdateTeamManagerHandler(
                 "Team ID not found"
             );
         }
-        if (existingTeams.Count(t => t.TeamManagerId == command.NewTeamManagerId) > 3)
+        if (existingTeams.Count(t => t.TeamManagerId.Value == command.NewTeamManagerId) > 3)
         {
             LogHelper.BusinessRuleFailure(
                 logger,
@@ -56,7 +56,7 @@ public class UpdateTeamManagerHandler(
             );
             throw new DomainException("A manager cannot manage more than 3 teams.");
         }
-        if (team.TeamManagerId == command.NewTeamManagerId)
+        if (team.TeamManagerId.Value == command.NewTeamManagerId)
         {
             LogHelper.BusinessRuleFailure(
                 logger,

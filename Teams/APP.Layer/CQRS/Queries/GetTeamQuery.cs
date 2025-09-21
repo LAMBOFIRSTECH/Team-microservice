@@ -11,8 +11,5 @@ public class GetTeamQuery : IRequest<TeamDetailsDto>
     /// Initializes a new instance of the <see cref="GetTeamQuery"/> class with the specified team identifier.
     /// </summary>
     /// <param name="identifier">The unique identifier of the team to retrieve.</param>
-    public GetTeamQuery(Guid identifier)
-    {
-        Id = identifier;
-    }
+    public GetTeamQuery(Guid identifier) => Id = identifier;
 }

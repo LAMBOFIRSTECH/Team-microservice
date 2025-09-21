@@ -153,7 +153,7 @@ public class EmployeeService(
         switch (action)
         {
             case TeamMemberAction.Add:
-                if (team.MembersIds != null && team.MembersIds.Contains(memberId))
+                if (team.MembersIds != null && team.MembersIds.Select(m=> m.Value).ToHashSet().Contains(memberId))
                 {
                     LogHelper.BusinessRuleViolated(
                         "Member already exists in the team",
@@ -168,7 +168,7 @@ public class EmployeeService(
                 break;
 
             case TeamMemberAction.Remove:
-                if (team.MembersIds == null || !team.MembersIds.Contains(memberId))
+                if (team.MembersIds == null || !team.MembersIds.Select(m=> m.Value).ToHashSet().Contains(memberId))
                 {
                     LogHelper.BusinessRuleViolated(
                         "Member does not exist in the team",
