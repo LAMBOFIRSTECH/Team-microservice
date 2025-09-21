@@ -1,0 +1,98 @@
+{
+  "job": [
+    {
+      "api-team": [
+        {
+          "datacenters": [
+            "dev-local-lamboft"
+          ],
+          "group": [
+            {
+              "backend_api": [
+                {
+                  "count": 1,
+                  "network": [
+                    {
+                      "port": [
+                        {
+                          "http": [
+                            {
+                              "to": 8181
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "reschedule": [
+                    {
+                      "attempts": 0,
+                      "unlimited": false
+                    }
+                  ],
+                  "restart": [
+                    {
+                      "attempts": 0,
+                      "mode": "fail"
+                    }
+                  ],
+                  "service": [
+                    {
+                      "check": [
+                        {
+                          "interval": "10s",
+                          "path": "/team-management/health",
+                          "timeout": "2s",
+                          "type": "http"
+                        }
+                      ],
+                      "name": "team-management",
+                      "port": "http",
+                      "provider": "nomad"
+                    }
+                  ],
+                  "task": [
+                    {
+                      "api-team": [
+                        {
+                          "config": [
+                            {
+                              "cpu_hard_limit": true,
+                              "image": "${env.CI_REGISTRY}/${env.CI_PROJECT_NAMESPACE}/${env.CI_PROJECT_NAME}:${env.DOCKER_TAG}",
+                              "ports": [
+                                "http"
+                              ],
+                              "volumes": [
+                                "./appsettings.json:/app/Teams/API.Layer/appsettings.Development.json:ro"
+                              ]
+                            }
+                          ],
+                          "driver": "docker",
+                          "env": [
+                            {
+                              "ASPNETCORE_ENVIRONMENT": "Development",
+                              "ASPNETCORE_Kestrel__Certificates__Default__Password": "${env.CERT_PASSWORD}",
+                              "ASPNETCORE_Kestrel__Certificates__Default__Path": "/etc/ssl/certs/localhost.pfx",
+                              "ASPNETCORE_URLS": "https://+:8181",
+                              "LOG_LEVEL": "debug"
+                            }
+                          ],
+                          "resources": [
+                            {
+                              "cpu": 250,
+                              "memory": 250
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

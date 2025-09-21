@@ -1,0 +1,22 @@
+# .env
+*.pfx
+*.key
+*.crt
+
+
+bin/
+obj/
+*.log
+
+
+.git
+.gitignore
+
+
+# .docker_tag
+# build.env
+
+.vscode/
+.idea/
+*.user
+*.suo

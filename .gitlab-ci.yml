@@ -1,9 +1,17 @@
 ######## VARIABLES ########
 variables:
-  BUILD_CONFIGURATION: "Release"
-  NUGET_PACKAGES_DIRECTORY: "$CI_PROJECT_DIR/.nuget/packages"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
   SONARQUBE_CONF_DIR: "${CI_PROJECT_DIR}/.sonarqube/conf"
+  COVERAGE_REPORT_PATH: "$CI_PROJECT_DIR/TestResults/coverage.opencover.xml"
+  BUILD_CONFIGURATION: "Release"
+  GIT_STRATEGY: clone
+  GIT_CHECKOUT: "true"
+  NUGET_PACKAGES_DIRECTORY: "$CI_PROJECT_DIR/.nuget/packages"
+  GITLAB_PACKAGE_REGISTRY_USERNAME: "gitlab-ci-token"
+  GITLAB_PACKAGE_REGISTRY_PASSWORD: "$CI_JOB_TOKEN"
+  TRIGGER_ROLLBACK_URL: ""
 
 default:
   tags:
@@ -11,11 +19,13 @@ default:
 
 ######## CACHE ########
 cache:
-  key: "$CI_COMMIT_REF_SLUG"
+  key: "clean-cache-$CI_COMMIT_REF_SLUG"
   paths:
     - "$NUGET_PACKAGES_DIRECTORY"
+    - "TestResults/"
     - "bin/"
-    - ".sonarqube/"
+    - "obj/"
+  policy: pull-push
 
 ######## STAGES ########
 stages:
@@ -25,17 +35,18 @@ stages:
   - scan-vulnerabilities
   - sonar-build-and-analysis
   - deploy
+  - health-check
   - rollback
+  - cleanup
 
 ######## PRE-TREATMENT ########
 pre-treatment:
   stage: pre-treatment
   script:
     - echo "Nettoyage initial..."
-    - git reset --hard
-    - git clean -fdx
-    - dotnet nuget locals all --clear
-    - rm -rf **/bin/ **/obj/ **/TestResults/ Couverture/ .vscode/
+    - git fetch --all
+    - git reset --hard $CI_COMMIT_SHA
+    - rm -rf **/bin/ **/obj/ **/TestResults/ .vscode/
   artifacts:
     expire_in: 20 minutes
 
@@ -44,8 +55,8 @@ build:
   stage: build
   script:
     - SOLUTION_FILE=$(ls *.sln)
-    - echo "Compilation du projet :$SOLUTION_FILE"
-    - dotnet restore "$SOLUTION_FILE"
+    - dotnet restore "$SOLUTION_FILE" --configfile "$CI_PROJECT_DIR/NuGet.Config" --packages "$NUGET_PACKAGES_DIRECTORY"
+    - echo "Compilation du projet..."
     - dotnet build "$SOLUTION_FILE" --configuration $BUILD_CONFIGURATION
   artifacts:
     expire_in: 10 minutes
@@ -54,10 +65,12 @@ build:
 test:
   stage: test
   script:
-    - echo "Exécution des tests unitaires"
-    - TEST_PROJECT=$(find . -name "*.Tests.csproj" | head -n 1)
-    - dotnet test $TEST_PROJECT
+    - echo "Exécution des tests unitaires avec couverture"
+    - TEST_PROJECT=$(find . -name "*.Tests.csproj" )
+    - dotnet test $TEST_PROJECT --configuration $BUILD_CONFIGURATION /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=$COVERAGE_REPORT_PATH
   artifacts:
+    paths:
+      - TestResults/
     expire_in: 10 minutes
 
 ######## SCAN VULNERABILITÉS + DOCKER BUILD ########
@@ -69,7 +82,7 @@ scan-vulnerabilities:
   rules:
     - if: '$CI_COMMIT_BRANCH == "develop"'
   script:
-    - tag=$(./image_tag.sh | tr -cd '0-9.')
+    - tag=$(./image_tag.sh | tr -d '\n')
     - echo "DOCKER_TAG=$tag" > .env.ci
     - echo "CERT_PASSWORD=lambo" >> .env.ci
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
@@ -102,9 +115,9 @@ sonar-build-and-analysis:
     key: "$CI_COMMIT_REF_SLUG"
     paths:
       - "${SONAR_USER_HOME}/cache"
-      - sonar-scanner/
       - "$NUGET_PACKAGES_DIRECTORY"
       - ".sonarqube/"
+      - "TestResults/"
   artifacts:
     paths:
       - ".sonarqube/"
@@ -122,7 +135,8 @@ Env_dev:
     - echo "DEVELOPMENT_TAG=true" >> build.env
     - docker rm -f dev-$CI_PROJECT_NAME || true
     - chmod +x vault_app_auth.sh && ./vault_app_auth.sh
-    - docker-compose -f application-compose.yml --env-file .env.ci up -d
+    - export $(cat .env.ci | xargs)
+    - nomad job run application.hcl
     - echo "$DOCKER_TAG" > .docker_tag
   artifacts:
     reports:
@@ -130,6 +144,7 @@ Env_dev:
     paths:
       - .docker_tag
     expire_in: 10 minutes
+
 ######## DEPLOY STAGING ########
 Env_staging:
   stage: deploy
@@ -148,7 +163,8 @@ Env_staging:
     - docker build -t $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag .
     - docker push $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$tag
     - docker rm -f staging-$CI_PROJECT_NAME || true
-    - docker-compose -f application-compose.yml --env-file .env.ci up -d
+    - export $(cat .env.ci | xargs)
+    - nomad job run application.hcl
     - sleep 10
   artifacts:
     reports:
@@ -163,13 +179,13 @@ health_check:
   stage: health-check
   tags:
     - gitlab-lamboft-shell-runner
-  needs: ["Env_staging"]
+  needs: ["Env_dev"] # plus tard en staging
   script:
     - echo "Vérification de l'état de l'application sur $HEALTH_ENDPOINT..."
     - for i in {1..5}; do
-        curl -fs $HEALTH_ENDPOINT && exit 0;
-        echo "Health check failed, tentative $i...";
-        sleep 5;
+      curl -fs $HEALTH_ENDPOINT && exit 0;
+      echo "Health check failed, tentative $i...";
+      sleep 5;
       done
     - echo "Health check échoué après 5 tentatives. Déclenchement du rollback."
     - echo "$PREVIOUS_DOCKER_TAG" > .rollback_tag
@@ -186,8 +202,8 @@ health_check:
     expire_in: 10 minutes
   allow_failure: false
 
-######## ROLLBACK STAGING ########
-rollback_staging:
+######## ROLLBACK DEVELOP ########
+rollback_dev:
   stage: rollback
   tags:
     - gitlab-lamboft-shell-runner
@@ -196,14 +212,28 @@ rollback_staging:
   script:
     - ROLLBACK_TAG=$(cat .rollback_tag || cat .docker_tag || echo "none")
     - if [ "$ROLLBACK_TAG" = "none" ]; then
-        echo "Aucun tag trouvé pour rollback.";
-        exit 1;
+      echo "Aucun tag trouvé pour rollback.";
+      exit 1;
       fi
     - echo "Rollback vers l'image :$ROLLBACK_TAG"
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker pull $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$ROLLBACK_TAG
-    - docker rm -f staging-$CI_PROJECT_NAME || true
+    - docker rm -f dev-$CI_PROJECT_NAME || true
     - echo "CERT_PASSWORD=lambo" > .env.rollback
     - echo "DOCKER_TAG=$ROLLBACK_TAG" >> .env.rollback
-    - docker-compose -f application-compose.yml --env-file .env.rollback up -d
+    - export $(cat .env.rollback | xargs)
+    - nomad job run application.hcl
     - echo "Rollback terminé avec succès."
+
+# -----------------------------
+# Clean Up
+# -----------------------------
+cleanup:
+  stage: cleanup
+  tags:
+    - gitlab-lamboft-shell-develop
+  script:
+    - echo "Nettoyage des fichiers temporaires..."
+    - rm -rf **/bin/ **/obj/ TestResults/ .vscode/ .sonarqube/ .nuget/ *.md *.png sonar-report.json *.sh .git*
+  when: always
+  allow_failure: false

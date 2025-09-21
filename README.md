@@ -1,3 +1,5 @@
+### Couverture de code
+![Couverture code](./coverlet.png)
 
 ### 🔁 Pattern utilisés
 
@@ -255,7 +257,7 @@ La pipeline est organisée en plusieurs étapes (`stages`) :
 - **Build & Test** : Compilation et validation via tests unitaires.
 - **Scan vulnérabilités** : Scan Docker + dépendances avec Trivy.
 - **Analyse qualité** : Exécution SonarQube.
-- **Déploiement** : Docker build + push + lancement via Docker-compose.
+- **Déploiement** : Docker build + push + lancement via Nomad Hashicorp.
 - **Health Check** : Monitoring post-déploiement, retries inclus.
 - **Rollback** : Automatique sur échec health-check, sinon manuel.
 

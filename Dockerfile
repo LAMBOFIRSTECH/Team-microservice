@@ -14,39 +14,32 @@ ENV DOTNET_DOWNLOAD_URL=https://builds.dotnet.microsoft.com/dotnet/Sdk/${DOTNET_
 ENV DOTNET_ROOT=/opt/dotnet
 ENV PATH="${PATH}:${DOTNET_ROOT}"
 
-# Installation les dépendances nécessaires au SDK .NET
 RUN apk add --no-cache bash curl icu-libs krb5-libs zlib libgcc libstdc++
 
-# Création du service de lancement du conteneur
 RUN adduser -D -u 1000 backend_api && \
     mkdir -p /opt/dotnet
 
 WORKDIR /opt/dotnet
 
-# Téléchargement et installation du SDK manuellement
 RUN curl -SL ${DOTNET_DOWNLOAD_URL} -o dotnet.tar.gz && \
     tar -zxf dotnet.tar.gz -C .  && \
     rm dotnet.tar.gz
 
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 
-# Publication de l'application
 WORKDIR /src
 COPY . .
-COPY local-nuget-feed /local-nuget-feed
 
-RUN dotnet nuget add source /local-nuget-feed --name local
 RUN dotnet restore
 RUN dotnet publish Team-management.sln -c Release -r linux-musl-x64 --self-contained false -o /app
 
-# Runtime final minimal
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 RUN adduser -D -u 1000 backend_api
 WORKDIR /app
 COPY --from=builder /app .
 COPY Teams/API.Layer/appsettings.* .
 
-ENV ASPNETCORE_URLS=http://+:8181
+ENV ASPNETCORE_URLS=https://+:8181
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/etc/ssl/certs/backend.pfx
 
@@ -54,3 +47,4 @@ EXPOSE 8181
 USER backend_api
 
 ENTRYPOINT ["dotnet", "/app/Teams.dll"]
+
