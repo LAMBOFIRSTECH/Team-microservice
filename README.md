@@ -46,16 +46,14 @@
 - 📄 `DTOs/TeamRequestDto.cs`
 
 **Middlewares**  
-- 📄 `Middlewares/ExceptionHandlerMiddleware.cs`
 - 📄 `Middlewares/HandlerException.cs`
 - 📄 `Middlewares/JwtBearerAuthenticationMiddleware.cs`
 - 📄 `Middlewares/RequestLoggingMiddleware.cs`
 
 **Mappings**  
-- 📄 `Mappings/ProjectAssociationMapper.cs`
+- 📄 `Mappings/ProjectProfile.cs`
 - 📄 `Mappings/TeamProfile.cs`
-- 📄 `Mappings/TeamTransfertMapper.cs`
-- 📄 `Mappings/ValidationErrorMapper.cs`
+- 📄 `Mappings/TransfertMemberProfile.cs`
 
 **Shared.Logging**  
 - 📄 `Shared.Logging/SerilogConfiguration.cs`
@@ -265,7 +263,7 @@ La pipeline est organisée en plusieurs étapes (`stages`) :
 
 ## Déploiement
 
-Le déploiement utilise Docker Compose avec des tags versionnés générés automatiquement (`image_tag.sh`).  
+Le déploiement utilise nomad de chez hashicorp avec des tags versionnés générés automatiquement (`image_tag.sh`).  
 Chaque build génère un tag unique, stocké dans `.docker_tag` pour suivi.
 
 ---
