@@ -20,6 +20,16 @@ public class TeamDomainHandler(
         INotificationHandler<DomainEventNotification<TeamMaturityEvent>>,
         INotificationHandler<DomainEventNotification<ProjectDateChangedEvent>>
 {
+
+    public async Task Handle(
+        DomainEventNotification<TeamCreatedEvent> notification,
+        CancellationToken ct = default
+    )
+    {
+        _log.LogWarning("🔥 TeamCreatedEvent handler triggered for TeamId {Id}", notification.DomainEvent.TeamId);
+        _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
+        await Task.Delay(500);
+    }
     private async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -30,15 +40,6 @@ public class TeamDomainHandler(
             _log.LogWarning("⚠️ Team with ID {TeamId} not found.", teamId);
         }
         return team;
-    }
-
-    public async Task Handle(
-        DomainEventNotification<TeamCreatedEvent> notification,
-        CancellationToken ct = default
-    )
-    {
-        _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
-        await _teamScheduler.RescheduleAsync(ct);
     }
 
     public async Task Handle(

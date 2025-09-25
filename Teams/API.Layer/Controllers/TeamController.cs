@@ -76,8 +76,8 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var team = await _mediator.Send(new GetTeamQuery(teamId), cancellationToken);
-        return Ok(team);
+        var teamDto = await _mediator.Send(new GetTeamQuery(teamId), cancellationToken);
+        return Ok(teamDto);
     }
     /// <summary>
     /// 
@@ -95,8 +95,8 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var team = await _mediator.Send(new GetTeamStatsQuery(teamId), cancellationToken);
-        return Ok(team);
+        var teamDto = await _mediator.Send(new GetTeamStatsQuery(teamId), cancellationToken);
+        return Ok(teamDto);
     }
 
     /// <summary>
@@ -130,11 +130,11 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var teams = await _mediator.Send(
+        var teamsDto = await _mediator.Send(
             new GetTeamsByManagerQuery(managerId, includeMembers),
             cancellationToken
         );
-        return Ok(teams);
+        return Ok(teamsDto);
     }
 
     /// <summary>
@@ -224,11 +224,11 @@ public class TeamController(
         CancellationToken cancellationToken = default
     )
     {
-        var teams = await _mediator.Send(
+        var teamsDto = await _mediator.Send(
             new GetTeamsByMemberQuery(memberId, includeMembers),
             cancellationToken
         );
-        return Ok(teams);
+        return Ok(teamsDto);
     }
 
     /// <summary>
@@ -359,8 +359,8 @@ public class TeamController(
             var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
             return BadRequest(errorResponse);
         }
-        var team = await _mediator.Send(command, cancellationToken);
-        return Ok(team);
+        var teamDto = await _mediator.Send(command, cancellationToken);
+        return Ok(teamDto);
     }
 
     /// <summary>

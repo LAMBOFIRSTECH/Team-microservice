@@ -6,16 +6,13 @@ namespace Teams.APP.Layer.CQRS.Commands;
 
 public class CreateTeamCommand : IRequest<TeamDto>
 {
-    public string? Name { get; set; }
+    public string Name { get; set; }
     public Guid TeamManagerId { get; set; }
-    public HashSet<Guid> MembersId { get; } = new();
-
-    public CreateTeamCommand() { }
-
-    public CreateTeamCommand(string name, Guid teamManagerId, HashSet<Guid> membersId)
+    public IEnumerable<Guid> MembersIds { get; set; }
+    public CreateTeamCommand(string name, Guid teamManagerId, IEnumerable<Guid> membersId)
     {
         Name = name;
         TeamManagerId = teamManagerId;
-        MembersId = membersId;
+        MembersIds = membersId;
     }
 }

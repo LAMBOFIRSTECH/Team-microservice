@@ -10,7 +10,6 @@ using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.Services;
-
 public class ProjectService(
     ITeamRepository teamRepository,
     TeamExternalService teamExternalService,
@@ -46,9 +45,9 @@ public class ProjectService(
         return mapper.Map<ProjectAssociation>(dto);
 
     }
-    public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
+    public async Task ManageTeamProjectAsync(Guid operationId, string operationName)
     {
-        var teamProject = await GetProjectAssociationDataAsync(managerId, teamName);
+        var teamProject = await GetProjectAssociationDataAsync(operationId, operationName);
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             teamProject.TeamName,
             teamProject.TeamManagerId
@@ -77,28 +76,48 @@ public class ProjectService(
                 );
             }
         }
-        var projectState = teamProject.Details.Any(p => p.State == ProjectState.Active);
-        if (!projectState)
-            await RemoveTeamProjectAsync(existingTeam, teamProject);
-        await AddTeamProjectAsync(existingTeam, teamProject);
-    }
+        if (teamProject.HasSuspendedProject())
+            throw new DomainException("At least one project must be active.");
 
-    private async Task AddTeamProjectAsync(Team existingTeam, ProjectAssociation project)
+        await AddProjectToTeamAsync(existingTeam, teamProject);
+    }
+    private async Task AddProjectToTeamAsync(Team existingTeam, ProjectAssociation teamProject)
     {
-        existingTeam.AttachProjectToTeam(project, true);
+        if (teamProject == null || teamProject.IsEmpty())
+            throw new DomainException("Project association data cannot be null");
+
+        if (!teamProject.HasActiveProject())
+            throw new DomainException("Project must be active to be associated with a team.");
+
+        if (teamProject.Details.Count > 3)
+            throw new DomainException("A team cannot be associated with more than 3 projects.");
+
+        existingTeam.AssignProject(teamProject);
         await teamRepository.UpdateTeamAsync(existingTeam);
         LogHelper.Info(
-            $"🔗 📁 👥 Team {project.TeamName} has been attached to [{project.Details.Count}] project(s) successfully. ",
+            $"🔗 📁 👥 Team {teamProject.TeamName} has been attached to [{teamProject.Details.Count}] project(s) successfully.",
             log
         );
     }
-
-    private async Task RemoveTeamProjectAsync(Team existingTeam, ProjectAssociation project)
+    public async Task SuspendedProjectAsync(Guid managerId, string projectName)
     {
-        existingTeam.RemoveProjectsIfExpiredOrSuspended(false);
-        await teamRepository.UpdateTeamAsync(existingTeam);
+        var existingTeams = await teamRepository.GetTeamsByManagerIdAsync(managerId);
+        var suspendedTeam = existingTeams
+             .FirstOrDefault(t => t.Project.Details.Any(d => d.ProjectName == projectName));
+        if (suspendedTeam == null)
+        {
+            LogHelper.Warning(
+                $"No team found matching {managerId}, {projectName} with a suspended project",
+                log
+            );
+            throw new DomainException(
+                $"No team found matching {managerId}, {projectName} with a suspended project"
+            );
+        }
+        suspendedTeam.RemoveSuspendedProjects(projectName);
+        await teamRepository.UpdateTeamAsync(suspendedTeam);
         LogHelper.Info(
-            $"✅ Team 🧑‍🤝‍🧑 {project.TeamName} successfully removed from 🗂️ {project.Details.Count} project(s).",
+            $"✅ The suspended project 🗂️ [{projectName}] successfully removed from Team 🧑‍🤝‍🧑 [[{suspendedTeam.Name.Value}]].",
             log
         );
     }

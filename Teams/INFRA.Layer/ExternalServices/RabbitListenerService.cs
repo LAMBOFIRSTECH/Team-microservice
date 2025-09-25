@@ -1,9 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using CustomVaultPackage.Services;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Serilog;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 
@@ -68,7 +66,6 @@ public partial class RabbitListenerService(
             HandleServiceError(ex);
         }
     }
-
     private void ProcessMessage(
         string message,
         BasicDeliverEventArgs ea,
@@ -76,27 +73,26 @@ public partial class RabbitListenerService(
     )
     {
         var match = GuidAndTeamRegex().Match(message);
-
         try
         {
             if (match.Success && Guid.TryParse(match.Groups[1].Value, out Guid identifier))
             {
-                var TeamManagerId = new Guid(match.Groups[1].Value);
-                var teamName = match.Groups[3].Value.Trim();
+                var projectOperationId = new Guid(match.Groups[1].Value);
+                var projectOperationName = match.Groups[3].Value.Trim();
                 if (message.Contains("Member to add", StringComparison.OrdinalIgnoreCase))
                     backgroundJob.ScheduleAddTeamMemberAsync(identifier);
                 else if (message.Contains("Member to delete", StringComparison.OrdinalIgnoreCase))
-                    backgroundJob.ScheduleDeleteTeamMemberAsync(identifier, teamName);
+                    backgroundJob.ScheduleDeleteTeamMemberAsync(identifier, projectOperationName);
                 else if (message.Contains("Project affected", StringComparison.OrdinalIgnoreCase))
-                    backgroundJob.ScheduleAddProjectToTeamAsync(TeamManagerId, teamName);
+                    backgroundJob.ScheduleAddProjectToTeamAsync(projectOperationId, projectOperationName);
                 else if (message.Contains("Project suspended", StringComparison.OrdinalIgnoreCase))
-                    backgroundJob.ScheduleRemoveProjectToTeamAsync(TeamManagerId, teamName);
+                    backgroundJob.ScheduleRemoveProjectToTeamAsync(projectOperationId, projectOperationName);
                 else
                     throw new InvalidOperationException("Unrecognized message type");
 
                 _channel?.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
                 LogHelper.Info(
-                    $"🔔 Message processed for member or manager {identifier} in team {teamName}",
+                    $"🔔 Message processed for member or manager {identifier} in team {projectOperationName}",
                     log
                 );
             }
@@ -111,7 +107,6 @@ public partial class RabbitListenerService(
             HandleMessageError(ex, ea, match.Groups[1].Value);
         }
     }
-
     private async Task InitializeRabbitMqConnectionAsync()
     {
         var factory = await EstablishConnection();
@@ -120,7 +115,6 @@ public partial class RabbitListenerService(
 
         _channel.QueueDeclare(queue: QueueName, durable: true, exclusive: false, autoDelete: false);
     }
-
     private async Task<ConnectionFactory> EstablishConnection()
     {
         var rabbitSection = configuration.GetSection("RabbitMQ");
@@ -136,7 +130,6 @@ public partial class RabbitListenerService(
             }
         };
     }
-
     private void HandleMessageError(Exception ex, BasicDeliverEventArgs ea, string guidValue)
     {
         LogHelper.Error(
@@ -164,7 +157,6 @@ public partial class RabbitListenerService(
             ex
         );
     }
-
     public override void Dispose()
     {
         _channel?.Close();

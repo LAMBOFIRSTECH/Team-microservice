@@ -1,13 +1,9 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.INFRA.Layer.Persistence.Configurations;
-
 public class TeamConfiguration : IEntityTypeConfiguration<Team>
 {
     public void Configure(EntityTypeBuilder<Team> builder)
@@ -21,20 +17,9 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
 
         builder.Property(t => t.TeamManagerId)
             .HasConversion(
-                v => v.Value,       
+                v => v.Value,
                 v => new MemberId(v)
             ).IsRequired();
-        builder
-            .Property(t => t.ProjectStartDate)
-            .HasField("_projectStartDate")
-            .UsePropertyAccessMode(PropertyAccessMode.Field)
-            .IsRequired(false); // nullable
-
-        builder
-            .Property(t => t.ProjectEndDate)
-            .HasField("_projectEndDate")
-            .UsePropertyAccessMode(PropertyAccessMode.Field)
-            .IsRequired(false); // nullable
 
         builder.Property(t => t.State).IsRequired();
         builder.Property(t => t.TeamCreationDate).IsRequired();
@@ -44,6 +29,23 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                 b.Property(m => m.Value).HasColumnName("MemberId"); // colonne guid
                 b.HasKey("Value", "TeamId"); // PK composite
                 b.ToTable("TeamMembers"); // table dédiée pour EF
+            });
+
+        builder.OwnsOne(t => t.Project, pa =>
+            {
+                pa.Property(p => p.TeamManagerId)
+                .HasConversion(v => v, v => v)
+                .IsRequired();
+                pa.Property(p => p.TeamName).HasMaxLength(100);
+                pa.OwnsMany(p => p.Details, d =>
+                {
+                    d.Property(dd => dd.ProjectName).HasMaxLength(200).IsRequired();
+                    d.Property(dd => dd.ProjectStartDate).IsRequired();
+                    d.Property(dd => dd.ProjectEndDate).IsRequired();
+                    d.Property(dd => dd.State).IsRequired();
+                    d.ToTable("ProjectDetails"); // table séparée pour Details
+                    d.WithOwner().HasForeignKey("ProjectAssociationId");
+                });
             });
     }
 }

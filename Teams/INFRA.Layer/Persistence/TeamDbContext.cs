@@ -45,6 +45,8 @@ public class TeamDbContext : DbContext
             .Where(e => e.Entity is Team t && t.DomainEvents.Count > 0)
             .Select(e => (Team)e.Entity)
             .ToList();
+      
+
 
         var result = await base.SaveChangesAsync(ct);
         foreach (var entity in entitiesWithEvents)

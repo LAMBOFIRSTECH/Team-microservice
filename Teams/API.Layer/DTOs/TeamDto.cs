@@ -5,12 +5,11 @@ public class TeamDto
     public Guid Id { get; set; }
     public string? Name { get; set; }
     public Guid TeamManagerId { get; set; }
-    public IEnumerable<Guid> MembersId { get; set; }
+    public IEnumerable<Guid> MembersIds { get; set; }
 
 #pragma warning disable CS8618 
     public TeamDto() { }
 #pragma warning restore CS8618
-
 
     public TeamDto(
         Guid managerId,
@@ -22,8 +21,8 @@ public class TeamDto
         TeamManagerId = managerId;
         Name = teamName;
         if (includeMembers)
-            MembersId = memberIds ?? [];
+            MembersIds = memberIds ?? [];
         else
-            MembersId = [];
+            MembersIds = [];
     }
 }

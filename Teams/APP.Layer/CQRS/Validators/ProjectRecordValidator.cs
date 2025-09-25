@@ -28,8 +28,8 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
                     .RuleFor(x => x.ProjectName)
                     .NotEmpty()
                     .WithMessage("Project name can be empty.")
-                    .MaximumLength(100)
-                    .WithMessage("Project name cannot exceed 100 characters.");
+                    .MaximumLength(200)
+                    .WithMessage("Project name cannot exceed 200 characters.");
             });
 
         RuleForEach(x => x.Details)

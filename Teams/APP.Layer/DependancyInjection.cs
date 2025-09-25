@@ -27,10 +27,15 @@ public static class DependancyInjection
         services.AddAutoMapper(typeof(ProjectProfile).Assembly);
         services.AddAutoMapper(typeof(TransfertMemberProfile).Assembly);
 
+        // services.AddMediatR(cfg =>
+        // {
+        //     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+        // });
         services.AddMediatR(cfg =>
         {
-            cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
+            cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
         });
+
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();

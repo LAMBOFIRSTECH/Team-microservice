@@ -5,4 +5,5 @@ public interface IProjectService
 {
     Task ManageTeamProjectAsync(Guid managerId, string teamName);
     Task<ProjectAssociation> GetProjectAssociationDataAsync(Guid? managerId, string teamName);
+    Task SuspendedProjectAsync(Guid managerId, string projectName);
 }

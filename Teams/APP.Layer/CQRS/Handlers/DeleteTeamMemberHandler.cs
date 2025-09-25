@@ -29,11 +29,11 @@ public class DeleteTeamMemberHandler(ITeamRepository teamRepository)
         try
         {
             teamMember.RemoveMemberSafely(command.MemberId);
+            await teamRepository.UpdateTeamAsync(teamMember, cancellationToken);
         }
         catch (DomainException ex)
         {
             throw HandlerException.BadRequest(ex.Message, "Domain validation failed");
         }
-        await teamRepository.UpdateTeamAsync(teamMember, cancellationToken);
     }
 }

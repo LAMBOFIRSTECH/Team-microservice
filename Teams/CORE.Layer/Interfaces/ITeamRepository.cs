@@ -28,6 +28,8 @@ public interface ITeamRepository
         Guid teamManager,
         CancellationToken cancellationToken = default
     );
+    Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default);
+    Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
     Task<Team> CreateTeamAsync(Team team, CancellationToken cancellationToken = default);
     Task AddTeamMemberAsync(CancellationToken cancellationToken = default);
     Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default);

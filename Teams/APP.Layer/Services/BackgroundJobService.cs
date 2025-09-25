@@ -129,7 +129,7 @@ public class BackgroundJobService(
     }
 
     [Queue("runner_operation_add_project")]
-    public void ScheduleAddProjectToTeamAsync(Guid managerId, string teamName)
+    public void ScheduleRemoveProjectToTeamAsync(Guid projectOperationId, string projectOperationName)
     {
         try
         {
@@ -140,7 +140,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.ManageTeamProjectAsync(managerId, teamName),
+                        () => project.SuspendedProjectAsync(projectOperationId, projectOperationName),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,
@@ -174,7 +174,7 @@ public class BackgroundJobService(
     }
 
     [Queue("runner_operation_remove_project")]
-    public void ScheduleRemoveProjectToTeamAsync(Guid managerId, string teamName)
+    public void ScheduleAddProjectToTeamAsync(Guid projectOperationId, string projectOperationName)
     {
         try
         {
@@ -185,7 +185,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.ManageTeamProjectAsync(managerId, teamName),
+                        () => project.ManageTeamProjectAsync(projectOperationId, projectOperationName),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,

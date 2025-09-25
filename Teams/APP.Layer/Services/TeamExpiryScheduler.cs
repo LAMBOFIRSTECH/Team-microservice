@@ -49,7 +49,7 @@ public class TeamExpiryScheduler(
 
         foreach (var team in teams)
         {
-            if (team.IsProjectHasAnyDependencies(team))
+            if (team.HasAnyDependencies())
             {
                 LogHelper.Warning(
                     $"⚠️ Team {team.Name} cannot be archived because it has active projects.",

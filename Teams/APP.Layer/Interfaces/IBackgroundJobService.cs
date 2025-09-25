@@ -1,5 +1,3 @@
-using Teams.CORE.Layer.ValueObjects;
-
 namespace Teams.APP.Layer.Interfaces;
 
 public interface IBackgroundJobService
@@ -8,6 +6,4 @@ public interface IBackgroundJobService
     void ScheduleDeleteTeamMemberAsync(Guid memberId, string teamName);
     void ScheduleAddProjectToTeamAsync(Guid managerId, string teamName);
     void ScheduleRemoveProjectToTeamAsync(Guid managerId, string teamName);
-    
-    // Task DisAffectedProjectToTeam();
 }

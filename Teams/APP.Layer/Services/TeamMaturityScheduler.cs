@@ -59,8 +59,10 @@ public class TeamMaturityScheduler(
 
         foreach (var team in matureTeams)
         {
+            if (!team.IsMature())
+                LogHelper.Info($"✅ Team {team.Name} is not yet mature", _log);
+                
             LogHelper.Info($"✅ Team {team.Name} reached maturity", _log);
-            team.Maturity();
             await teamRepository.UpdateTeamAsync(team);
         }
 

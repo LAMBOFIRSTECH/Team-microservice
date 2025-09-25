@@ -12,19 +12,10 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         CancellationToken cancellationToken = default
     ) => await teamDbContext.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken); // AsNoTracking() pour lecture seule, sans intention de modifier
 
-    public async Task<Team?> GetTeamByNameAsync(
-        string teamName,
-        CancellationToken cancellationToken = default
-    ) =>
-        await teamDbContext.Teams.FirstOrDefaultAsync(
-            t => t.Name.Value.Equals(teamName),
-            cancellationToken
-        );
+    public async Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default)
+     => await teamDbContext.Teams.FirstOrDefaultAsync(t => t.Name.Value.Equals(teamName), cancellationToken);
 
-    public async Task<List<Team>> GetAllTeamsAsync(
-        CancellationToken cancellationToken = default,
-        bool asNoTracking = false
-    )
+    public async Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default,bool asNoTracking = false)
     {
         var query = teamDbContext.Teams.AsQueryable();
         if (asNoTracking)
@@ -33,10 +24,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return await query.ToListAsync(cancellationToken);
     }
 
-    public async Task<List<Team>> GetTeamsByManagerIdAsync(
-        Guid managerId,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId,CancellationToken cancellationToken = default)
     {
         var teams = await teamDbContext
             .Teams!.Where(t => t.TeamManagerId.Value == managerId)
@@ -44,49 +32,37 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
         return teams;
     }
 
-    public async Task<Team?> GetTeamByNameAndTeamManagerIdAsync(
-        string teamName,
-        Guid teamManager,
-        CancellationToken cancellationToken = default
-    ) =>
-        await teamDbContext
-            .Teams!.Where(t => t.Name.Value == teamName && t.TeamManagerId.Value.Equals(teamManager))
+    public async Task<Team?> GetTeamByNameAndTeamManagerIdAsync(string teamName,Guid teamManager,CancellationToken cancellationToken = default)
+    => await teamDbContext.Teams!.Where(t => t.Name.Value == teamName && t.TeamManagerId.Value.Equals(teamManager))
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<List<Team>> GetTeamsByMemberIdAsync(
-        Guid memberId,
-        CancellationToken cancellationToken = default
-    )
-    {
-        return await teamDbContext
-            .Teams.WhereMembersContain(memberId)
+    public async Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
+    => await teamDbContext.Teams.WhereMembersContain(memberId).ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Team>> GetTeamsByMemberAsync(Guid memberId, CancellationToken ct)
+    => await teamDbContext.Teams.WhereMembersContain(memberId).ToListAsync(ct);
+
+    public async Task<Team?> GetTeamByNameAndMemberIdAsync(Guid memberId,string teamName,CancellationToken cancellationToken)
+    =>  await teamDbContext.Teams!.Where(t => t.Name.Value == teamName && t.MembersIds.Select(m => m.Value).Contains(memberId))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    #region Project Expiry
+    public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
+    =>  await teamDbContext.Teams.Where(t => t.Project.Details.Any(d => d.ProjectEndDate <= DateTime.Now))
             .ToListAsync(cancellationToken);
-    }
 
-    public async Task<IReadOnlyList<Team>> GetTeamsByMemberAsync(
-        Guid memberId,
-        CancellationToken ct
-    )
+    public async Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
+    =>  await teamDbContext.Teams
+           .Where(t => t.Project.Details.Any(d => d.ProjectEndDate > DateTime.Now))
+           .SelectMany(t => t.Project.Details)
+           .Where(d => d.ProjectEndDate > DateTime.Now)
+           .MinAsync(d => (DateTime?)d.ProjectEndDate, cancellationToken);
+
+    #endregion
+
+    public async Task<Team> CreateTeamAsync(Team team,CancellationToken cancellationToken = default)
     {
-        var teams = await teamDbContext.Teams.WhereMembersContain(memberId).ToListAsync(ct);
-        return teams;
-    }
-
-    public async Task<Team?> GetTeamByNameAndMemberIdAsync(
-        Guid memberId,
-        string teamName,
-        CancellationToken cancellationToken
-    ) =>
-        await teamDbContext
-            .Teams!.Where(t => t.Name.Value == teamName && t.MembersIds.Select(m=> m.Value).Contains(memberId))
-            .FirstOrDefaultAsync(cancellationToken);
-
-    public async Task<Team> CreateTeamAsync(
-        Team team,
-        CancellationToken cancellationToken = default
-    )
-    {
-        await teamDbContext.Teams!.AddAsync(team, cancellationToken);
+        await teamDbContext.Teams.AddAsync(team, cancellationToken);
         await SaveAsync(cancellationToken);
         return team;
     }
@@ -101,7 +77,7 @@ public class TeamRepository(TeamDbContext teamDbContext) : ITeamRepository
     }
 
     public async Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default) =>
-        await SaveAsync(cancellationToken);
+        await SaveAsync(cancellationToken); // voir si on doit faire un attach avant de SaveChangesAsync
 
     public async Task AddTeamMemberAsync(CancellationToken cancellationToken = default) =>
         await SaveAsync(cancellationToken);

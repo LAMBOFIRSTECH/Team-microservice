@@ -11,7 +11,6 @@ using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
-
 public class CreateTeamHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
@@ -50,8 +49,8 @@ public class CreateTeamHandler(
 
         if (
             existingTeams.Any(t =>
-                t.MembersIds.Count == command.MembersId.Count
-                && !t.MembersIds.Select(m => m.Value).Except(command.MembersId).Any()
+                t.MembersIds.Count == command.MembersIds.Count()
+                && !t.MembersIds.Select(m => m.Value).Except(command.MembersIds).Any()
                 && t.TeamManagerId.Value == command.TeamManagerId
             )
         )
@@ -66,7 +65,7 @@ public class CreateTeamHandler(
                 "A team with exactly the same members and manager already exists."
             );
         }
-        var maxCommonPercent = GetCommonMembersStats(command.MembersId, existingTeams);
+        var maxCommonPercent = GetCommonMembersStats(command.MembersIds, existingTeams);
         if (maxCommonPercent >= 50)
         {
             LogHelper.BusinessRuleFailure(
@@ -82,7 +81,7 @@ public class CreateTeamHandler(
         Team team;
         try
         {
-            team = Team.Create(command.Name!, command.TeamManagerId, command.MembersId);
+            team = Team.Create(command.Name!, command.TeamManagerId, command.MembersIds);
         }
         catch (DomainException ex)
         {
@@ -98,17 +97,16 @@ public class CreateTeamHandler(
                 cancellationToken
             );
         }
-
         team.ClearDomainEvents();
         return mapper.Map<TeamDto>(team);
     }
 
     public static double GetCommonMembersStats(
-        HashSet<Guid> newTeamMembers,
-        List<Team> existingTeams // un hashset peut etre
+        IEnumerable<Guid> newTeamMembers,
+        List<Team> existingTeams
     )
     {
-        if (newTeamMembers == null || newTeamMembers.Count == 0)
+        if (newTeamMembers == null || newTeamMembers.Count() == 0)
             throw new DomainException("The new team must have at least two member.");
 
         if (existingTeams == null || existingTeams.Count == 0)
@@ -125,7 +123,6 @@ public class CreateTeamHandler(
             if (percent > maxPercent)
                 maxPercent = percent;
         }
-
         return maxPercent;
     }
 }

@@ -15,7 +15,7 @@ public class CreateTeamCommandValidator : AbstractValidator<CreateTeamCommand>
             .Must(id => id != Guid.Empty)
             .WithMessage("Team manager ID cannot be empty or an empty GUID");
 
-        RuleFor(x => x.MembersId)
+        RuleFor(x => x.MembersIds)
             .NotEmpty()
             .WithMessage("Team member cannot be empty")
             .Must(members => members.All(id => id != Guid.Empty))
