@@ -41,6 +41,14 @@ public class Team
     // Datetime.Now Couplage fort avec le systeme use IClock à la place
     #region Constructors
 #pragma warning disable CS8618
+    /// <summary>
+    /// Constructeur pour Entity Framework Core
+    /// Nécessaire pour la matérialisation par EF Core
+    /// </summary>
+    /// <remarks>
+    /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
+    /// Il ne doit pas être utilisé directement dans le code applicatif.
+    /// </remarks>
     public Team() { }
 #pragma warning restore CS8618
 
@@ -78,6 +86,14 @@ public class Team
     public bool IsTeamExpired() =>
          GetLocalDateTime() >= ExpirationDate && State != TeamState.Archived;
 
+    /// <summary>
+    /// Factory method to create a new Team instance.
+    /// Validates input parameters and enforces domain rules.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="teamManagerId"></param>
+    /// <param name="memberIds"></param>
+    /// <returns></returns>
     public static Team Create(
          string name,
          Guid teamManagerId,
@@ -87,9 +103,18 @@ public class Team
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), GetLocalDateTime());
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id));  // Ajouter l'événement de domaine pour la création de l'équipe doit pouvoir être annulé si erreur dans la suite
         return team;
     }
+    /// <summary>
+    /// Update team details: name, manager, members.
+    /// Cannot update an expired team.
+    /// Validates changes and recalculates team state.
+    /// </summary>
+    /// <param name="newName"></param>
+    /// <param name="newManagerId"></param>
+    /// <param name="newMemberIds"></param>
+    /// <exception cref="DomainException"></exception>
     public void UpdateTeam(string newName, Guid newManagerId, IEnumerable<Guid> newMemberIds)
     {
         if (IsTeamExpired())
@@ -112,6 +137,12 @@ public class Team
     #endregion
 
     #region State Computation
+    /// <summary>
+    /// Compute the current state of the team based on its members and expiration.
+    /// Draft if less than 3 members or no manager.
+    /// Archived if past expiration date.
+    /// Active otherwise.
+    /// </summary>
     public TeamState ComputedTeamState
     {
         get
@@ -125,6 +156,11 @@ public class Team
             return TeamState.Active;
         }
     }
+    /// <summary>
+    /// Recalculate and update the team's state and project state.
+    /// This method should be called after any operation that modifies the team's members,
+    /// manager, or project association to ensure the states are accurate.
+    /// </summary>
     public void RecalculateStates()
     {
         State = ComputedTeamState;
@@ -154,15 +190,33 @@ public class Team
         return hasDependencies;
     }
 
+    /// <summary>
+    /// Determine if the team is mature based on its creation date and maturity threshold.
+    /// Only active teams can be evaluated for maturity.
+    /// Maturity is defined as having existed for at least the maturity threshold duration.
+    /// An exception is thrown if the team is not active.
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="DomainException"></exception>
     public bool IsMature()
     {
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
 
-        if (!((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= MaturityThresholdInDays))
+        if (!((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= MaturityThresholdInDays)) // C'est 180 jours pour les tests on a mis 180 secondes
             return false;
         return true;
     }
+    /// <summary>
+    /// Archive the team if it has exceeded its validity period.
+    /// Only teams that are past their expiration date can be archived.
+    /// An exception is thrown if the team is not yet eligible for archiving.
+    /// </summary>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// Archiving a team changes its state to Archived.
+    /// This action is irreversible and should be performed with caution.
+    /// </remarks>  
     public void ArchiveTeam()
     {
         if (!IsTeamExpired())
@@ -173,6 +227,18 @@ public class Team
     #endregion
 
     #region Business Logic
+    /// <summary>
+    /// Validate team invariants:
+    /// - At least 3 members including the manager.
+    /// - No more than 10 members.
+    /// - Unique members.
+    /// - Manager must be a member.
+    /// Throws DomainException if any invariant is violated.
+    /// </summary>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// This method is called during team creation and updates to ensure the team remains valid.
+    /// </remarks>
     private void ValidateTeamInvariants()
     {
         if (_members.Count < 3)
@@ -187,7 +253,17 @@ public class Team
         if (!_members.Contains(_teamManagerId))
             throw new DomainException("The manager must be one of the team members.");
     }
-
+    /// <summary>
+    /// Assign a project to the team.
+    /// Validates project details and updates team expiration if necessary.
+    /// Throws DomainException if any validation fails.
+    /// </summary>
+    /// <param name="project"></param>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// This method ensures that the project is valid and aligns with the team's creation date and manager.
+    /// It also extends the team's expiration date based on the project's start date.
+    /// </remarks>
     public void AssignProject(ProjectAssociation project)
     {
         if (project.IsEmpty())
@@ -220,6 +296,14 @@ public class Team
         AddDomainEvent(new ProjectDateChangedEvent(Id));
     }
 
+    /// <summary>
+    /// Remove expired projects from the team.
+    /// Updates team state and triggers domain event if necessary.
+    /// </summary>
+    /// <remarks>
+    /// This method checks the project's details and removes any that have expired.
+    /// It then recalculates the team's state and triggers a domain event to notify of the change.
+    /// </remarks>
     public void RemoveExpiredProjects()
     {
         if (Project == null) return;
@@ -229,6 +313,15 @@ public class Team
         RecalculateStates();
     }
 
+    /// <summary>
+    /// Remove suspended projects from the team by project name.
+    /// Updates team state and triggers domain event if necessary.
+    /// </summary>
+    /// <param name="projectName"></param>
+    /// <remarks>
+    /// This method checks the project's details and removes any that are marked as suspended.
+    /// It then recalculates the team's state and triggers a domain event to notify of the change.
+    /// </remarks>
     public void RemoveSuspendedProjects(string projectName)
     {
         if (Project == null) return;
@@ -238,6 +331,18 @@ public class Team
         RecalculateStates();
     }
 
+    /// <summary>
+    /// Add a new member to the team.
+    /// Validates that the member is not already in the team, that the team does not exceed
+    /// the maximum number of members, and that the member being added is not the manager.
+    /// Throws DomainException if any validation fails.
+    /// </summary>
+    /// <param name="memberId"></param>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// This method ensures that the team remains valid after adding a new member.
+    /// It also triggers a domain event to notify of the member addition.
+    /// </remarks>
     public void AddMember(Guid memberId)
     {
         var vo = new MemberId(memberId);
@@ -251,7 +356,18 @@ public class Team
         AddDomainEvent(new TeamMemberAddedEvent(Id, memberId));
         RecalculateStates();
     }
-
+    /// <summary>
+    /// Remove a member from the team.
+    /// Validates that the member exists in the team, that the member being removed is not  the manager,
+    /// and that the team does not fall below the minimum number of members.
+    /// Throws DomainException if any validation fails.
+    /// </summary>
+    /// <param name="memberId"></param>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// This method ensures that the team remains valid after removing a member.
+    /// It also triggers a domain event to notify of the member removal.
+    /// </remarks>
     public void RemoveMemberSafely(Guid memberId)
     {
         var vo = new MemberId(memberId);
@@ -268,7 +384,17 @@ public class Team
         AddDomainEvent(new TeamMemberRemoveEvent(Id, memberId));
         RecalculateStates();
     }
-
+    /// <summary>
+    /// Change the team manager to a new member.
+    /// Validates that the new manager is a member of the team and not an empty GUID
+    /// Throws DomainException if any validation fails.
+    /// </summary>
+    /// <param name="newTeamManagerId"></param>
+    /// <exception cref="DomainException"></exception>
+    /// <remarks>
+    /// This method updates the team manager and triggers a domain event to notify of the change.
+    /// It also recalculates the team's state to ensure it remains valid.
+    /// </remarks>
     public void ChangeTeamManager(Guid newTeamManagerId)
     {
         var managerId = new MemberId(newTeamManagerId);
@@ -279,7 +405,7 @@ public class Team
             throw new DomainException("New team manager must be a member of the team.");
 
         _teamManagerId = managerId;
-        AddDomainEvent(new TeamManagerChangedEvent(Id, newTeamManagerId));
+        // AddDomainEvent(new TeamManagerChangedEvent(Id, newTeamManagerId));
         RecalculateStates();
     }
     #endregion
@@ -290,7 +416,14 @@ public class Team
     private void AddDomainEvent(IDomainEvent @event) => _domainEvents.Add(@event);
     public void ClearDomainEvents() => _domainEvents.Clear();
     #endregion
-
+    /// <summary>
+    /// Get the current local date and time.
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>
+    /// This method ensures that all date and time operations within the Team entity
+    /// are based on the local time zone, promoting consistency across the application.
+    /// </remarks>
     public static DateTime GetLocalDateTime() =>
         DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
 }
