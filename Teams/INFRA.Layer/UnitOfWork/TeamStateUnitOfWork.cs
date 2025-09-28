@@ -9,8 +9,8 @@ public class TeamStateUnitOfWork : ITeamStateUnitOfWork
     {
         foreach (var team in teams)
         {
-            if (team.State != TeamState.Archivee)
-                team.RecalculateState();
+            if (team.State != TeamState.Archived)
+                team.RecalculateStates();
         }
     }
 }

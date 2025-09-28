@@ -62,7 +62,7 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
             .ChildRules(detail =>
             {
                 detail
-                    .RuleFor(x => x.ProjectState)
+                    .RuleFor(x => x.VoState)
                     .NotNull()
                     .WithMessage("Project state object cannot be null.");
             });
@@ -71,7 +71,7 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
             .ChildRules(detail =>
             {
                 detail
-                    .RuleFor(x => x.ProjectState.State)
+                    .RuleFor(x => x.VoState.State)
                     .IsInEnum()
                     .WithMessage("Project state must be a valid enum value.");
             });

@@ -11,7 +11,7 @@ public class TeamDetailsDto
     public Guid TeamManagerId { get; set; }
     public string TeamCreationDate { get; set; }
     public string TeamExpirationDate { get; set; }
-    public bool ActiveProject { get; set; }
+    public bool IsAnyProject { get; set; }
     public List<string>? ProjectNames { get; set; }
 
     public string State { get; set; }
@@ -25,14 +25,14 @@ public class TeamDetailsDto
         DateTime teamExpirationDate,
         string state,
         List<string> projectNames,
-        bool activeProject
+        bool isAnyProject
     )
     {
         Name = teamName;
         TeamManagerId = managerId;
         ProjectNames = projectNames;
         State = state;
-        ActiveProject = activeProject;
+        IsAnyProject = isAnyProject;
         TeamCreationDate = ReadableDateTimeFormat(teamCreationDate);
         TeamExpirationDate = ReadableDateTimeFormat(teamExpirationDate);
 

@@ -140,7 +140,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.SuspendedProjectAsync(projectOperationId, projectOperationName),
+                        () => project.SuspendProjectAsync(projectOperationId, projectOperationName),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,

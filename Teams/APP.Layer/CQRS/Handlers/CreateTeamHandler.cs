@@ -100,7 +100,6 @@ public class CreateTeamHandler(
         team.ClearDomainEvents();
         return mapper.Map<TeamDto>(team);
     }
-
     public static double GetCommonMembersStats(
         IEnumerable<Guid> newTeamMembers,
         List<Team> existingTeams

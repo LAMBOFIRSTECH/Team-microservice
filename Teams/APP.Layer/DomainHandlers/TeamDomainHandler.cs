@@ -10,14 +10,11 @@ namespace Teams.APP.Layer.DomainHandlers;
 
 public class TeamDomainHandler(
     IProjectExpirySchedule _projectScheduler,
-    ITeamExpiryScheduler _teamScheduler,
-    ITeamMaturityScheduler _maturitySchedule,
+    ITeamLifecycleScheduler _teamLifecycleScheduler,
     IServiceScopeFactory _scopeFactory,
     ILogger<TeamDomainHandler> _log
 )
     : INotificationHandler<DomainEventNotification<TeamCreatedEvent>>,
-        INotificationHandler<DomainEventNotification<TeamArchiveEvent>>,
-        INotificationHandler<DomainEventNotification<TeamMaturityEvent>>,
         INotificationHandler<DomainEventNotification<ProjectDateChangedEvent>>
 {
 
@@ -28,6 +25,8 @@ public class TeamDomainHandler(
     {
         _log.LogWarning("🔥 TeamCreatedEvent handler triggered for TeamId {Id}", notification.DomainEvent.TeamId);
         _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
+        await _teamLifecycleScheduler.RescheduleAsync(ct);
+
         await Task.Delay(500);
     }
     private async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken ct = default)
@@ -43,34 +42,11 @@ public class TeamDomainHandler(
     }
 
     public async Task Handle(
-        DomainEventNotification<TeamArchiveEvent> notification,
-        CancellationToken ct = default
-    )
-    {
-        LogHelper.Info(
-            $"🔄 TeamArchivedEvent received for Team Id {notification.DomainEvent.TeamId}, rescheduling...",
-            _log
-        );
-        await _teamScheduler.RescheduleAsync(ct);
-    }
-
-    public async Task Handle(
-        DomainEventNotification<TeamMaturityEvent> notification,
-        CancellationToken ct = default
-    )
-    {
-        LogHelper.Info(
-            $"🔄 TeamMaturityEvent received for Team Id {notification.DomainEvent.TeamId}, rescheduling maturity check...",
-            _log
-        );
-        await _maturitySchedule.RescheduleMaturityTeamAsync(ct);
-    }
-
-    public async Task Handle(
         DomainEventNotification<ProjectDateChangedEvent> notification,
         CancellationToken ct = default
     )
     {
+        _log.LogWarning("🔥 ProjectDateChangedEvent handler triggered for TeamId {Id}", notification.DomainEvent.TeamId);
         LogHelper.Info("🔄 ProjectDateChangedEvent received, rescheduling...", _log);
         await _projectScheduler.RescheduleAsync(ct);
     }

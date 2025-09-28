@@ -33,24 +33,28 @@ public class GetTeamQueryHandler(
                 "Not Found",
                 "Team ressource not found"
             );
-        if (team.State == TeamState.Archivee)
+        if (team.State == TeamState.Archived && !team.HasAnyDependencies())
+        {
             throw new HandlerException(
                 410,
                 $"Team with ID {request.Id} is expired.",
                 "Gone",
                 "Team ressource is expired"
             );
+        }
+
         var teamDto = mapper.Map<TeamDetailsDto>(team);
         var projectAssociation = team.Project;
         if (!team.HasAnyDependencies() || projectAssociation == null || projectAssociation.Details.Count == 0)
         {
-            teamDto.ActiveProject = false;
+            teamDto.IsAnyProject = false;
             teamDto.ProjectNames = null;
             teamDto.State = Maturity(team);
             return teamDto;
         }
-
-        teamDto.ActiveProject = true;
+        teamDto.TeamExpirationDate = projectAssociation.GetprojectMaxEndDate().ToString("dd-MM-yyyy HH:mm:ss",
+                                   System.Globalization.CultureInfo.InvariantCulture);
+        teamDto.IsAnyProject = true;
         teamDto.TeamManagerId = projectAssociation.TeamManagerId;
         teamDto.Name = projectAssociation.TeamName;
         teamDto.ProjectNames = projectAssociation.Details.Select(d => d.ProjectName).ToList();
@@ -64,12 +68,12 @@ public class GetTeamQueryHandler(
             verdict = "not yet mature";
             _ = StateMappings[team.State];
             LogHelper.Info($"✅ Team is {team.State} however {StateMappings[team.State]}.", log);
-            return $"✅ Team is {team.State} however {StateMappings[team.State]}.";
+            return $"✅ Team is {team.State} with {team.ProjectState} project however {StateMappings[team.State]}.";
         }
         verdict = "Mature";
         _ = StateMappings[team.State];
         LogHelper.Info($"✅ Team is {team.State} and {StateMappings[team.State]}.", log);
-        return $"✅ Team is {team.State} and {StateMappings[team.State]}.";
+        return $"✅ Team is {team.State} with {team.ProjectState} project and {StateMappings[team.State]}.";
 
     }
 }

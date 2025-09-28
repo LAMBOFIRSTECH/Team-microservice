@@ -8,13 +8,13 @@ public class ProjectProfile : Profile
 {
     public ProjectProfile()
     {
-        CreateMap<ProjectStateDto, ProjectState>().ConvertUsing(src => src.State);
+        CreateMap<ProjectStateDto, VoState>().ConvertUsing(src => src.State);
         CreateMap<DetailDto, Detail>()
             .ConvertUsing(src => new Detail(
                 src.ProjectName,
                 src.ProjectStartDate,
                 src.ProjectEndDate,
-                src.ProjectState.State
+                src.VoState.State
             ));
 
         CreateMap<ProjectAssociationDto, ProjectAssociation>()

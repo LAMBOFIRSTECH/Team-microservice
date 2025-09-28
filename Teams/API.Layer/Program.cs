@@ -54,7 +54,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
         httpsOptions.ClientCertificateMode = Enum.Parse<ClientCertificateMode>(
             kestrelSection["ClientCertificateMode"] ?? "RequireCertificate",
             ignoreCase: true
-        ); // a remettre en place RequireCertificate
+        );
 
         httpsOptions.ClientCertificateValidation = (cert, chain, errors) =>
         {
@@ -89,7 +89,7 @@ builder.Services.AddHealthChecks();
 var app = builder.Build();
 try
 {
-    Log.Information("🚀 Application starting up");
+    Log.Information("🟢 Application starting up");
     app.Map(
         "/team-management",
         teamApp =>

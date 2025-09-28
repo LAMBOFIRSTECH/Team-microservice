@@ -7,12 +7,37 @@ using Teams.APP.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
+/// <summary>
+/// RabbitMQ listener service
+/// 1. Connects to RabbitMQ and listens for messages on a specified queue.
+/// 2. Processes messages to handle team member additions/removals and project associations.
+/// 3. Uses regex to parse messages and extract relevant information.
+/// 4. Interacts with a background job service to schedule tasks based on message content.
+/// 5. Implements error handling and logging for monitoring and debugging.
+/// 6. Designed to run as a hosted background service within the application.
+///   Note: Ensure RabbitMQ server is accessible and the queue is properly configured.
+///  Connection details are sourced from configuration settings.
+/// </summary>
+/// <param name="log"></param>
+/// <param name="configuration"></param>
+/// <param name="scopeFactory"></param>
 public partial class RabbitListenerService(
     ILogger<RabbitListenerService> log,
     IConfiguration configuration,
     IServiceScopeFactory scopeFactory
 ) : BackgroundService
 {
+    // Que se passe t-il quand un message n'est pas consommé correctement ?
+    // -> Il est renvoyé dans la file d'attente (requeue)
+    // -> On peut aussi le rejeter (reject) et le supprimer (nack) de la file d'attente
+    // -> On peut aussi le rediriger vers une autre file d'attente (dead-letter queue)
+    // Ici, on choisit de le supprimer (nack) pour éviter les boucles infinies de reprocessing
+    // En production, il serait judicieux de mettre en place une dead-letter queue pour analyser
+    // les messages qui n'ont pas pu être traités
+    // et comprendre pourquoi (format incorrect, données manquantes, etc.)
+    // On pourrait aussi implémenter un mécanisme de retry avec un délai avant de renvoyer le message
+    // dans la file d'attente principale.
+    // Pour l'instant, on a un nack et un retry coté hangfire (3 tentatives par défaut)
     private const string QueueName = "team_management";
     private IConnection? _connection;
     private IModel? _channel;
@@ -25,7 +50,7 @@ public partial class RabbitListenerService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        LogHelper.Info("🟢 RabbitListenerService started", log);
+        LogHelper.Info("🚀 RabbitMq Listener Service starting up", log);
 
         try
         {

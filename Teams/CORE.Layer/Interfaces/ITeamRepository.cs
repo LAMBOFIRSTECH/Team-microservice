@@ -4,25 +4,16 @@ namespace Teams.CORE.Layer.Interfaces;
 
 public interface ITeamRepository
 {
-    Task<List<Team>> GetAllTeamsAsync(
-        CancellationToken cancellationToken = default,
-        bool asNoTracking = false
-    );
+    Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default, bool asNoTracking = false);
     Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);
     Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default);
-    Task<List<Team>> GetTeamsByMemberIdAsync(
-        Guid memberId,
-        CancellationToken cancellationToken = default
-    );
+    Task<List<Team>> GetTeamsByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default);
     Task<Team?> GetTeamByNameAndMemberIdAsync(
         Guid memberId,
         string teamName,
         CancellationToken cancellationToken = default
     );
-    Task<List<Team>> GetTeamsByManagerIdAsync(
-        Guid managerId,
-        CancellationToken cancellationToken = default
-    );
+    Task<List<Team>> GetTeamsByManagerIdAsync(Guid managerId, CancellationToken cancellationToken = default);
     Task<Team?> GetTeamByNameAndTeamManagerIdAsync(
         string teamName,
         Guid teamManager,
@@ -30,6 +21,8 @@ public interface ITeamRepository
     );
     Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default);
     Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
+    // Task<DateTime?> GetNextTeamExpirationDate(CancellationToken cancellationToken = default);
+    // Task<List<Team>> GetExpiredTeams(CancellationToken cancellationToken = default);
     Task<Team> CreateTeamAsync(Team team, CancellationToken cancellationToken = default);
     Task AddTeamMemberAsync(CancellationToken cancellationToken = default);
     Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default);

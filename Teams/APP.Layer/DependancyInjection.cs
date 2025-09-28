@@ -1,4 +1,3 @@
-using System.Reflection;
 using CustomVaultPackage;
 using FluentValidation;
 using OpenTelemetry.Resources;
@@ -9,7 +8,6 @@ using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
 
 namespace Teams.APP.Layer;
-
 public static class DependancyInjection
 {
     public static IServiceCollection AddApplicationDI(
@@ -26,11 +24,6 @@ public static class DependancyInjection
         services.AddAutoMapper(typeof(TeamProfile).Assembly);
         services.AddAutoMapper(typeof(ProjectProfile).Assembly);
         services.AddAutoMapper(typeof(TransfertMemberProfile).Assembly);
-
-        // services.AddMediatR(cfg =>
-        // {
-        //     cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-        // });
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssemblies(AppDomain.CurrentDomain.GetAssemblies());
@@ -45,22 +38,15 @@ public static class DependancyInjection
             sp.GetRequiredService<ProjectExpiryScheduler>()
         );
         services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
-        services.AddSingleton<TeamExpiryScheduler>();
-        services.AddSingleton<ITeamExpiryScheduler>(sp =>
-            sp.GetRequiredService<TeamExpiryScheduler>()
+        services.AddSingleton<TeamLifecycleScheduler>();
+        services.AddSingleton<ITeamLifecycleScheduler>(sp =>
+            sp.GetRequiredService<TeamLifecycleScheduler>()
         );
-        services.AddHostedService(sp => sp.GetRequiredService<TeamExpiryScheduler>());
-        services.AddSingleton<TeamMaturityScheduler>();
-        services.AddSingleton<ITeamMaturityScheduler>(sp =>
-            sp.GetRequiredService<TeamMaturityScheduler>()
-        );
-        services.AddHostedService(sp => sp.GetRequiredService<TeamMaturityScheduler>());
-
+        services.AddHostedService(sp => sp.GetRequiredService<TeamLifecycleScheduler>());
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);
         return services;
     }
-
     private static IServiceCollection AddAuthorizationPolicies(this IServiceCollection services)
     {
         services.AddAuthorization(options =>
@@ -82,7 +68,6 @@ public static class DependancyInjection
                         .AddAuthenticationSchemes("JwtAuthorization")
             );
         });
-
         return services;
     }
 

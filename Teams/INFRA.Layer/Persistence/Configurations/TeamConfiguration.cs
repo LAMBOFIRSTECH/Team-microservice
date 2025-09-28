@@ -4,6 +4,7 @@ using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.INFRA.Layer.Persistence.Configurations;
+
 public class TeamConfiguration : IEntityTypeConfiguration<Team>
 {
     public void Configure(EntityTypeBuilder<Team> builder)
@@ -45,6 +46,8 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                     d.Property(dd => dd.State).IsRequired();
                     d.ToTable("ProjectDetails"); // table séparée pour Details
                     d.WithOwner().HasForeignKey("ProjectAssociationId");
+                    d.Property<Guid>("Id");
+                    d.HasKey("Id");
                 });
             });
     }

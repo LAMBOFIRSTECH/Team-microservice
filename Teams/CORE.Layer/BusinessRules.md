@@ -11,24 +11,29 @@
 --------------------------------------------------------------------------------------------------------
 
 Les differents Etat d'une équipe et leur signification
-----------------------------------------------------------------------------------------------------------------------------------------------------
-| Statut         | Description                                                                    | Déclencheurs / Conditions métier               |
-| ---------------| -------------------------------------------------------------------------------|----------------------------------------------- |
-| **Incomplète** |Équipe constituée mais sans projet (peut être en création ou non conforme)      |`Membres.Count < 2 ou Responsable == null`      |
-|                |                                                                                |                                                |
-| **Active**     |Équipe complète (≥2 membres + manager)                                          |`Membres.Count >= 2` et `Responsable != null`   |
-|****************|********************************************************************************|************************************************|
-| **Complete**   |Équipe active et associée à un projet                                           |`Équipe.Active == true et Projet != null`       | 
-|                |                                                                                |                                                |
-| **Suspendue**  |Projet associé à l’équipe est suspendu                                          | `Projet.Etat == Suspendu`                      |
-|****************|********************************************************************************|************************************************|
-| **En révision**|Équipe suspendue, en cours d’évaluation RH (productivité, turnover...)          |`Productivité < 40%` ou Turnover > 50% en 2 mois|
-|                |                                                                                |                                                |
-|**À désaffecter**|Équipe non réaffectée à un projet après la révision                            |Évaluation terminée sans réassignation          |
-|****************|********************************************************************************|************************************************|
-|                |                                                                                |                                                |
-|**Archivée**    |Équipe incomplète (sans projet) depuis 15 jours                                 |`État == Incomplète pendant > 15 jours `        |
-----------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------
+|Statut (Team)   | Description                                                       | Déclencheurs / Conditions métier               |
+|----------------|-------------------------------------------------------------------|----------------------------------------------- |
+|**Draft**       |Équipe en cours de création (moins de 3 membres ou pas de manager) |`Membres.Count < 3 ou Responsable == null`      |
+|                |                                                                   |                                                |
+|**Active**      |Équipe complète (≥ 3 membres + 1 manager)                          |`Membres.Count >= 3` et `Responsable != null`   |
+|                |                                                                   |                                                |
+|**Archived**    |Équipe inactive ou restée non valide après un certain délai        |`State = TeamState.Archived`                    |
+|-------------------------------------------------------------------------------------------------------------------------------------|
+
+|**************************|***********************************************|************************************************|
+|Statut (Project)          | Description                                   | Déclencheurs / Conditions métier               |
+|--------------------------|-----------------------------------------------|------------------------------------------------|
+|**Unaffected**            |Aucune affectation projet                      |`ProjectAssignmentState.Unassigned`             | 
+|                          |                                               |                                                |
+|**Assigned**              |Projet en cours                                | `ProjectAssignmentState.Assigned`              |
+|                          |                                               |                                                |
+|**Suspended**             |Projet(s) associé(s) suspendu(s)               |`ProjectAssignmentState.Suspended`              |
+|                          |                                               |                                                |
+|**UnderReview**           |Projet en cours d’évaluation pour réaffectation|`ProjectAssignmentState.UnderReview`            |
+|                          |                                               |                                                |
+|**UnassignedAfterReview** |Équipe restée sans projet après révision       |`ProjectAssignmentState.UnassignedAfterReview`  |
+|---------------------------------------------------------------------------------------------------------------------------|
 
 
 # Entité Equipe microservice dédié
@@ -72,11 +77,11 @@ Les differents Etat d'une équipe et leur signification
 -----------------------------------------------------------------------------------------------------------
 | Règle                                              | Exemple                                            |
 | -------------------------------------------------- | ---------------------------------------------------|
-|☑️  Une équipe doit avoir un nom non vide          | `"NomEquipe != null && NomEquipe.Length > 0"`      | 
-|                                                   |                                                    |
-|☑️ Le responsable doit être un employé valide        | Vérifié via `EmployeeService`                    |
-|                                                   |                                                    |
-|☑️ Les membres doivent être des employés existants | Vérifié avant ajout                                |
+|☑️ Une équipe doit avoir un nom non vide           | `"NomEquipe != null && NomEquipe.Length > 0"`       | 
+|                                                    |                                                    |
+|☑️ Le responsable doit être un employé valide      | Vérifié via `EmployeeService`                       |
+|                                                    |                                                    |
+|☑️ Les membres doivent être des employés existants | Vérifié avant ajout                                 |
 -----------------------------------------------------------------------------------------------------------
 
 
@@ -98,7 +103,7 @@ Les differents Etat d'une équipe et leur signification
 |------------------------------------------------|--------------------------------------- |
 |☑️Une équipe ne peut pas dépasser 10 membres    | `if (Membres.Count >= 10) throw ...`   |
 |                                                |                                         |
-|☑️Minimum 2 membres pour valider une équipe     | Empêche les équipes “fantômes”         |
+|☑️Minimum 3 membres pour valider une équipe     | Empêche les équipes “fantômes”         |
 -------------------------------------------------------------------------------------------
 
 
@@ -106,7 +111,7 @@ Les differents Etat d'une équipe et leur signification
 -----------------------------------------------------------------------------------------------------------------------------------------------
 | Règle                                                                              | Exemple                                                 |
 |------------------------------------------------------------------------------------|---------------------------------------------------------|
-|☑️ Une équipe ne peut être activée que si elle a un responsable et au moins 2 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
+|☑️ Une équipe ne peut être activée que si elle a un responsable et au moins 3 membres |`Etat == Actif` validé à l’activation(Redis ID + status) |
 |                                                                                    |                                                         |
 |☑️ Une équipe archivée ne peut plus être modifiée                                  | `if (Equipe.Etat == Archivee) throw BusinessException`  |
 |                                                                                    |                                                         |
@@ -137,7 +142,7 @@ Les differents Etat d'une équipe et leur signification
 | Règle                                       | Exemple                                                                 |
 |---------------------------------------------|-------------------------------------------------------------------------|
 |☑️ Statut de l’équipe (Complète /Incomplète)|                                                                          |
-|dérivé du nombre de membres et de            | `Etat = (Membres.Count >= 2 && Responsable != null) ? Actif : Incomplet`| 
+|dérivé du nombre de membres et de            | `Etat = (Membres.Count >= 3 && Responsable != null) ? Actif : Incomplet`| 
 |la présence d’un responsable                 |                                                                         |
 |                                             |                                                                         |
 | Taux d'engagement de l’équipe               | % de membres actifs dans des projets                                    |
@@ -206,7 +211,7 @@ Les differents Etat d'une équipe et leur signification
 |                                                                         |                                                                              |
 |☑️ Interdiction d’avoir deux équipes avec **exactement** les mêmes membres |Empêche duplication structurelle `(GetAllTeamsQueryHandler)`               |
 |                                                                         |                                                                              |
-|Une équipe-associée-projet ne peut etre supprimée if `ExpirationDate > ValidityPeriodInDays `| update la date expiration de 30 jours                   |
+|☑️ Une équipe-associée-projet ne peut etre supprimée if `ExpirationDate > ValidityPeriodInDays `| update la date expiration de 30 jours                   |
 ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 

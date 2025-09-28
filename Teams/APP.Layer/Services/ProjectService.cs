@@ -10,6 +10,7 @@ using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.Services;
+
 public class ProjectService(
     ITeamRepository teamRepository,
     TeamExternalService teamExternalService,
@@ -26,28 +27,30 @@ public class ProjectService(
             LogHelper.Error("❌ Failed to retrieve project association data", log);
             throw new DomainException("Failed to retrieve project association data");
         }
+
         if (dto.TeamManagerId != managerId || dto.TeamName != teamName)
         {
             LogHelper.Error(
-                $"❌ Messages server send: {managerId}, {teamName}. We Received: {dto.TeamManagerId}, {dto.TeamName} from the external service.",
+                $"❌ Mismatch: Expected [{managerId}, {teamName}], Received [{dto.TeamManagerId}, {dto.TeamName}]",
                 log
             );
-            throw new DomainException(
-                $"Mismatched team manager or team name. Expected: {managerId}, {teamName}. Received: {dto.TeamManagerId}, {dto.TeamName}"
-            );
+            throw new DomainException("Mismatched team manager or team name");
         }
+
         var validationResult = await projectRecordValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
             LogHelper.CriticalFailure(log, "Data validation", $"{validationResult}", null);
-            throw new DomainException("Project association data are invalid");
+            throw new DomainException("Project association data is invalid");
         }
-        return mapper.Map<ProjectAssociation>(dto);
 
+        return mapper.Map<ProjectAssociation>(dto);
     }
-    public async Task ManageTeamProjectAsync(Guid operationId, string operationName)
+
+    public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
     {
-        var teamProject = await GetProjectAssociationDataAsync(operationId, operationName);
+        var teamProject = await GetProjectAssociationDataAsync(managerId, teamName);
+
         var existingTeam = await teamRepository.GetTeamByNameAndTeamManagerIdAsync(
             teamProject.TeamName,
             teamProject.TeamManagerId
@@ -55,69 +58,59 @@ public class ProjectService(
 
         if (existingTeam == null)
         {
-            LogHelper.Warning(
-                $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}",
-                log
-            );
-            throw new DomainException(
-                $"No team found matching {teamProject.TeamManagerId}, {teamProject.TeamName}"
-            );
+            LogHelper.Warning($"No team found for [{teamProject.TeamManagerId}, {teamProject.TeamName}]", log);
+            throw new DomainException("No matching team found");
         }
-        if (existingTeam.State == TeamState.Complete)
+
+        if (!teamProject.HasActiveProject())
         {
-            foreach (var item in teamProject.Details)
-            {
-                LogHelper.Warning(
-                    $"Team {teamProject.TeamName} already has an active project name's [ {item.ProjectName} ].",
-                    log
-                );
-                throw new DomainException(
-                    $"Team {teamProject.TeamName} already has an active project."
-                );
-            }
+            throw new DomainException("At least one project must be active to associate with the team");
         }
-        if (teamProject.HasSuspendedProject())
-            throw new DomainException("At least one project must be active.");
 
         await AddProjectToTeamAsync(existingTeam, teamProject);
     }
-    private async Task AddProjectToTeamAsync(Team existingTeam, ProjectAssociation teamProject)
+
+    private async Task AddProjectToTeamAsync(Team existingTeam, ProjectAssociation project)
     {
-        if (teamProject == null || teamProject.IsEmpty())
-            throw new DomainException("Project association data cannot be null");
+        if (project.IsEmpty())
+            throw new DomainException("Project association data cannot be null or empty");
 
-        if (!teamProject.HasActiveProject())
-            throw new DomainException("Project must be active to be associated with a team.");
+        if (project.Details.Count > 3)
+            throw new DomainException("A team cannot be associated with more than 3 projects");
 
-        if (teamProject.Details.Count > 3)
-            throw new DomainException("A team cannot be associated with more than 3 projects.");
+        if (existingTeam.Project is not null)
+        {
+            existingTeam.Project!.AddDetail(project.Details.LastOrDefault()!);
+        }
+        else existingTeam.AssignProject(project);
+        Console.WriteLine($"Voici le nombre de détails présent: {project.Details.Last().ProjectName}");
 
-        existingTeam.AssignProject(teamProject);
         await teamRepository.UpdateTeamAsync(existingTeam);
         LogHelper.Info(
-            $"🔗 📁 👥 Team {teamProject.TeamName} has been attached to [{teamProject.Details.Count}] project(s) successfully.",
+            $"🔗 Team '{project.TeamName}' successfully attached to [{project.Details.Count}] project(s)",
             log
         );
     }
-    public async Task SuspendedProjectAsync(Guid managerId, string projectName)
+
+    public async Task SuspendProjectAsync(Guid managerId, string projectName)
     {
         var existingTeams = await teamRepository.GetTeamsByManagerIdAsync(managerId);
+
         var suspendedTeam = existingTeams
-             .FirstOrDefault(t => t.Project.Details.Any(d => d.ProjectName == projectName));
+            .FirstOrDefault(t => t.Project != null && t.Project.Details.Any(d => d.ProjectName == projectName));
+
         if (suspendedTeam == null)
         {
-            LogHelper.Warning(
-                $"No team found matching {managerId}, {projectName} with a suspended project",
-                log
-            );
-            throw new DomainException(
-                $"No team found matching {managerId}, {projectName} with a suspended project"
-            );
+            LogHelper.Warning($"No team found for manager {managerId} with project '{projectName}'", log);
+            throw new DomainException("No matching team with the specified project found");
         }
+
         suspendedTeam.RemoveSuspendedProjects(projectName);
+
         await teamRepository.UpdateTeamAsync(suspendedTeam);
+
         LogHelper.Info(
-            $"✅ The suspended project 🗂️ [{projectName}] successfully removed from Team 🧑‍🤝‍🧑 [[{suspendedTeam.Name.Value}]].",
+            $"✅ Project '{projectName}' successfully removed from Team '{suspendedTeam.Name.Value}'",
             log
         );
     }
