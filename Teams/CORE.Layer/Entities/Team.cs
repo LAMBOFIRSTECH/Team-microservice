@@ -87,7 +87,7 @@ public class Team
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), GetLocalDateTime());
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id));  // Ajouter l'événement de domaine pour la création de l'équipe doit pouvoir être annulé si erreur dans la suite
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
     public void UpdateTeam(string newName, Guid newManagerId, IEnumerable<Guid> newMemberIds)
@@ -159,7 +159,7 @@ public class Team
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
 
-        if (!((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= MaturityThresholdInDays)) // C'est 180 jours pour les tests on a mis 180 secondes
+        if (!((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= MaturityThresholdInDays))
             return false;
         return true;
     }
@@ -279,7 +279,7 @@ public class Team
             throw new DomainException("New team manager must be a member of the team.");
 
         _teamManagerId = managerId;
-        // AddDomainEvent(new TeamManagerChangedEvent(Id, newTeamManagerId));
+        AddDomainEvent(new TeamManagerChangedEvent(Id, newTeamManagerId));
         RecalculateStates();
     }
     #endregion
