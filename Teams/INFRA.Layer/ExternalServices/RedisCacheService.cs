@@ -6,7 +6,6 @@ using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
-
 public class RedisCacheService(
     IDistributedCache cache,
     ITeamRepository teamRepository,
@@ -54,7 +53,6 @@ public class RedisCacheService(
             throw;
         }
     }
-
     public async Task StoreNewTeamMemberInformationsInRedisAsync(Guid memberId, string teamName)
     {
         var cacheKey = GetKey(memberId.ToString());
@@ -85,7 +83,6 @@ public class RedisCacheService(
         );
         LogHelper.Info($"Successfully added new entry for key: {cacheKey}", log);
     }
-
     public async Task<string> GetNewTeamMemberFromCacheAsync(Guid memberId)
     {
         var cacheKey = GetKey(memberId.ToString());

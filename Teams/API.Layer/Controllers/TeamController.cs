@@ -1,4 +1,3 @@
-using System.Net.Mime;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -23,21 +22,30 @@ public class TeamController(
 {
     /// <summary>
     /// Retrieves all teams in the system.
-    /// This endpoint allows you to get a list of all teams, including their details such as
-    /// team name, members, and team manager.
-    /// If no teams are found, an empty list will be returned.
-    /// This endpoint is useful for administrators or managers to view all teams in the system.
-    /// Authorization is not required for this endpoint, but it can be restricted to specific roles
-    /// such as "Admin" or "Manager" if needed.
-    /// Example usage:
-    /// GET /teams
-    /// This will return a list of all teams in the system.
     /// </summary>
-    /// <returns></returns>
+    /// <remarks>
+    /// This endpoint allows you to get a list of all teams, including their details such as team name, members, and team manager.
+    /// 
+    /// **Authorization:** Not required by default, but can be restricted to specific roles such as "Admin" or "Manager".
+    /// 
+    /// **Query Parameters:**
+    /// - `onlyMature` (bool, optional): If true, only mature teams will be returned.
+    ///
+    /// **Example usage:**
+    /// ```http
+    /// GET /teams?onlyMature=true
+    /// ```
+    ///
+    /// **Response:**
+    /// - 200 OK: Returns a list of `TeamDto` objects. If no teams are found, an empty list is returned.
+    /// </remarks>
+    /// <param name="onlyMature">Filter to return only mature teams (optional)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of teams as `TeamDto`</returns>
     // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpGet]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<TeamDto>>> GetAllTeams(
         [FromQuery] bool onlyMature = false,
@@ -51,24 +59,31 @@ public class TeamController(
 
     /// <summary>
     /// Retrieves a team by its unique identifier.
-    /// This endpoint allows you to get the details of a specific team based on its ID.
-    /// If the team with the specified ID does not exist, a 404 Not Found response will be returned.
-    /// If the team is found, a 200 OK response with the team details will be returned.
-    /// This endpoint is useful for retrieving information about a specific team, such as its name,
-    /// members, and team manager.
-    /// Authorization is not required for this endpoint, but it can be restricted to specific roles
-    /// such as "Admin" or "Manager" if needed.
-    /// Example usage:
-    /// GET /teams/{teamId}
-    /// where `{teamId}` is the unique identifier of the team you want to retrieve.
     /// </summary>
-    /// <param name="teamId"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This endpoint allows you to get the details of a specific team, including its name, members, and team manager.
+    ///
+    /// **Authorization:** Not required by default, but can be restricted to specific roles such as "Admin" or "Manager".
+    ///
+    /// **Route Parameters:**
+    /// - `teamId` (GUID): The unique identifier of the team to retrieve.
+    ///
+    /// **Example usage:**
+    /// ```http
+    /// GET /teams/{teamId}
+    /// ```
+    ///
+    /// **Responses:**
+    /// - 200 OK: Returns the team details as `TeamDetailsDto`.
+    /// - 404 Not Found: The team with the specified ID does not exist.
+    /// </remarks>
+    /// <param name="teamId">The unique identifier of the team to retrieve</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The details of the requested team as `TeamDetailsDto`</returns>
     // [Authorize(Policy = "AdminPolicy,ManagerPolicy(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpGet("{teamId:guid}")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(TeamDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamDetailsDto>> GetTeam(
@@ -79,15 +94,31 @@ public class TeamController(
         var teamDto = await _mediator.Send(new GetTeamQuery(teamId), cancellationToken);
         return Ok(teamDto);
     }
+
     /// <summary>
-    /// 
+    /// Retrieves statistics for a specific team.
     /// </summary>
-    /// <param name="teamId"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This endpoint returns various statistics related to a team, such as the number of members, active projects, or other metrics.
+    ///
+    /// **Query Parameters:**
+    /// - `teamId` (GUID, required): The unique identifier of the team for which stats are requested.
+    ///
+    /// **Example usage:**
+    /// ```http
+    /// GET /teams/stats?teamId=123e4567-e89b-12d3-a456-426614174000
+    /// ```
+    ///
+    /// **Responses:**
+    /// - 200 OK: Returns the team statistics as `TeamStatsDto`.
+    /// - 404 Not Found: The team with the specified ID does not exist.
+    /// </remarks>
+    /// <param name="teamId">The unique identifier of the team</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The statistics of the requested team as `TeamStatsDto`</returns>
     [AllowAnonymous]
     [HttpGet("stats")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(TeamStatsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TeamDetailsDto>> GetTeamStats(
@@ -99,29 +130,34 @@ public class TeamController(
         return Ok(teamDto);
     }
 
+
     /// <summary>
-    ///  Retrieve all teams managed by a specific manager.
-    ///  This endpoint allows you to get a list of teams based on the manager's ID
-    ///  and optionally include the members of those teams.
-    ///  If `includeMembers` is set to true, the response will include the members of each team.
-    ///  If `includeMembers` is false, the response will only include the team details without member information.
-    ///  If no teams are found for the given manager ID,
-    ///  a 404 Not Found response will be returned.
-    ///  This endpoint is useful for managers to view the teams they oversee and their members.
-    ///  It can also be used by administrators to manage teams based on their managers.
-    ///  Authorization is not required for this endpoint, but it can be restricted to specific roles
-    ///  such as "Admin" or "Manager" if needed.
-    ///  Example usage:
-    ///  GET /teams/manager?managerId=123e4567-e89b-12d3-a456-426614174000&amp;includeMembers=true
-    ///  This will return a list of teams managed by the manager with ID `123e4567-e89b-12d3-a456-426614174000`.
+    /// Retrieves all teams managed by a specific manager.
     /// </summary>
-    /// <param name="managerId"></param>
-    /// <param name="includeMembers"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This endpoint returns a list of teams based on the manager's ID. Optionally, it can include the members of those teams.
+    ///
+    /// **Query Parameters:**
+    /// - `managerId` (GUID, required): The unique identifier of the manager.
+    /// - `includeMembers` (bool, optional, default = false): If true, include team members in the response.
+    ///
+    /// **Responses:**
+    /// - 200 OK: Returns a list of teams as `TeamDto`.
+    /// - 404 Not Found: No teams were found for the given manager ID.
+    ///
+    /// **Example usage:**
+    /// ```http
+    /// GET /teams/manager?managerId=123e4567-e89b-12d3-a456-426614174000%includeMembers=true
+    /// ```
+    /// This will return all teams managed by the specified manager.
+    /// </remarks>
+    /// <param name="managerId">The unique identifier of the manager</param>
+    /// <param name="includeMembers">Whether to include team members in the response</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of teams managed by the specified manager</returns>
     [AllowAnonymous]
     [HttpGet("manager")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<TeamDto>>> GetTeamsByManagerId(
@@ -139,36 +175,34 @@ public class TeamController(
 
     /// <summary>
     /// Changes the team manager for a specific team.
-    /// This endpoint allows you to change the team manager for a specific team identified by its name
-    /// and the ID of the current team manager.
-    /// If the team with the specified name and current manager ID does not exist, a 404 Not Found response will be returned.
-    /// If the change is successful, a 204 No Content response will be returned.
-    /// This endpoint is useful for updating team management responsibilities, such as when a team manager leaves or is replaced.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
-    /// Example usage:
-    /// PATCH /teams/manager
+    /// </summary>
+    /// <remarks>
+    /// This endpoint allows updating the team manager for a team identified by its name and the current manager's ID.
+    ///
+    /// **Request Body:**
+    /// ```json
     /// {
     ///    "Name": "Pentester",
     ///    "OldTeamManagerId": "b14db1e2-026e-4ac9-9739-378720de6f5b",
-    ///    "NewTeamManagerId": "9a57d8f7-56f4-47d9-a429-5f4f34e9bc83"
-    ///     "ContratType": "Stagiaire"
+    ///    "NewTeamManagerId": "9a57d8f7-56f4-47d9-a429-5f4f34e9bc83",
+    ///    "ContratType": "Stagiaire"
     /// }
-    /// The request body should contain the team name, the ID of the current team manager,
-    /// and the ID of the new team manager.
-    /// The `newTeamManagerId` should be a valid user ID of a user who will become the new team manager.
-    /// If the request is successful, a 204 No Content response will be returned,
-    /// indicating that the team manager has been successfully changed.
-    /// If the request fails due to validation errors, a 400 Bad Request response will be returned
-    /// with details about the validation errors.
-    /// If the team is not found, a 404 Not Found response will be returned.
-    /// If an unexpected error occurs, a 500 Internal Server Error response will be returned.
-    /// </summary>
-    /// <param name="command"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// ```
+    /// 
+    /// **Responses:**
+    /// - 204 No Content: The team manager has been successfully changed.
+    /// - 400 Bad Request: Validation errors in the request body.
+    /// - 404 Not Found: The team with the specified name and current manager ID does not exist.
+    /// - 500 Internal Server Error: Unexpected server error.
+    ///
+    /// **Authorization:** Required, typically restricted to "Admin" or "Manager".
+    /// </remarks>
+    /// <param name="command">The update command containing team name, old manager ID, new manager ID, and contract type.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content if successful; otherwise, appropriate error response.</returns>
     // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -194,28 +228,33 @@ public class TeamController(
 
     /// <summary>
     /// Retrieves all teams that a specific member is part of.
-    /// This endpoint allows you to get a list of teams based on the member's #if true
-    /// unique identifier (memberId)
-    /// and optionally include the members of those teams.
-    /// If `includeMembers` is set to true, the response will include the members of each team.
-    /// If `includeMembers` is false, the response will only include the team details without member information.
-    /// If no teams are found for the given member ID, a 404 Not Found response will be returned.
-    /// This endpoint is useful for members to view the teams they are part of and their members.
-    /// It can also be used by administrators to manage teams based on their members.
-    /// Authorization is not required for this endpoint, but it can be restricted to specific roles
-    /// such as "Admin" or "Manager" if needed.
-    /// Example usage:
-    /// GET /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000&amp;includeMembers=true
-    /// This will return a list of teams that the member with ID `123e4567-e89b-12d3-a456-426614174000` is part of.
     /// </summary>
-    /// <param name="memberId"></param>
-    /// <param name="includeMembers"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
+    /// <remarks>
+    /// This endpoint returns a list of teams based on the member's unique identifier (`memberId`).
+    /// 
+    /// **Query Parameters:**
+    /// - `memberId` (Guid): Unique identifier of the member.
+    /// - `includeMembers` (bool): If true, includes members of each team; otherwise, only team details are returned.
+    ///
+    /// **Responses:**
+    /// - 200 OK: Returns a list of teams the member is part of.
+    /// - 404 Not Found: No teams found for the given member ID.
+    ///
+    /// **Example usage:**
+    /// GET /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000%includeMembers=true
+    /// 
+    /// This returns all teams that the member with ID `123e4567-e89b-12d3-a456-426614174000` belongs to.
+    ///
+    /// **Authorization:** Optional; can be restricted to "Admin" or "Manager".
+    /// </remarks>
+    /// <param name="memberId">Unique identifier of the member</param>
+    /// <param name="includeMembers">Whether to include team members in the response</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of teams the member is part of</returns>
+    /// [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpGet("member")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<List<TeamDto>>> GetTeamsByMemberId(
@@ -232,22 +271,30 @@ public class TeamController(
     }
 
     /// <summary>
-    /// Adds a new member to the team.
-    /// This endpoint allows an administrator or team manager to add a new member to a specific team.
-    /// If the member with the specified ID does not exist, a 404 Not Found response will be returned.
-    /// If the addition is successful, a 201 Created response with the team details will be returned.
-    /// This endpoint is useful for managing team memberships and ensuring that teams are up-to-date with their members.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
-    /// Example usage:
-    /// POST /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000
-    /// where `memberId` is the unique identifier of the member to be added to the team.
-    /// The request will create a new team member and associate them with the team.
+    /// Adds a new member to a team.
     /// </summary>
-    /// <param name="memberId"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This endpoint allows an administrator or team manager to add a new member to a specific team.
+    ///
+    /// **Query Parameters:**
+    /// - `memberId` (Guid): Unique identifier of the member to be added.
+    ///
+    /// **Responses:**
+    /// - 204 No Content: The member was successfully added to the team.
+    /// - 400 Bad Request: The `memberId` is empty or invalid.
+    /// - 404 Not Found: The member with the specified ID does not exist or cannot be found in any team.
+    /// - 500 Internal Server Error: Unexpected server error.
+    ///
+    /// **Example usage:**
+    /// PATCH /teams/member?memberId=123e4567-e89b-12d3-a456-426614174000
+    ///
+    /// **Authorization:** Required for "Admin" or "Manager" roles.
+    /// </remarks>
+    /// <param name="memberId">Unique identifier of the member to add</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content if successful</returns>
     //[Authorize(Roles = "Manager(responsable d'équipe)")] tous les deux admin et manager
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -274,29 +321,40 @@ public class TeamController(
     }
 
     /// <summary>
-    /// Creates a new team with the specified details.
+    /// Creates a new team.
+    /// </summary>
+    /// <remarks>
     /// This endpoint allows an administrator or team manager to create a new team in the system.
-    /// If the creation is successful, a 201 Created response with the created team details will be returned.
-    /// If the request data is invalid, a 400 Bad Request response with validation          errors will be returned.
-    /// This endpoint is useful for managing teams, allowing users to organize members into specific groups.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
-    /// Example usage:
-    /// POST /teams
+    ///
+    /// **Request Body:**
+    /// ```json
     /// {
     ///   "Name": "Development Team",
-    ///   "MembersId": ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"],
+    ///   "MembersId": [
+    ///     "123e4567-e89b-12d3-a456-426614174000",
+    ///     "123e4567-e89b-12d3-a456-426614174001",
+    ///     123e4567-e89b-12d3-a456-426614174002
+    ///   ],
     ///   "TeamManagerId": "123e4567-e89b-12d3-a456-426614174002"
     /// }
-    /// The request body should contain the team name, a list of member IDs, and the team manager ID.
-    /// The `teamManagerId` should be a valid user ID of a user who will manage the team.
-    /// </summary>
-    /// <param name="command"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// ```
+    ///
+    /// **Responses:**
+    /// - 201 Created: Returns the created team details.
+    /// - 400 Bad Request: The request data is invalid.
+    ///
+    /// **Authorization:** Required for "Admin" or "Manager" roles.
+    ///
+    /// **Example usage:**
+    /// POST /teams
+    /// </remarks>
+    /// <param name="command">The details of the team to create</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The created team</returns>
     //[Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpPost]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType<CreateTeamCommand>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TeamDto>> CreateTeam(
@@ -316,32 +374,41 @@ public class TeamController(
 
     /// <summary>
     /// Updates an existing team by its unique identifier.
+    /// </summary>
+    /// <remarks>
     /// This endpoint allows an administrator or team manager to modify the details of a specific team.
-    /// If the team with the specified ID does not exist, a 404 Not Found response will be returned.
-    /// If the update is successful, a 200 OK response with the updated team details will be returned.
-    /// This endpoint is useful for managing team information, such as changing the team name,
-    /// updating team members, or changing the team manager.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
-    /// Example usage:
-    /// PUT /teams/{teamId}
+    ///
+    /// **Request Body:**
+    /// ```json
     /// {
     ///   "id": "123e4567-e89b-12d3-a456-426614174000",
     ///   "name": "Updated Team Name",
-    ///   "memberId": ["123e4567-e89b-12d3-a456-426614174001", "123e4567-e89b-12d3-a456-426614174002"],
+    ///   "memberId": [
+    ///     "123e4567-e89b-12d3-a456-426614174001",
+    ///     "123e4567-e89b-12d3-a456-426614174002"
+    ///   ],
     ///   "teamManagerId": "123e4567-e89b-12d3-a456-426614174003"
     /// }
-    /// where `teamId` is the unique identifier of the team to be updated.
-    /// The request body should contain the updated team details, including the team ID, name,
-    /// member IDs, and the team manager ID.
-    /// </summary>
-    /// <param name="teamId"></param>
-    /// <param name="command"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// ```
+    ///
+    /// **Responses:**
+    /// - 200 OK: Returns the updated team details.
+    /// - 400 Bad Request: Validation failed or teamId mismatch between URL and body.
+    /// - 404 Not Found: Team with the specified ID does not exist.
+    ///
+    /// **Authorization:** Required for "Admin" or "Manager" roles.
+    ///
+    /// **Example usage:**
+    /// PUT /teams/{teamId}
+    /// </remarks>
+    /// <param name="teamId">The unique identifier of the team to update</param>
+    /// <param name="command">Updated team details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The updated team</returns>
     //[Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpPut("{teamId}")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -364,27 +431,36 @@ public class TeamController(
     }
 
     /// <summary>
-    /// Deletes a team member by their unique identifier and the name of the team.
+    /// Deletes a team member from a specific team.
+    /// </summary>
+    /// <remarks>
     /// This endpoint allows an administrator or team manager to remove a member from a specific team.
-    /// If the member with the specified ID does not exist in the team, a 404 Not Found response will be returned.
-    /// If the deletion is successful, a 204 No Content response will be returned.
-    /// This endpoint is useful for managing team memberships and ensuring that only active members are retained in the team.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" or "Manager" role.
-    /// Example usage:
-    /// DELETE /teams/member
+    ///
+    /// **Request Body:**
+    /// ```json
     /// {
     ///   "memberId": "123e4567-e89b-12d3-a456-426614174000",
     ///   "teamName": "Development Team"
     /// }
-    /// where `memberId` is the unique identifier of the member to be deleted and `teamName` is the name of the team from which the member will be removed.
-    /// </summary>
-    /// <param name="deleteTeamMemberDto"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// ```
+    ///
+    /// **Responses:**
+    /// - 204 No Content: Member was successfully removed.
+    /// - 400 Bad Request: Request data is null or team name is missing.
+    /// - 404 Not Found: Member not found in the specified team.
+    ///
+    /// **Authorization:** Required for "Admin" or "Manager" roles.
+    ///
+    /// **Example usage:**
+    /// DELETE /teams/member
+    /// </remarks>
+    /// <param name="deleteTeamMemberDto">DTO containing memberId and teamName</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content</returns>
     // [Authorize(Roles = "Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpDelete("member")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteTeamMemberById(
@@ -406,22 +482,27 @@ public class TeamController(
 
     /// <summary>
     /// Deletes a team by its unique identifier.
-    /// This endpoint allows an administrator to delete a team from the system.
-    /// If the team with the specified ID does not exist, a 404 Not Found response will be returned.
-    /// If the deletion is successful, a 204 No Content response will be returned.
-    /// This endpoint is useful for managing teams and ensuring that only active teams are retained in the system.
-    /// Authorization is required for this endpoint, typically restricted to users with the "Admin" role.
-    /// Example usage:
+    /// </summary>
+    /// <remarks>
+    /// This endpoint allows an administrator to remove a team from the system.
+    ///
+    /// **Responses:**
+    /// - 204 No Content: Team successfully deleted.
+    /// - 404 Not Found: Team with the specified ID does not exist.
+    ///
+    /// **Authorization:** Required for "Admin" role.
+    ///
+    /// **Example usage:**
     /// DELETE /teams/{teamId}
     /// where `{teamId}` is the unique identifier of the team to be deleted.
-    /// </summary>
-    /// <param name="teamId"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// </remarks>
+    /// <param name="teamId">Unique identifier of the team to delete</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content</returns>
     //[Authorize(Policy = "AdminPolicy")]
     [AllowAnonymous]
     [HttpDelete("{teamId:guid}")]
-    [Consumes(MediaTypeNames.Application.Json)]
+    [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteTeam(

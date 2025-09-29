@@ -97,9 +97,13 @@ try
             teamApp.UseRouting();
             teamApp.UseAuthentication();
             teamApp.UseAuthorization();
-            teamApp.UseMiddleware<ExceptionHandlerMiddleware>();
-            teamApp.UseMiddleware<RequestLoggingMiddleware>();
-
+            teamApp.UseSwagger();
+            teamApp.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint($"/team-management/swagger/{app.Configuration["ApiVersion"]}/swagger.json", "Team Management API");
+                c.RoutePrefix = "swagger"; // => accessible sur /team-management/swagger
+            });
+            teamApp.UseMiddleware<ExceptionMiddleware>();
             teamApp.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -140,6 +144,7 @@ try
                     },
                 }
             );
+            teamApp.UseMiddleware<RequestLoggingMiddleware>();
         }
     );
 

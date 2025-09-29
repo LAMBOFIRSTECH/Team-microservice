@@ -15,8 +15,8 @@ public class HandlerException : Exception
     }
 
     public static HandlerException NotFound(string message, string reason) =>
-        new HandlerException(404, message, "Not Found", reason);
+        new HandlerException(404, message, "Team creation", reason);
 
     public static HandlerException BadRequest(string message, string reason) =>
-        new HandlerException(400, message, "Bad Request", reason);
+        new HandlerException(400, message, "Team creation", reason);
 }

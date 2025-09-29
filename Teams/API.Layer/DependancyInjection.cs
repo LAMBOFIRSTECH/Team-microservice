@@ -2,8 +2,10 @@ using System.Reflection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Teams.API.Layer.Middlewares;
+using Teams.API.Layer.Common;
 
 namespace Teams.API.Layer
 {
@@ -14,17 +16,21 @@ namespace Teams.API.Layer
             IConfiguration configuration
         )
         {
-            services
-                .AddControllers()
-                .AddNewtonsoftJson(options =>
-                {
-                    options.SerializerSettings.ContractResolver =
-                        new CamelCasePropertyNamesContractResolver();
-                })
-                .AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-                });
+            services.AddControllers(options => options.Filters.Add<ValidateModelAttribute>())
+                    .ConfigureApiBehaviorOptions(options =>
+                        {
+                            options.SuppressModelStateInvalidFilter = true;
+                        })
+                    .AddNewtonsoftJson(options =>
+                        {
+                            options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                            options.SerializerSettings.MissingMemberHandling = MissingMemberHandling.Error;
+                        })
+                    .AddJsonOptions(opt =>
+                        {
+                            // Ignore la casse lors de la désérialisation
+                            opt.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                        });
 
             services.AddSwaggerGen(opt =>
             {

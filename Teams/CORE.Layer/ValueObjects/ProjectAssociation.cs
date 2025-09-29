@@ -13,7 +13,7 @@ public enum VoState
 
 public class Detail
 {
-    public Guid Id { get; private set; } = Guid.NewGuid(); 
+    public Guid Id { get; private set; } = Guid.NewGuid();
     public string ProjectName { get; private set; }
     public DateTime ProjectStartDate { get; private set; }
     public DateTime ProjectEndDate { get; private set; }
@@ -75,7 +75,7 @@ public class ProjectAssociation
     public string TeamName { get; private set; }
     private readonly List<Detail> _details = new();
     public IReadOnlyList<Detail> Details => _details;
-    
+
 
     // Constructeur domaine
     /// <summary>
@@ -114,6 +114,19 @@ public class ProjectAssociation
     public DateTime GetprojectStartDate() => Details.Select(p => p.ProjectStartDate).FirstOrDefault();
     public DateTime GetprojectEndDate() => Details.Select(p => p.ProjectEndDate).FirstOrDefault();
     public DateTime GetprojectMaxEndDate() => Details.Select(p => p.ProjectEndDate).Max();
+    public bool IsUnderReview { get; set; } = false; // à implémenter plus tard
+
+    /// <summary>
+    /// Get the computed project assignment state based on current details. 
+    /// </summary>
+    /// <returns></returns>
+    /// <remarks>
+    /// This property evaluates the current state of the project association
+    /// based on the details provided. It considers various conditions such as
+    /// whether there are active or suspended projects, if the project is under review,
+    /// or if it has expired. The logic ensures that the most relevant state is returned
+    /// based on the current context of the project association.
+    /// </remarks>
     public ProjectAssignmentState ComputedProjectState
     {
         get
@@ -125,8 +138,8 @@ public class ProjectAssociation
             if (Project.HasSuspendedProject())
                 return ProjectAssignmentState.Suspended;
 
-            // if (Project.IsUnderReview)
-            //     return ProjectAssignmentState.UnderReview; // plustard
+            if (Project.IsUnderReview)
+                return ProjectAssignmentState.UnderReview;
 
             if (Project.IsExpired())
                 return ProjectAssignmentState.UnassignedAfterReview;
@@ -168,6 +181,17 @@ public class ProjectAssociation
         }
         else return;
     }
+    /// <summary>
+    /// Remove details of projects that have expired.
+    /// This method checks for any project details where the end date has passed
+    /// and removes them from the association.
+    /// </summary>
+    ///     <remarks>
+    /// This method helps maintain the integrity of the project association
+    /// by ensuring that only active or relevant project details are retained.
+    /// It should be called periodically or after certain operations to clean up
+    /// expired project details.
+    /// </remarks>
     public void RemoveExpiredDetails()
     {
         if (HasActiveProject())

@@ -1,6 +1,5 @@
 using FluentValidation.Results;
-using Teams.CORE.Layer.Models;
-
+using Teams.API.Layer.Models;
 namespace Teams.API.Layer.Mappings;
 
 public class ValidationErrorMapper
@@ -18,7 +17,7 @@ public class ValidationErrorMapper
                     Field = f.PropertyName,
                     Message = f.ErrorMessage,
                 })
-                .ToList(),
+                .ToList()
         };
     }
 }

@@ -1,5 +1,7 @@
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
+using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
@@ -87,25 +89,85 @@ public class Team
          GetLocalDateTime() >= ExpirationDate && State != TeamState.Archived;
 
     /// <summary>
-    /// Factory method to create a new Team instance.
-    /// Validates input parameters and enforces domain rules.
+    /// Calculates the maximum percentage of common members between a new team and a collection of existing teams.
     /// </summary>
-    /// <param name="name"></param>
-    /// <param name="teamManagerId"></param>
-    /// <param name="memberIds"></param>
-    /// <returns></returns>
-    public static Team Create(
-         string name,
-         Guid teamManagerId,
-         IEnumerable<Guid> memberIds
-     )
+    /// <param name="newTeamMembers">The list of members (as <see cref="Guid"/>) for the new team being created.</param>
+    /// <param name="existingTeams">The collection of existing teams to compare against.</param>
+    /// <returns>
+    /// A <see cref="double"/> representing the highest percentage of overlap in members 
+    /// between the new team and any existing team. Returns 0 if no existing teams are provided.
+    /// </returns>
+    /// <exception cref="DomainException">
+    /// Thrown when <paramref name="newTeamMembers"/> is null or contains fewer than two members.
+    /// </exception>
+    private static double GetCommonMembersStats(
+        IEnumerable<Guid> newTeamMembers,
+        IEnumerable<Team> existingTeams)
     {
+        if (newTeamMembers == null || newTeamMembers.Count() == 0)
+            throw new DomainException("The new team must have at least two member.");
+
+        if (existingTeams == null || existingTeams.Count() == 0)
+            return 0;
+
+        double maxPercent = 0;
+        foreach (var existingTeam in existingTeams)
+        {
+            var common = existingTeam.MembersIds.Select(m => m.Value).Intersect(newTeamMembers).Count();
+            var universe = existingTeam.MembersIds.Select(m => m.Value).Union(newTeamMembers).Count();
+            double percent = (double)common / universe * 100;
+
+            if (percent > maxPercent)
+                maxPercent = percent;
+        }
+        return maxPercent;
+    }
+
+    /// <summary>
+    /// Factory method to create a new <see cref="Team"/> while enforcing domain invariants.
+    /// </summary>
+    /// <param name="name">The unique name of the team to be created.</param>
+    /// <param name="teamManagerId">The identifier of the team manager.</param>
+    /// <param name="memberIds">The collection of member identifiers to include in the team.</param>
+    /// <param name="teams">The collection of existing teams used for validation checks.</param>
+    /// <returns>A newly created and valid <see cref="Team"/> instance.</returns>
+    /// <exception cref="DomainException">
+    /// Thrown when:
+    /// <list type="bullet">
+    /// <item><description>A team with the same name already exists.</description></item>
+    /// <item><description>The manager already manages more than 3 teams.</description></item>
+    /// <item><description>A team with the exact same members and manager already exists.</description></item>
+    /// <item><description>The new team shares more than 50% of its members with an existing team.</description></item>
+    /// </list>
+    /// </exception>
+    public static Team Create(
+        string name,
+        Guid teamManagerId,
+        IEnumerable<Guid> memberIds,
+        IEnumerable<Team> teams
+    )
+    {
+        if (teams.Any(t => t.Name.Value.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new DomainException($"A team with the name '{name}' already exists.");
+        if (teams.Count(t => t.TeamManagerId.Value == teamManagerId) > 3)
+            throw new DomainException("A manager cannot manage more than 3 teams.");
+        if (
+            teams.Any(t =>
+                t.MembersIds.Count == memberIds.Count()
+                && !t.MembersIds.Select(m => m.Value).Except(memberIds).Any()
+                && t.TeamManagerId.Value == teamManagerId))
+            throw new DomainException("A team with exactly the same members and manager already exists.");
+
+        if (GetCommonMembersStats(memberIds, teams) >= 50)
+            throw new DomainException("Cannot create a team with more than 50% common members with existing team.");
+
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), GetLocalDateTime());
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id));  // Ajouter l'événement de domaine pour la création de l'équipe doit pouvoir être annulé si erreur dans la suite
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
+
     /// <summary>
     /// Update team details: name, manager, members.
     /// Cannot update an expired team.
@@ -143,7 +205,7 @@ public class Team
     /// Archived if past expiration date.
     /// Active otherwise.
     /// </summary>
-    public TeamState ComputedTeamState
+    private TeamState ComputedTeamState
     {
         get
         {
@@ -389,16 +451,16 @@ public class Team
     /// Validates that the new manager is a member of the team and not an empty GUID
     /// Throws DomainException if any validation fails.
     /// </summary>
-    /// <param name="newTeamManagerId"></param>
+    /// <param name="newManagerId"></param>
     /// <exception cref="DomainException"></exception>
     /// <remarks>
     /// This method updates the team manager and triggers a domain event to notify of the change.
     /// It also recalculates the team's state to ensure it remains valid.
     /// </remarks>
-    public void ChangeTeamManager(Guid newTeamManagerId)
+    public void ChangeTeamManager(Guid newManagerId)
     {
-        var managerId = new MemberId(newTeamManagerId);
-        if (newTeamManagerId == Guid.Empty)
+        var managerId = new MemberId(newManagerId);
+        if (newManagerId == Guid.Empty)
             throw new DomainException("New team manager ID cannot be empty.");
 
         if (!_members.Contains(managerId))
