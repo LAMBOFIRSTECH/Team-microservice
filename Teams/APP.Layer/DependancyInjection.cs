@@ -6,6 +6,7 @@ using Teams.API.Layer.Mappings;
 using Teams.APP.Layer.CQRS.Validators;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
+using Teams.CORE.Layer.CoreServices;
 
 namespace Teams.APP.Layer;
 public static class DependancyInjection
@@ -43,6 +44,7 @@ public static class DependancyInjection
             sp.GetRequiredService<TeamLifecycleScheduler>()
         );
         services.AddHostedService(sp => sp.GetRequiredService<TeamLifecycleScheduler>());
+        services.AddSingleton<TeamLifecycleDomainService>();
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);
         return services;

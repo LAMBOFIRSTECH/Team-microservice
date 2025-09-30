@@ -11,7 +11,7 @@ public class TeamRepository(TeamDbContext _context) : ITeamRepository
     public async Task<Team?> GetTeamByIdAsync(
         Guid teamId,
         CancellationToken cancellationToken = default
-    ) => await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken); // AsNoTracking() pour lecture seule, sans intention de modifier
+    ) => await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
 
     public async Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default)
      => await _context.Teams.FirstOrDefaultAsync(t => t.Name.Value.Equals(teamName), cancellationToken);

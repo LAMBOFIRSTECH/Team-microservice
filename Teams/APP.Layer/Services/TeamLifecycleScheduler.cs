@@ -4,6 +4,7 @@ using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Interfaces;
 using Teams.INFRA.Layer.Dispatchers;
+using Teams.CORE.Layer.CoreServices;
 
 namespace Teams.APP.Layer.Services;
 
@@ -24,6 +25,7 @@ public class TeamLifecycleScheduler(
     IServiceScopeFactory _scopeFactory,
     IDomainEventDispatcher dispatcher,
     IMapper mapper,
+    TeamLifecycleDomainService teamLifecycleDomain,
     ILogger<TeamLifecycleScheduler> _log
 ) : IHostedService, IDisposable, ITeamLifecycleScheduler
 {
@@ -31,11 +33,13 @@ public class TeamLifecycleScheduler(
     private readonly object _lock = new();
     private DateTime? _nextCheckDate;
 
+
     public async Task StartAsync(CancellationToken ct)
     {
         LogHelper.Info("🚀 TeamLifecycleScheduler starting...", _log);
         await ScheduleNextCheckAsync();
     }
+
 
     public Task StopAsync(CancellationToken ct)
     {
@@ -67,26 +71,23 @@ public class TeamLifecycleScheduler(
         LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.Now}", _log);
 
         using var scope = _scopeFactory.CreateScope();
-        var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
-
-        var now = DateTime.Now;
+        var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
         var teams = await teamRepository.GetAllTeamsAsync(ct, asNoTracking: true);
 
-        // 1. Vérification de la maturité
-        var matureTeams = teams.Where(t => (now - t.TeamCreationDate).TotalSeconds >= 30).ToList();
-        // En prod : >= 180 jours
+        var matureTeams = teamLifecycleDomain.GetMatureTeams(teams);
         foreach (var team in matureTeams)
         {
-            if (!team.IsMature())
-                LogHelper.Info($"✅ Team {team.Name} is not yet mature", _log);
-            else
-                LogHelper.Info($"✅ Team {team.Name} reached maturity", _log);
-
+            // if (!teamLifecycleDomain.MatureTeams(teams))
+            //     LogHelper.Info($"✅ Team {team.Name} is not yet mature", _log);
+            // else
+            //     LogHelper.Info($"✅ Team {team.Name} reached maturity", _log);
             await teamRepository.UpdateTeamAsync(team, ct);
+            await dispatcher.DispatchAsync(team.DomainEvents, ct);
+            team.ClearDomainEvents();
         }
-        // 2. Vérification de l’expiration
-        var expiredTeams = teams.Where(t => t.IsTeamExpired()).ToList();
+        var expiredTeams = teamLifecycleDomain.GetExpiredTeams(teams);
+        teamLifecycleDomain.ArchiveTeams(expiredTeams);
         foreach (var team in expiredTeams)
         {
             /**
@@ -102,7 +103,6 @@ public class TeamLifecycleScheduler(
                 Trouver le moyen de fixer une date d'expiration exactement à la date de fin du projet de façon à ce que
                 Le scheduler puisse archiver l'équipe au meme moment qu'il supprime le projet expiré de l'équipe
             **/
-            team.ArchiveTeam();
             await teamRepository.UpdateTeamAsync(team, ct);
             LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
             var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
@@ -119,21 +119,12 @@ public class TeamLifecycleScheduler(
     {
         using var scope = _scopeFactory.CreateScope();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
-
-        var now = DateTime.Now;
         var teams = await teamRepository.GetAllTeamsAsync();
 
         // Calcul des prochaines dates (maturité + expiration)
-        var futureMaturities = teams
-            .Select(t => t.TeamCreationDate.AddSeconds(30)) // en prod : AddDays(180)
-            .Where(d => d > now);
-
-        var futureExpirations = teams
-            .Where(t => t.ExpirationDate > now)
-            .Select(t => t.ExpirationDate);
-
+        var futureMaturities = teamLifecycleDomain.GetfutureMaturities(teams);
+        var futureExpirations = teamLifecycleDomain.GetfutureExpirations(teams);
         var nextEvents = futureMaturities.Concat(futureExpirations).ToList();
-
         if (!nextEvents.Any())
         {
             LogHelper.Info("⏸ No upcoming maturities or expirations. Timer stopped.", _log);
@@ -145,7 +136,7 @@ public class TeamLifecycleScheduler(
         }
 
         _nextCheckDate = nextEvents.Min();
-        var delay = _nextCheckDate.Value - now;
+        var delay = _nextCheckDate.Value - DateTime.Now;
         if (delay < TimeSpan.Zero)
             delay = TimeSpan.Zero;
 

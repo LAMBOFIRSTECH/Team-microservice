@@ -1,10 +1,8 @@
 using Teams.API.Layer.DTOs;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
-using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
@@ -61,7 +59,6 @@ public class RedisCacheService(
             );
 
             LogHelper.Info($"✅ Team {redisTeamDto.Name} stored in Redis with key {cacheKey}", log);
-            Console.WriteLine($"Redis service Entrée l'état du team: {redisTeamDto.State}");
             await teamRepository.DeleteTeamAsync(redisTeamDto.Id, cancellationToken);
             LogHelper.Info($"✅ Team {redisTeamDto.Name} has been deleted from DB successfully.", log);
         }
@@ -86,7 +83,6 @@ public class RedisCacheService(
         var cachedData = await EnsureKeyExistsAsync(cacheKey, cancellationToken);
         if (cachedData.StartsWith("Resource with key")) return new TeamDetailsDto();
         var teamDto = JsonConvert.DeserializeObject<TeamDetailsDto>(cachedData) ?? throw new InvalidOperationException("Deserialized team is null");
-        Console.WriteLine($"Redis service sortie l'état du team : {teamDto.State}");
         return teamDto;
     }
 
@@ -107,7 +103,7 @@ public class RedisCacheService(
             serializedData,
             new DistributedCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3) // 1 semaine en prod
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) // 1 semaine en prod
             },
             cancellationToken
         );
@@ -129,7 +125,7 @@ public class RedisCacheService(
 
         var teamName = teamNameObj?.ToString() ?? throw new InvalidOperationException("'Team Name' is null");
 
-        await cache.RemoveAsync(cacheKey, cancellationToken); // ✅ remove by key, pas par value
+        await cache.RemoveAsync(cacheKey, cancellationToken);
         return teamName;
     }
 }
