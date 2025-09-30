@@ -33,7 +33,7 @@ public class Team
     public ProjectAssociation? Project { get; private set; }
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
-    private const int ValidityPeriodInDays = 250; // Durée de validité standard en secondes (150 jours)
+    private const int ValidityPeriodInDays = 100; // 250 pour les tests| Durée de validité standard en secondes (150 jours)
     private const int MaturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
     private int ExtraDays { get; set; } = 0;
     public DateTime TeamCreationDate { get; private set; }

@@ -11,12 +11,12 @@ public class TeamName
     {
 
         if (!Regex.IsMatch(value, @"^[\p{L}\s\-']+$"))
-            throw new HandlerException(
-                   400,
-                   "Team name contains invalid characters.",
-                   "Entry format",
-                   "Data validation error"
-               );
+            throw HandlerException.BadRequest(
+                title: "Entry format",
+                statusCode: 400,
+                message: $"Team name [[{value}]] contains invalid characters.",
+                reason: "Value Objet Validation Error"
+            );
         return new TeamName(value.Trim());
     }
     public override string ToString() => Value;

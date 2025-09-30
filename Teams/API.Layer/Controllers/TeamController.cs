@@ -217,11 +217,7 @@ public class TeamController(
             command,
             cancellationToken
         );
-        if (!validationResult.IsValid)
-        {
-            var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
-            return BadRequest(errorResponse);
-        }
+        if (!validationResult.IsValid) return BadRequest();
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -330,12 +326,12 @@ public class TeamController(
     /// ```json
     /// {
     ///   "Name": "Development Team",
-    ///   "MembersId": [
+    ///   "TeamManagerId": "123e4567-e89b-12d3-a456-426614174002",
+    ///   "MembersIds": [
     ///     "123e4567-e89b-12d3-a456-426614174000",
     ///     "123e4567-e89b-12d3-a456-426614174001",
-    ///     123e4567-e89b-12d3-a456-426614174002
-    ///   ],
-    ///   "TeamManagerId": "123e4567-e89b-12d3-a456-426614174002"
+    ///     "123e4567-e89b-12d3-a456-426614174002"
+    ///   ]
     /// }
     /// ```
     ///
@@ -363,11 +359,7 @@ public class TeamController(
     )
     {
         var validationResult = await _createTeamValidator.ValidateAsync(command, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
-            return BadRequest(errorResponse);
-        }
+        if (!validationResult.IsValid) return BadRequest();
         var createdTeam = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetTeam), new { teamId = createdTeam.Id }, createdTeam);
     }
@@ -421,11 +413,7 @@ public class TeamController(
         if (teamId != command.Id)
             return BadRequest("Team ID in the URL does not match the ID in the request body.");
         var validationResult = await _updateTeamValidator.ValidateAsync(command, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            var errorResponse = ValidationErrorMapper.MapErrors(validationResult.Errors);
-            return BadRequest(errorResponse);
-        }
+        if (!validationResult.IsValid) return BadRequest();
         var teamDto = await _mediator.Send(command, cancellationToken);
         return Ok(teamDto);
     }

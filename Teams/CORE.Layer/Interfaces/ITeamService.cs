@@ -3,7 +3,7 @@ using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Interfaces;
 
-public interface ITeamCore
+public interface ITeamService
 {
     Guid Id { get; }
     TeamName Name { get; }

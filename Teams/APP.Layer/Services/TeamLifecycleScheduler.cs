@@ -1,7 +1,9 @@
+using AutoMapper;
+using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Interfaces;
+using Teams.INFRA.Layer.Dispatchers;
 
 namespace Teams.APP.Layer.Services;
 
@@ -20,6 +22,8 @@ namespace Teams.APP.Layer.Services;
 /// </summary>
 public class TeamLifecycleScheduler(
     IServiceScopeFactory _scopeFactory,
+    IDomainEventDispatcher dispatcher,
+    IMapper mapper,
     ILogger<TeamLifecycleScheduler> _log
 ) : IHostedService, IDisposable, ITeamLifecycleScheduler
 {
@@ -81,7 +85,6 @@ public class TeamLifecycleScheduler(
 
             await teamRepository.UpdateTeamAsync(team, ct);
         }
-
         // 2. Vérification de l’expiration
         var expiredTeams = teams.Where(t => t.IsTeamExpired()).ToList();
         foreach (var team in expiredTeams)
@@ -99,18 +102,16 @@ public class TeamLifecycleScheduler(
                 Trouver le moyen de fixer une date d'expiration exactement à la date de fin du projet de façon à ce que
                 Le scheduler puisse archiver l'équipe au meme moment qu'il supprime le projet expiré de l'équipe
             **/
-            Console.WriteLine($"Voici l'etat de l'equipe avant archivage : {team.State}");
             team.ArchiveTeam();
             await teamRepository.UpdateTeamAsync(team, ct);
-            LogHelper.Info($"📦 Archiving team {team.Name}...", _log);
-
-            await redisCacheService.StoreArchivedTeamInRedisAsync(team, ct);
-            // send notification event (via domain event)
+            LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
+            var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
+            await redisCacheService.StoreArchivedTeamInRedisAsync(redisTeamDto, ct);
+            // send notification event (via domain event)  
+            await dispatcher.DispatchAsync(team.DomainEvents, ct); // pertinence qu'à meme
+            team.ClearDomainEvents(); //  pertinence de supprimer ??
             LogHelper.Info($"🔔 Notification for archived team {team.Name} sent.", _log);
-
-
         }
-
         await ScheduleNextCheckAsync();
     }
 

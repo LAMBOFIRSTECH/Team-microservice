@@ -5,7 +5,7 @@ using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
-using Teams.CORE.Layer.Models;
+using Teams.CORE.Layer.ValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
@@ -121,7 +121,7 @@ public class EmployeeService(
             );
             await redisCache.StoreNewTeamMemberInformationsInRedisAsync(
                 transfertMemberDto.MemberTeamId,
-                transfertMemberDto.DestinationTeam
+                transfertMemberDto.DestinationTeam, cancellationToken
             );
         }
         catch (DomainException ex)
@@ -152,7 +152,7 @@ public class EmployeeService(
         switch (action)
         {
             case TeamMemberAction.Add:
-                if (team.MembersIds != null && team.MembersIds.Select(m=> m.Value).ToHashSet().Contains(memberId))
+                if (team.MembersIds != null && team.MembersIds.Select(m => m.Value).ToHashSet().Contains(memberId))
                 {
                     LogHelper.BusinessRuleViolated(
                         "Member already exists in the team",
@@ -167,7 +167,7 @@ public class EmployeeService(
                 break;
 
             case TeamMemberAction.Remove:
-                if (team.MembersIds == null || !team.MembersIds.Select(m=> m.Value).ToHashSet().Contains(memberId))
+                if (team.MembersIds == null || !team.MembersIds.Select(m => m.Value).ToHashSet().Contains(memberId))
                 {
                     LogHelper.BusinessRuleViolated(
                         "Member does not exist in the team",
@@ -219,7 +219,7 @@ public class EmployeeService(
         CancellationToken cancellationToken = default
     )
     {
-        var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId);
+        var teamName = await redisCache.GetNewTeamMemberFromCacheAsync(memberId, cancellationToken);
         var teamMember = await teamRepository.GetTeamByNameAsync(teamName, cancellationToken);
         if (teamMember == null)
         {

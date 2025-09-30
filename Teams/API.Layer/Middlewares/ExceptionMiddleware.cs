@@ -1,10 +1,8 @@
 using FluentValidation;
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Net;
-using Teams.API.Layer.Mappings;
 using Teams.API.Layer.Common;
+using Teams.INFRA.Layer;
 
 namespace Teams.API.Layer.Middlewares;
 
@@ -83,7 +81,7 @@ public class ExceptionMiddleware
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             }));
         }
-        catch (JsonSerializationException ex) // Membre inconnu ou manquant
+        catch (JsonException ex) // Membre inconnu ou manquant
         {
             context.Response.StatusCode = StatusCodes.Status400BadRequest;
             context.Response.ContentType = "application/json";
@@ -125,24 +123,27 @@ public class ExceptionMiddleware
             context.Response.StatusCode = ex.StatusCode;
             context.Response.ContentType = "application/json";
 
-            var error = new
-            {
-                type = "https://example.com/probs/domain-error",
-                title = "Domain validation error",
-                status = ex.StatusCode,
-                message = ex.Message,
-                reason = ex.Reason ?? "domain_error",
-                traceId = context.TraceIdentifier
-            };
-
-            await context.Response.WriteAsync(
-                JsonConvert.SerializeObject(error, new JsonSerializerSettings
-                {
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                })
+            var errorJson = ProblemDetailsFactory.CreateDomainProblem(
+                context,
+                message: ex.Message,
+                reason: ex.Reason ?? "domain_error",
+                title: ex.Title,
+                statusCode: ex.StatusCode
             );
+            await context.Response.WriteAsync(errorJson);
         }
-
+        catch (InfrastructureException ex)
+        {
+            context.Response.StatusCode = ex.StatusCode;
+            var errorJson = ProblemDetailsFactory.CreateDomainProblem(
+                context,
+                message: ex.Message,
+                reason: ex.Reason ?? "infra_error",
+                title: ex.Title,
+                statusCode: ex.StatusCode
+            );
+            await context.Response.WriteAsync(errorJson);
+        }
 
         catch (Exception ex) // Exception technique non gérée
         {
@@ -166,30 +167,3 @@ public class ExceptionMiddleware
         }
     }
 }
-
-
-
-//     catch (HandlerException ex)
-//     {
-//         context.Response.StatusCode = ex.StatusCode;
-//         context.Response.ContentType = "application/json";
-
-//         var errors = new Dictionary<string, string[]>
-// {
-//     { ex.Reason ?? "domain", new[] { ex.Message } }
-// };
-
-//         var problem = new
-//         {
-//             type = "https://example.com/probs/domain-error",
-//             title = "Domain validation error",
-//             status = ex.StatusCode,
-//             errors,
-//             traceId = context.TraceIdentifier
-//         };
-
-//         await context.Response.WriteAsync(JsonConvert.SerializeObject(problem, new JsonSerializerSettings
-//         {
-//             ContractResolver = new CamelCasePropertyNamesContractResolver()
-//         }));
-//     }

@@ -4,6 +4,7 @@ using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Helpers;
+using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities;
 using Teams.CORE.Layer.Interfaces;
 
@@ -12,6 +13,7 @@ namespace Teams.APP.Layer.CQRS.Handlers;
 public class GetTeamQueryHandler(
     ITeamRepository teamRepository,
     IMapper mapper,
+    IRedisCacheService redisCache,
     ILogger<GetTeamQueryHandler> log
 ) : IRequestHandler<GetTeamQuery, TeamDetailsDto>
 {
@@ -19,49 +21,58 @@ public class GetTeamQueryHandler(
     public Dictionary<TeamState, string> StateMappings =>
        Enum.GetValues(typeof(TeamState))
            .Cast<TeamState>()
-           .ToDictionary(state => state, state => verdict);
+           .ToDictionary(state => state, state => verdict); // dépendance majeure à un objet du domaine [TeamState] Couplage fort
     public async Task<TeamDetailsDto> Handle(
         GetTeamQuery request,
         CancellationToken cancellationToken
     )
     {
-        var team =
-            await teamRepository.GetTeamByIdAsync(request.Id, cancellationToken)
-            ?? throw new HandlerException(
-                404,
-                $"Team with ID {request.Id} not found.",
-                "Not Found",
-                "Team ressource not found"
-            );
-        if (team.State == TeamState.Archived && !team.HasAnyDependencies())
+        var team = await teamRepository.GetTeamByIdAsync(request.Id, cancellationToken);
+        if (team is not null) return BuildDto(team, mapper);
+        var archivedTeamDto = await redisCache.GetArchivedTeamFromRedisAsync(request.Id, cancellationToken);
+        if (archivedTeamDto is not null)
         {
-            throw new HandlerException(
-                410,
-                $"Team with ID {request.Id} is expired.",
-                "Gone",
-                "Team ressource is expired"
-            );
+            Enum.TryParse(archivedTeamDto.State, out TeamState currentStatus);
+            if (currentStatus == TeamState.Archived)
+            {
+                archivedTeamDto.State = $"Team {archivedTeamDto.Name} has been archived for 7 days.";
+                return archivedTeamDto;
+            }
         }
+        throw HandlerException.NotFound(
+            title: "Not Found",
+            statusCode: 404,
+            message: $"Team with ID {request.Id} not found.",
+            reason: "Resource not found"
+        );
+    }
 
+    private TeamDetailsDto BuildDto(Team team, IMapper mapper) // Couplage fort avec le domaine à casser
+    {
         var teamDto = mapper.Map<TeamDetailsDto>(team);
         var projectAssociation = team.Project;
-        if (!team.HasAnyDependencies() || projectAssociation == null || projectAssociation.Details.Count == 0)
+        if (projectAssociation == null || projectAssociation.Details.Count == 0)
         {
-            teamDto.IsAnyProject = false;
+            teamDto.HasAnyProject = false;
             teamDto.ProjectNames = null;
-            teamDto.State = Maturity(team);
-            return teamDto;
         }
-        teamDto.TeamExpirationDate = projectAssociation.GetprojectMaxEndDate().ToString("dd-MM-yyyy HH:mm:ss",
-                                   System.Globalization.CultureInfo.InvariantCulture);
-        teamDto.IsAnyProject = true;
-        teamDto.TeamManagerId = projectAssociation.TeamManagerId;
-        teamDto.Name = projectAssociation.TeamName;
-        teamDto.ProjectNames = projectAssociation.Details.Select(d => d.ProjectName).ToList();
-        teamDto.State = Maturity(team);
+        else
+        {
+            teamDto.TeamExpirationDate = projectAssociation
+                .GetprojectMaxEndDate()
+                .ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+
+            teamDto.HasAnyProject = true;
+            teamDto.TeamManagerId = projectAssociation.TeamManagerId;
+            teamDto.Name = projectAssociation.TeamName;
+            teamDto.ProjectNames = projectAssociation.Details.Select(d => d.ProjectName).ToList();
+        }
+
+        teamDto.State = GetMaturity(team);
         return teamDto;
     }
-    public string Maturity(Team team)
+
+    private string GetMaturity(Team team) // Couplage fort avec le domaine métier à casser
     {
         if (!team.IsMature())
         {

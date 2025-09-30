@@ -1,8 +1,4 @@
-using Teams.CORE.Layer.Entities;
-using Teams.INFRA.Layer.ExternalServicesDtos;
-using Teams.CORE.Layer.ValueObjects;
 namespace Teams.API.Layer.DTOs;
-
 
 public class TeamDetailsDto
 {
@@ -11,7 +7,7 @@ public class TeamDetailsDto
     public Guid TeamManagerId { get; set; }
     public string TeamCreationDate { get; set; }
     public string TeamExpirationDate { get; set; }
-    public bool IsAnyProject { get; set; }
+    public bool HasAnyProject { get; set; }
     public List<string>? ProjectNames { get; set; }
 
     public string State { get; set; }
@@ -25,14 +21,14 @@ public class TeamDetailsDto
         DateTime teamExpirationDate,
         string state,
         List<string> projectNames,
-        bool isAnyProject
+        bool hasAnyProject
     )
     {
         Name = teamName;
         TeamManagerId = managerId;
         ProjectNames = projectNames;
         State = state;
-        IsAnyProject = isAnyProject;
+        HasAnyProject = hasAnyProject;
         TeamCreationDate = ReadableDateTimeFormat(teamCreationDate);
         TeamExpirationDate = ReadableDateTimeFormat(teamExpirationDate);
 

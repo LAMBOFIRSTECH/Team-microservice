@@ -1,5 +1,4 @@
 namespace Teams.API.Layer.Middlewares;
-
 public class HandlerException : Exception
 {
     public int StatusCode { get; }
@@ -14,9 +13,24 @@ public class HandlerException : Exception
         Reason = reason;
     }
 
-    public static HandlerException NotFound(string message, string reason) =>
-        new HandlerException(404, message, "Team creation", reason);
+    public static HandlerException DomainError(
+        string message,
+        string reason,
+        string title = "Domain validation error",
+        int statusCode = 400
+    ) => new HandlerException(statusCode, message, title, reason);
 
-    public static HandlerException BadRequest(string message, string reason) =>
-        new HandlerException(400, message, "Team creation", reason);
+    public static HandlerException NotFound(
+        string message,
+        string reason,
+        string title = "Not Found",
+        int statusCode = 404
+    ) => new HandlerException(statusCode, message, title, reason);
+
+    public static HandlerException BadRequest(
+        string message,
+        string reason,
+        string title = "Bad Request",
+        int statusCode = 400
+    ) => new HandlerException(statusCode, message, title, reason);
 }

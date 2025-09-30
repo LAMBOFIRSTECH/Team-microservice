@@ -4,6 +4,9 @@ using Newtonsoft.Json.Serialization;
 
 namespace Teams.API.Layer.Common;
 
+/// <summary>
+/// 
+/// </summary>
 public static class ProblemDetailsFactory
 {
     public static string CreateValidationProblem(
@@ -27,21 +30,22 @@ public static class ProblemDetailsFactory
         });
     }
     public static string CreateDomainProblem(
-        HttpContext context,
-        string reason,
-        string message,
-        int statusCode = StatusCodes.Status400BadRequest
-    )
+     HttpContext context,
+     string reason,
+     string message,
+     string title,
+     int statusCode
+ )
     {
         var problem = new
         {
-            type = "https://example.com/probs/domain-error", // Créer une page d'erreur pour le domaine
-            title = "Domain validation error",
+            type = "https://example.com/probs/domain-error",
+            title,
             status = statusCode,
             errors = new Dictionary<string, string[]>()
-            {
-                { reason ?? "domain", new[] { message } }
-            },
+        {
+            { reason ?? "domain", new[] { message } }
+        },
             traceId = context.TraceIdentifier
         };
 
@@ -50,6 +54,7 @@ public static class ProblemDetailsFactory
             ContractResolver = new CamelCasePropertyNamesContractResolver()
         });
     }
+
 
     public static string CreateServerProblem(HttpContext context, Exception ex)
     {
