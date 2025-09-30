@@ -1,7 +1,5 @@
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
-using Teams.CORE.Layer.Interfaces;
 using Teams.CORE.Layer.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
@@ -49,7 +47,6 @@ public class Team
     /// </summary>
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
-    /// Il ne doit pas être utilisé directement dans le code applicatif.
     /// </remarks>
     public Team() { }
 #pragma warning restore CS8618

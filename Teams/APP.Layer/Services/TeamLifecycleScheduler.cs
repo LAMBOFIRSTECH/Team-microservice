@@ -33,14 +33,11 @@ public class TeamLifecycleScheduler(
     private readonly object _lock = new();
     private DateTime? _nextCheckDate;
 
-
     public async Task StartAsync(CancellationToken ct)
     {
         LogHelper.Info("🚀 TeamLifecycleScheduler starting...", _log);
         await ScheduleNextCheckAsync();
     }
-
-
     public Task StopAsync(CancellationToken ct)
     {
         LogHelper.Info("🛑 TeamLifecycleScheduler stopping timer...", _log);
@@ -74,14 +71,9 @@ public class TeamLifecycleScheduler(
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
         var teams = await teamRepository.GetAllTeamsAsync(ct, asNoTracking: true);
-
         var matureTeams = teamLifecycleDomain.GetMatureTeams(teams);
         foreach (var team in matureTeams)
         {
-            // if (!teamLifecycleDomain.MatureTeams(teams))
-            //     LogHelper.Info($"✅ Team {team.Name} is not yet mature", _log);
-            // else
-            //     LogHelper.Info($"✅ Team {team.Name} reached maturity", _log);
             await teamRepository.UpdateTeamAsync(team, ct);
             await dispatcher.DispatchAsync(team.DomainEvents, ct);
             team.ClearDomainEvents();
@@ -128,10 +120,7 @@ public class TeamLifecycleScheduler(
         if (!nextEvents.Any())
         {
             LogHelper.Info("⏸ No upcoming maturities or expirations. Timer stopped.", _log);
-            lock (_lock)
-            {
-                _timer = null;
-            }
+            lock (_lock) _timer = null;
             return;
         }
 

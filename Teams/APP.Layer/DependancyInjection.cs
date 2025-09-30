@@ -34,17 +34,17 @@ public static class DependancyInjection
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ProjectService>();
+        
         services.AddSingleton<ProjectExpiryScheduler>();
-        services.AddSingleton<IProjectExpirySchedule>(sp =>
-            sp.GetRequiredService<ProjectExpiryScheduler>()
-        );
+        services.AddSingleton<IProjectExpirySchedule>(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
         services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
+        services.AddSingleton<ProjectExpiryDomainService>();
+        
         services.AddSingleton<TeamLifecycleScheduler>();
-        services.AddSingleton<ITeamLifecycleScheduler>(sp =>
-            sp.GetRequiredService<TeamLifecycleScheduler>()
-        );
+        services.AddSingleton<ITeamLifecycleScheduler>(sp =>sp.GetRequiredService<TeamLifecycleScheduler>());
         services.AddHostedService(sp => sp.GetRequiredService<TeamLifecycleScheduler>());
         services.AddSingleton<TeamLifecycleDomainService>();
+
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);
         return services;
