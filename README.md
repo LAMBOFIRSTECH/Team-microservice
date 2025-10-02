@@ -1,14 +1,18 @@
 ### Couverture de code
 ![Couverture code](./coverlet.png)
 
+# Présentation du projet  
+Ce projet utilise les patterns suivants et une stack technique moderne pour assurer modularité, testabilité et scalabilité.
+
 ### 🔁 Pattern utilisés
 
-- **DDD (Domain-Driven Design)** : séparation claire du métier, de l'infrastructure et de l’application.
-- **CQRS (Command Query Responsibility Segregation)** : distinction entre commandes (écriture) et requêtes (lecture).
-- **Domain Event** : chaque evènement important du domain est géré via le domain event.
-- **MediatR** : gestion centralisée des commandes, requêtes et événements.
-- **Automapper** : mappage entre DTOs et entités.
-- **FluentValidation** : validation métier.
+- **DDD** :              Séparation claire entre domaine, l'infrastructure, présentation et applicatif.
+- **CQRS** :             Distinction entre commandes (écriture) et requêtes (lecture).
+- **MediatR** :          Gestion centralisée des commandes, requêtes et événements.
+- **Automapper** :       Mappage entre DTOs et entité.
+- **FluentValidation** : Validation des données.
+- **Domain Event** :     Chaque evènement important du domain est géré via le domain event.
+- **Dispatchers** :      CQRS dispatchers,In-process dispatcher (validation de transaction après commit), EDA dispatcher (outboxing)
 
 ---
 
@@ -17,9 +21,7 @@
 - **.NET 8**
 - **C#**
 - **MediatR**
-- **FluentValidation**
 - **AutoMapper**
-- **AutoDispatcher**
 - **Wrapper**
 - **Entity Framework Core**
 - **JWT Auth**
@@ -37,26 +39,25 @@
 ## 📦 API.Layer
 
 **Controllers**  
-- 📄 `Controllers/TeamController.cs`
+- 📄 `TeamController.cs`
 
 **DTOs**  
-- 📄 `DTOs/ChangeManagerDto.cs`
-- 📄 `DTOs/DeleteTeamMemberDto.cs`
-- 📄 `DTOs/TeamDto.cs`
-- 📄 `DTOs/TeamRequestDto.cs`
+- 📄 `ChangeManagerDto.cs`
+- 📄 `TeamDto.cs`
+
 
 **Middlewares**  
-- 📄 `Middlewares/HandlerException.cs`
-- 📄 `Middlewares/JwtBearerAuthenticationMiddleware.cs`
-- 📄 `Middlewares/RequestLoggingMiddleware.cs`
+- 📄 `HandlerException.cs`
+- 📄 `JwtBearerAuthenticationMiddleware.cs`
+
 
 **Mappings**  
-- 📄 `Mappings/ProjectProfile.cs`
-- 📄 `Mappings/TeamProfile.cs`
-- 📄 `Mappings/TransfertMemberProfile.cs`
+- 📄 `ProjectProfile.cs`
+- 📄 `TeamProfile.cs`
+
 
 **Shared.Logging**  
-- 📄 `Shared.Logging/SerilogConfiguration.cs`
+- 📄 `SerilogConfiguration.cs`
 
 **Autres**  
 - 📄 `DependancyInjection.cs`
@@ -68,57 +69,39 @@
 ## 🧠 APP.Layer
 
 **CQRS / Commands**  
-- 📄 `CQRS/Commands/CreateTeamCommand.cs`
-- 📄 `CQRS/Commands/DeleteTeamCommand.cs`
-- 📄 `CQRS/Commands/DeleteTeamMemberCommand.cs`
-- 📄 `CQRS/Commands/UpdateTeamCommand.cs`
-- 📄 `CQRS/Commands/UpdateTeamManagerCommand.cs`
+- 📄 `CreateTeamCommand.cs`
+
 
 **CQRS / Handlers**  
-- 📄 `CQRS/Handlers/CreateTeamHandler.cs`
-- 📄 `CQRS/Handlers/DeleteTeamHandler.cs`
-- 📄 `CQRS/Handlers/DeleteTeamMemberHandler.cs`
-- 📄 `CQRS/Handlers/GetAllTeamsQueryHandler.cs`
-- 📄 `CQRS/Handlers/GetTeamQueryHandler.cs`
-- 📄 `CQRS/Handlers/GetTeamsByManagerQueryHandler.cs`
-- 📄 `CQRS/Handlers/GetTeamsByMemberQueryHandler.cs`
-- 📄 `CQRS/Handlers/UpdateTeamHandler.cs`
-- 📄 `CQRS/Handlers/UpdateTeamManagerHandler.cs`
+- 📄 `CreateTeamHandler.cs`
+
 
 **CQRS / Queries**  
-- 📄 `CQRS/Queries/GetAllTeamsQuery.cs`
-- 📄 `CQRS/Queries/GetTeamQuery.cs`
-- 📄 `CQRS/Queries/GetTeamsByManagerQuery.cs`
+- 📄 `GetAllTeamsQuery.cs`
+- 📄 `GetTeamQuery.cs`
 
 **CQRS / Validators**  
 - 📄 `CQRS/Validators/AddTeamMemberRecordValidator.cs`
 - 📄 `CQRS/Validators/CreateTeamCommandValidator.cs`
-- 📄 `CQRS/Validators/DeleteTeamCommandValidator.cs`
-- 📄 `CQRS/Validators/ProjectRecordValidator.cs`
-- 📄 `CQRS/Validators/UpdateTeamCommandValidator.cs`
-- 📄 `CQRS/Validators/UpdateTeamManagerValidator.cs`
+
 
 **EventNotification**
-- `EventNotification/DomainEventNotification.cs`
+- `DomainEventNotification.cs`
 
 **Helpers**  
-- 📄 `Helpers/LogHeper.cs`
+- 📄 `LogHeper.cs`
 
 **Interfaces**  
-- 📄 `Interfaces/IBackgroundJobService.cs`
-- 📄 `Interfaces/IEmployeeService.cs`
-- 📄 `Interfaces/IRedisCacheService.cs`
-- 📄 `Interfaces/IProjectExpiryScheduler.cs`
-- 📄 `Interfaces/ITeamStateUnitOfWork.cs`
+- 📄 `IBackgroundJobService.cs`
+- 📄 `IEmployeeService.cs`
+
 
 **Services**  
-- 📄 `Services/BackgroundJobService.cs`
-- 📄 `Services/EmployeeService.cs`
-- 📄 `Services/ProjectService.cs`
-- 📄 `Services/ProjectExpiryScheduler.cs`
+- 📄 `BackgroundJobService.cs`
+- 📄 `EmployeeService.cs`
+- 📄 `ProjectService.cs`
+- 📄 `ProjectExpiryScheduler.cs`
 
-**UnitOfWork**
-- 📄 `UnitOfWork/TeamStateUnitOfWork.cs`
 
 **Autres**  
 - 📄 `DependancyInjection.cs`
@@ -128,28 +111,19 @@
 ## 🧱 CORE.Layer
 
 **BusinessExceptions**  
-- 📄 `BusinessExceptions/DomainException.cs`
+- 📄 `DomainException.cs`
 
 **CoreEvents**
-- 📄 `CoreEvents/EmployeeNotification.cs`
-- 📄 `CoreEvents/IDomainEvent.cs`
-- 📄 `CoreEvents/ProjectAssociatedNotification.cs`
-- 📄 `CoreEvents/ProjectDatesChangedEvent.cs`
+- 📄 `TeamCreatedEvent.cs`
 
 **Entities**  
 - 📄 `Entities/Team.cs`
+    **ValueObjects**  
+    - 📄 `ProjectAssociation.cs`
+    - 📄 `TransfertMember.cs`
 
-**Interfaces**  
-- 📄 `Interfaces/ITeamRepository.cs`
-
-**Models**  
-- 📄 `Models/Message.cs`
-- 📄 `Models/TeamMemberAction.cs`
-- 📄 `Models/ValidationErrorResponse.cs`
-
-**ValueObjects**  
-- 📄 `ValueObjects/ProjectAssociation.cs`
-- 📄 `ValueObjects/TransfertMember.cs`
+**CoreInterfaces**  
+- 📄 `ITeamRepository.cs`
 
 ---
 
@@ -159,16 +133,16 @@
 - 📄 `DependancyInjection.cs`
 
 **ExternalServices**  
-- 📄 `ExternalServices/RabbitListenerService.cs`
-- 📄 `ExternalServices/RedisCacheService.cs`
-- 📄 `ExternalServices/TeamExternalService.cs`
+- 📄 `RabbitListenerService.cs`
+- 📄 `RedisCacheService.cs`
+- 📄 `TeamExternalService.cs`
 
 **ExternalServicesDtos**  
-- 📄 `ExternalServicesDtos/ProjectAssociationDto.cs`
-- 📄 `ExternalServicesDtos/TransfertMemberDto.cs`
+- 📄 `ProjectAssociationDto.cs`
+- 📄 `TransfertMemberDto.cs`
 
 **Dispatchers**  
-- 📄 `Dispatchers/DomainEventDispatcher.cs`
+- 📄 `DomainEventDispatcher.cs`
 
 **Persistence**  
 - 📂 `Persistence/Migration/` *(contenu non détaillé)*
