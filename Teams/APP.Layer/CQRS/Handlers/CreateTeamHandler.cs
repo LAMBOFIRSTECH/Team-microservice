@@ -6,7 +6,7 @@ using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 using Teams.INFRA.Layer.Dispatchers;
 
 namespace Teams.APP.Layer.CQRS.Handlers;

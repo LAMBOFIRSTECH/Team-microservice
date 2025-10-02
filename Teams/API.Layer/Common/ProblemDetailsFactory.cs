@@ -1,12 +1,8 @@
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Teams.API.Layer.Common;
 
-/// <summary>
-/// 
-/// </summary>
 public static class ProblemDetailsFactory
 {
     public static string CreateValidationProblem(

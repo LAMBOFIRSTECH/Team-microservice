@@ -1,6 +1,4 @@
+using Teams.CORE.Layer.CoreInterfaces;
 namespace Teams.CORE.Layer.CoreEvents;
-public class TeamMaturityEvent : IDomainEvent
-{
-    public Guid TeamId { get; }
-    public TeamMaturityEvent(Guid teamId) => TeamId = teamId;
-}
+
+public record TeamMaturityEvent(Guid teamId) : IDomainEvent;

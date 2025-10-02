@@ -1,6 +1,6 @@
 using Teams.CORE.Layer.Entities;
 
-namespace Teams.CORE.Layer.Interfaces;
+namespace Teams.CORE.Layer.CoreInterfaces;
 
 public interface ITeamRepository
 {

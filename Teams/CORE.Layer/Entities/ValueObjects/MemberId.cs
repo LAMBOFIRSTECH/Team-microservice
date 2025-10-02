@@ -1,4 +1,4 @@
-namespace Teams.CORE.Layer.ValueObjects;
+namespace Teams.CORE.Layer.Entities.ValueObjects;
 
 [Microsoft.EntityFrameworkCore.Owned]
 public class MemberId

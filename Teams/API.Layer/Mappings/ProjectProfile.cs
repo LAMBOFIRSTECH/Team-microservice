@@ -1,5 +1,5 @@
 using AutoMapper;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.API.Layer.Mappings;

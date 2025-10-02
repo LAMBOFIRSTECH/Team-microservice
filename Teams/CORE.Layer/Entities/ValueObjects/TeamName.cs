@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Teams.API.Layer.Middlewares;
 
-namespace Teams.CORE.Layer.ValueObjects;
+namespace Teams.CORE.Layer.Entities.ValueObjects;
 
 public class TeamName
 {

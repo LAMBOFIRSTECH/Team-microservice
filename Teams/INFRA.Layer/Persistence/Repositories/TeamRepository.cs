@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 using Teams.INFRA.Layer.Persistence.EFQueries;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;

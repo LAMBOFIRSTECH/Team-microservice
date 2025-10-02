@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
@@ -44,7 +44,6 @@ public class RedisCacheService(
     {
         var cacheKey = BuildKey(redisTeamDto.Id.ToString());
         await EnsureKeyDoesNotExistAsync(cacheKey, cancellationToken);
-
         try
         {
             var serializedTeam = JsonConvert.SerializeObject(redisTeamDto, Formatting.Indented);
@@ -107,7 +106,6 @@ public class RedisCacheService(
             },
             cancellationToken
         );
-
         LogHelper.Info($"✅ Successfully added new entry for key: {cacheKey}", log);
     }
     public async Task<string> GetNewTeamMemberFromCacheAsync(Guid memberId, CancellationToken cancellationToken)
@@ -115,16 +113,13 @@ public class RedisCacheService(
         var cacheKey = BuildKey(memberId.ToString());
         var cachedData = await EnsureKeyExistsAsync(cacheKey, cancellationToken);
         if (cachedData.StartsWith("Resource with key")) return string.Empty;
-
         var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(cachedData);
         if (dict == null || !dict.TryGetValue("Team Name", out var teamNameObj))
         {
             LogHelper.Error($"Dictionary is null or key 'Team Name' missing in cache data for {cacheKey}", log);
             throw new InvalidOperationException("Dictionary is null or key 'Team Name' missing");
         }
-
         var teamName = teamNameObj?.ToString() ?? throw new InvalidOperationException("'Team Name' is null");
-
         await cache.RemoveAsync(cacheKey, cancellationToken);
         return teamName;
     }

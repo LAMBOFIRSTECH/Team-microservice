@@ -1,7 +1,6 @@
-namespace Teams.API.Layer.Common;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+namespace Teams.API.Layer.Common;
 
 public class ValidateModelAttribute : ActionFilterAttribute
 {

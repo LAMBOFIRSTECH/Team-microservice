@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 
 namespace Teams.INFRA.Layer.ExternalServicesDtos;
 

@@ -1,8 +1,8 @@
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 
-namespace Teams.APP.Layer.Services;
+namespace Teams.APP.Layer.Scheldulers.Services;
 
 public class ProjectExpiryScheduler(
     IServiceScopeFactory _scopeFactory,

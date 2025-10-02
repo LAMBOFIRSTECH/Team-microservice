@@ -1,13 +1,14 @@
 using MediatR;
-using Teams.APP.Layer.EventNotification;
+using Teams.APP.Layer.WrapperEventToNotification;
 using Teams.CORE.Layer.CoreEvents;
+using Teams.CORE.Layer.CoreInterfaces;
+
 
 namespace Teams.INFRA.Layer.Dispatchers;
 public interface IDomainEventDispatcher
 {
     Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken ct = default);
 }
-
 public class DomainEventDispatcher(IMediator _mediator, ILogger<DomainEventDispatcher> _log) : IDomainEventDispatcher
 {
     public async Task DispatchAsync(

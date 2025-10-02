@@ -1,5 +1,5 @@
 using AutoMapper;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.API.Layer.Mappings;
@@ -10,9 +10,9 @@ public class TransfertMemberProfile : Profile
     {
         CreateMap<
             Teams.INFRA.Layer.ExternalServicesDtos.AffectationStatus,
-            Teams.CORE.Layer.ValueObjects.AffectationStatus
+            Teams.CORE.Layer.Entities.ValueObjects.AffectationStatus
         >()
-            .ConstructUsing(dto => new Teams.CORE.Layer.ValueObjects.AffectationStatus(
+            .ConstructUsing(dto => new Teams.CORE.Layer.Entities.ValueObjects.AffectationStatus(
                 dto.IsTransferAllowed,
                 dto.ContratType,
                 dto.LeaveDate
@@ -25,7 +25,7 @@ public class TransfertMemberProfile : Profile
                         dto.MemberTeamId,
                         dto.SourceTeam,
                         dto.DestinationTeam,
-                        context.Mapper.Map<Teams.CORE.Layer.ValueObjects.AffectationStatus>(
+                        context.Mapper.Map<Teams.CORE.Layer.Entities.ValueObjects.AffectationStatus>(
                             dto.AffectationStatus
                         )
                     )

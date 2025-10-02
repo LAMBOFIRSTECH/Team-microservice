@@ -1,6 +1,4 @@
+using Teams.CORE.Layer.CoreInterfaces;
 namespace Teams.CORE.Layer.CoreEvents;
-public class TeamManagerChangedEvent : IDomainEvent
-{
-    public Guid TeamId { get; }
-    public TeamManagerChangedEvent(Guid teamId) => TeamId = teamId;
-}
+
+public record TeamManagerChangedEvent(Guid teamId) : IDomainEvent;

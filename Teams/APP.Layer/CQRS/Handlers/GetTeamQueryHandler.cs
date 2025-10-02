@@ -6,7 +6,8 @@ using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
@@ -22,10 +23,7 @@ public class GetTeamQueryHandler(
        Enum.GetValues(typeof(TeamState))
            .Cast<TeamState>()
            .ToDictionary(state => state, state => verdict); // dépendance majeure à un objet du domaine [TeamState] Couplage fort
-    public async Task<TeamDetailsDto> Handle(
-        GetTeamQuery request,
-        CancellationToken cancellationToken
-    )
+    public async Task<TeamDetailsDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
         var team = await teamRepository.GetTeamByIdAsync(request.Id, cancellationToken);
         if (team is not null) return BuildDto(team, mapper);
@@ -71,7 +69,6 @@ public class GetTeamQueryHandler(
         teamDto.State = GetMaturity(team);
         return teamDto;
     }
-
     private string GetMaturity(Team team) // Couplage fort avec le domaine métier à casser
     {
         if (!team.IsMature())

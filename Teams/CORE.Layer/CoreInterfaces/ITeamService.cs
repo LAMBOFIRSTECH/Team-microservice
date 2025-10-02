@@ -1,7 +1,7 @@
 using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 
-namespace Teams.CORE.Layer.Interfaces;
+namespace Teams.CORE.Layer.CoreInterfaces;
 
 public interface ITeamService
 {

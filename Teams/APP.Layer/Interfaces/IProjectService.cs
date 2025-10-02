@@ -1,4 +1,4 @@
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 namespace Teams.APP.Layer.Interfaces;
 
 public interface IProjectService

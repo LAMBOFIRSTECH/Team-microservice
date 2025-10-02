@@ -2,7 +2,7 @@ using MediatR;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 

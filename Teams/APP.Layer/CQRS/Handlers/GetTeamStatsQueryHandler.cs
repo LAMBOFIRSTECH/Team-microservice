@@ -5,7 +5,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 

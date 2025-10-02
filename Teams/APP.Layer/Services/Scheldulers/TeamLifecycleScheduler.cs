@@ -2,11 +2,11 @@ using AutoMapper;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.CORE.Layer.CoreServices;
 
-namespace Teams.APP.Layer.Services;
+namespace Teams.APP.Layer.Scheldulers.Services;
 
 /// <summary>
 /// Scheduler to manage team lifecycle events such as maturity and expiration.
@@ -48,13 +48,10 @@ public class TeamLifecycleScheduler(
         }
         return Task.CompletedTask;
     }
-
+    
     public void Dispose()
     {
-        lock (_lock)
-        {
-            _timer?.Dispose();
-        }
+        lock (_lock) _timer?.Dispose();
     }
 
     public async Task RescheduleAsync(CancellationToken ct = default)
@@ -62,7 +59,6 @@ public class TeamLifecycleScheduler(
         LogHelper.Info("🔄 Reschedule requested...", _log);
         await ScheduleNextCheckAsync();
     }
-
     private async Task CheckTeams(CancellationToken ct = default)
     {
         LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.Now}", _log);
@@ -82,19 +78,6 @@ public class TeamLifecycleScheduler(
         teamLifecycleDomain.ArchiveTeams(expiredTeams);
         foreach (var team in expiredTeams)
         {
-            /**
-               Comportement bizarre : Quand il y'a une dépendance la date d'expiration n'est pas mise à jour
-               Détail :
-                        Donc on archive l'équipe seulement si elle n'a pas de dépendance
-                        Cependant quand le projet arrive à expiration il reprend la date de création + 180 jours
-                        Exemple : "teamCreationDate"  :"28-09-2025 15:27:40",
-                                  "teamExpirationDate": "30-10-2025 10:00:00"  -> C'est la date du projet
-                Conclusion :
-                            Quand cette date est dépassée et bien teamExpirationDate redevient "28-09-2026 15:27:40" + la validationPeriode
-                            Ce qui est illogique car l'équipe a déjà été créée depuis longtemps
-                Trouver le moyen de fixer une date d'expiration exactement à la date de fin du projet de façon à ce que
-                Le scheduler puisse archiver l'équipe au meme moment qu'il supprime le projet expiré de l'équipe
-            **/
             await teamRepository.UpdateTeamAsync(team, ct);
             LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
             var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
@@ -112,7 +95,6 @@ public class TeamLifecycleScheduler(
         using var scope = _scopeFactory.CreateScope();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
         var teams = await teamRepository.GetAllTeamsAsync();
-
         // Calcul des prochaines dates (maturité + expiration)
         var futureMaturities = teamLifecycleDomain.GetfutureMaturities(teams);
         var futureExpirations = teamLifecycleDomain.GetfutureExpirations(teams);
@@ -123,7 +105,6 @@ public class TeamLifecycleScheduler(
             lock (_lock) _timer = null;
             return;
         }
-
         _nextCheckDate = nextEvents.Min();
         var delay = _nextCheckDate.Value - DateTime.Now;
         if (delay < TimeSpan.Zero)
@@ -133,7 +114,6 @@ public class TeamLifecycleScheduler(
             $"▶️ Next lifecycle check scheduled for {_nextCheckDate} (in {delay.TotalSeconds}s)",
             _log
         );
-
         lock (_lock)
         {
             _timer?.Dispose();

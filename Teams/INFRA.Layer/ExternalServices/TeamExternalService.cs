@@ -5,7 +5,9 @@ using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.INFRA.Layer.ExternalServices;
-
+/** 
+   A terme on aura plus besoin | les messages du serveur de messageries devront contenir toutes les infos necessaires
+**/
 public class TeamExternalService(
     HttpClient _httpClient,
     IConfiguration _configuration,

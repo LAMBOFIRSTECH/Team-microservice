@@ -1,18 +1,13 @@
 using System.Net.Security;
-using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using Hangfire;
 using Hangfire.MemoryStorage;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
-using RabbitMQ.Client.Events;
 using StackExchange.Redis;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
-using Teams.CORE.Layer.Interfaces;
+using Teams.CORE.Layer.CoreInterfaces;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;
@@ -52,7 +47,6 @@ public static class DependancyInjection
         ManageRedisCacheMemory(services, configuration);
         return services;
     }
-
     private static readonly string[] HangfireQueues =
     {
         "default",
@@ -62,7 +56,7 @@ public static class DependancyInjection
         "runner_operation_remove_project",
     };
 
-    private static IServiceCollection ManageRedisCacheMemory(
+private static IServiceCollection ManageRedisCacheMemory(
    this IServiceCollection services,
    IConfiguration configuration
 )
@@ -97,7 +91,6 @@ public static class DependancyInjection
                     && chain!.ChainElements[^1].Certificate.Subject == "CN=Infra local CA"
                 );
         };
-
         options.CertificateSelection += delegate
         {
             return clientCertificate;

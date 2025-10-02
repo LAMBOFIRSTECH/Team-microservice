@@ -1,6 +1,7 @@
 using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.CoreInterfaces;
 using Teams.CORE.Layer.CoreEvents;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.ValueObjects;
 
 namespace Teams.CORE.Layer.Entities;
 
@@ -48,7 +49,7 @@ public class Team
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
     /// </remarks>
-    public Team() { }
+    private Team() { }
 #pragma warning restore CS8618
 
     /// <summary>
@@ -282,6 +283,7 @@ public class Team
             throw new DomainException("Team has not yet exceeded the validity period.");
 
         State = TeamState.Archived;
+        AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid()));
     }
     #endregion
 
