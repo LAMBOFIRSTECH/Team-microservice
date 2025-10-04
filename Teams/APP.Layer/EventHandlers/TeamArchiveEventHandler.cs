@@ -5,7 +5,7 @@
 // using Teams.CORE.Layer.CoreInterfaces;
 // namespace Teams.APP.Layer.EventHandlers;
 // // C'est ici qu'on va gérer les caches et les notifications externes
-// public class TeamArchiveEventHandler(IRedisCacheService cache, INotificationService notification, IMapper mapper) : IDomainEvent<TeamArchiveEvent>
+// public class TeamArchiveEventHandler(IRedisCacheService cache, INotificationService notification, IMapper mapper) : IDomainEvent<TeamArchiveEvent> // à la place mettre : IDomainEventHandler<TeamArchiveEvent>
 // {
 //     public async Task Handle(TeamArchiveEvent @event, CancellationToken ct)
 //     {

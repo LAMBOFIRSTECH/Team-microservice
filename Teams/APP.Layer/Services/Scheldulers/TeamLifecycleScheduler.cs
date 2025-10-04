@@ -2,7 +2,7 @@ using AutoMapper;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.CORE.Layer.CoreServices;
 
@@ -78,7 +78,7 @@ public class TeamLifecycleScheduler(
         teamLifecycleDomain.ArchiveTeams(expiredTeams);
         foreach (var team in expiredTeams)
         {
-            await teamRepository.UpdateTeamAsync(team, ct);
+            await teamRepository.UpdateTeamAsync(team, ct); // C'est  ça le commit en DB
             LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
             var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
             await redisCacheService.StoreArchivedTeamInRedisAsync(redisTeamDto, ct);

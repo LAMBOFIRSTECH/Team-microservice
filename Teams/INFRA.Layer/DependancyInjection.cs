@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using Teams.APP.Layer.Interfaces;
 using Teams.APP.Layer.Services;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;

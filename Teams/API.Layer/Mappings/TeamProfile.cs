@@ -1,7 +1,7 @@
 using AutoMapper;
 using Teams.API.Layer.DTOs;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
 namespace Teams.API.Layer.Mappings;
 
 public class TeamProfile : Profile

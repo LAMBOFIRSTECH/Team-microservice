@@ -5,8 +5,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
@@ -26,7 +25,6 @@ public class CreateTeamHandler(
             var team = Team.Create(command.Name, command.TeamManagerId, command.MembersIds, existingTeams);
             await teamRepository.CreateTeamAsync(team, cancellationToken);
             LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
-
             await dispatcher.DispatchAsync(team.DomainEvents, cancellationToken);
             team.ClearDomainEvents(); // On enleve ça ici le UofW est dans le DbContext “Domain Events dispatching in the Infrastructure Layer” pure DDD
             return mapper.Map<TeamDto>(team);

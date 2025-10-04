@@ -3,9 +3,8 @@ using Teams.APP.Layer.Exceptions;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.CoreInterfaces;
-using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence.Configurations;

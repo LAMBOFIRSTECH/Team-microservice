@@ -5,7 +5,6 @@ using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.CoreEvents;
 
 namespace Teams.APP.Layer.DomainHandlers;
-
 public class TeamDomainHandler(
     IProjectExpirySchedule _projectScheduler,
     ITeamLifecycleScheduler _teamLifecycleScheduler,

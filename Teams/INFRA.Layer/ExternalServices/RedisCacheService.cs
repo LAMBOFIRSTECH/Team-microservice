@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 

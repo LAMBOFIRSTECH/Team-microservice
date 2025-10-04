@@ -1,4 +1,4 @@
-using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.CORE.Layer.CoreServices;
 

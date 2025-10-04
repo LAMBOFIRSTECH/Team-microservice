@@ -1,4 +1,4 @@
-namespace Teams.CORE.Layer.Entities.ValueObjects;
+namespace Teams.CORE.Layer.Entities.GeneralValueObjects;
 
 /// <summary>
 /// Statut d'un projet venant d'un service externe

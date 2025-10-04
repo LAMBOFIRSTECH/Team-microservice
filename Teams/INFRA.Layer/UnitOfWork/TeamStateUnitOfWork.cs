@@ -1,4 +1,4 @@
-using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.UnitOfWork;

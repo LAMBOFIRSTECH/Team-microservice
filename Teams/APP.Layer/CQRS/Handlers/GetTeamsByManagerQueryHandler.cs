@@ -2,7 +2,7 @@ using MediatR;
 using Teams.API.Layer.DTOs;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 

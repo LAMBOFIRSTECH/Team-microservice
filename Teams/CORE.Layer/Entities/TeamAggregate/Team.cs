@@ -1,9 +1,10 @@
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.CoreInterfaces;
 using Teams.CORE.Layer.CoreEvents;
-using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
-namespace Teams.CORE.Layer.Entities;
+
+namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
 /// <summary>
 /// Team state definitions:
@@ -17,10 +18,8 @@ public enum TeamState
     Active = 1,
     Archived = 2
 }
-
-public class Team
+public class Team : AggregateEntity, IAggregateRoot
 {
-    public Guid Id { get; private set; }
     private TeamName _name;
     public TeamName Name => _name;
     private MemberId _teamManagerId;
@@ -32,7 +31,7 @@ public class Team
     public ProjectAssociation? Project { get; private set; }
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
-    private const int ValidityPeriodInDays = 250; // 250 pour les tests| Durée de validité standard en secondes (150 jours)
+    private const int ValidityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
     private const int MaturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
     private int ExtraDays { get; set; } = 0;
     public DateTime TeamCreationDate { get; private set; }
@@ -64,7 +63,7 @@ public class Team
     /// <returns></returns>
     /// <remarks>
     /// Le constructeur initialise les propriétés de l'équipe, y compris la date d'expiration basée
-    /// sur la date de création et la période de validité standard.
+    /// Sur la date de création et la période de validité standard.
     /// La validation des données de l'équipe est effectuée via la méthode ValidateTeamData.
     /// </remarks>
     private Team(
@@ -109,12 +108,11 @@ public class Team
             return 0;
 
         double maxPercent = 0;
-        foreach (var existingTeam in existingTeams)
+        foreach (var team in existingTeams)
         {
-            var common = existingTeam.MembersIds.Select(m => m.Value).Intersect(newTeamMembers).Count();
-            var universe = existingTeam.MembersIds.Select(m => m.Value).Union(newTeamMembers).Count();
+            var common = team.MembersIds.Select(m => m.Value).Intersect(newTeamMembers).Count();
+            var universe = team.MembersIds.Select(m => m.Value).Union(newTeamMembers).Count();
             double percent = (double)common / universe * 100;
-
             if (percent > maxPercent)
                 maxPercent = percent;
         }
@@ -132,10 +130,10 @@ public class Team
     /// <exception cref="DomainException">
     /// Thrown when:
     /// <list type="bullet">
-    /// <item><description>A team with the same name already exists.</description></item>
-    /// <item><description>The manager already manages more than 3 teams.</description></item>
-    /// <item><description>A team with the exact same members and manager already exists.</description></item>
-    /// <item><description>The new team shares more than 50% of its members with an existing team.</description></item>
+    /// <item><description> A team with the same name already exists. </description></item>
+    /// <item><description> The manager already manages more than 3 teams. </description></item>
+    /// <item><description> A team with the exact same members and manager already exists. </description></item>
+    /// <item><description> The new team shares more than 50% of its members with an existing team. </description></item>
     /// </list>
     /// </exception>
     public static Team Create(
@@ -276,12 +274,11 @@ public class Team
     /// <remarks>
     /// Archiving a team changes its state to Archived.
     /// This action is irreversible and should be performed with caution.
-    /// </remarks>  
+    /// </remarks>
     public void ArchiveTeam()
     {
         if (!IsTeamExpired())
             throw new DomainException("Team has not yet exceeded the validity period.");
-
         State = TeamState.Archived;
         AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid()));
     }
@@ -471,12 +468,6 @@ public class Team
     }
     #endregion
 
-    #region Domain Event Handling
-    private readonly List<IDomainEvent> _domainEvents = new();
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-    private void AddDomainEvent(IDomainEvent @event) => _domainEvents.Add(@event);
-    public void ClearDomainEvents() => _domainEvents.Clear();
-    #endregion
     /// <summary>
     /// Get the current local date and time.
     /// </summary>

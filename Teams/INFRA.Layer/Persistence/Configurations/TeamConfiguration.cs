@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 namespace Teams.INFRA.Layer.Persistence.Configurations;
 

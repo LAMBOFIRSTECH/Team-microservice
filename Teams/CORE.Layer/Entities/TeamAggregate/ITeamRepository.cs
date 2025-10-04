@@ -1,6 +1,4 @@
-using Teams.CORE.Layer.Entities;
-
-namespace Teams.CORE.Layer.CoreInterfaces;
+namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
 public interface ITeamRepository
 {

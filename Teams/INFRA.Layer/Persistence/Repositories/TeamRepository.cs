@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.EFQueries;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
@@ -8,10 +7,8 @@ namespace Teams.INFRA.Layer.Persistence.Repositories;
 public class TeamRepository(TeamDbContext _context) : ITeamRepository
 {
     #region Get Methods
-    public async Task<Team?> GetTeamByIdAsync(
-        Guid teamId,
-        CancellationToken cancellationToken = default
-    ) => await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
+    public async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default)
+    => await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
 
     public async Task<Team?> GetTeamByNameAsync(string teamName, CancellationToken cancellationToken = default)
      => await _context.Teams.FirstOrDefaultAsync(t => t.Name.Value.Equals(teamName), cancellationToken);
@@ -91,11 +88,5 @@ public class TeamRepository(TeamDbContext _context) : ITeamRepository
            .MinAsync(d => (DateTime?)d.ProjectEndDate, cancellationToken);
 
     #endregion
-
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
-    {
-        await _context.SaveChangesAsync(cancellationToken);
-
-    }
-
+    public async Task SaveAsync(CancellationToken cancellationToken = default) => await _context.SaveChangesAsync(cancellationToken);
 }

@@ -3,7 +3,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 

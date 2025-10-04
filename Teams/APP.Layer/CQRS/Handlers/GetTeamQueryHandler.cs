@@ -5,9 +5,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Entities.ValueObjects;
-using Teams.CORE.Layer.CoreInterfaces;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
@@ -33,7 +31,7 @@ public class GetTeamQueryHandler(
             Enum.TryParse(archivedTeamDto.State, out TeamState currentStatus);
             if (currentStatus == TeamState.Archived)
             {
-                archivedTeamDto.State = $"Team {archivedTeamDto.Name} has been archived for 7 days.";
+                archivedTeamDto.State = $"Team {archivedTeamDto.Name} has been archived for 7 days. No more present in database";
                 return archivedTeamDto;
             }
         }

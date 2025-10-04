@@ -1,4 +1,4 @@
-namespace Teams.CORE.Layer.Entities.ValueObjects;
+namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 // doit etre dans un VO
 public enum TeamMemberAction
 {

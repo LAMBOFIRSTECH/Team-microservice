@@ -1,5 +1,6 @@
-using Teams.CORE.Layer.Entities;
-using Teams.CORE.Layer.Entities.ValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
 
 namespace Teams.CORE.Layer.CoreInterfaces;
 

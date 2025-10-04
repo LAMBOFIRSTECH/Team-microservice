@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Teams.CORE.Layer.Entities;
+using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.INFRA.Layer.Persistence.EFQueries;
 
