@@ -105,7 +105,7 @@ public class TeamLifecycleScheduler(
             lock (_lock) _timer = null;
             return;
         }
-        _nextCheckDate = nextEvents.Min();
+        _nextCheckDate = nextEvents.Min().ToDateTimeUtc(); // revoir car créé une boucle infernale
         var delay = _nextCheckDate.Value - DateTime.Now;
         if (delay < TimeSpan.Zero)
             delay = TimeSpan.Zero;

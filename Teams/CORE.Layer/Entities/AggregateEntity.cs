@@ -1,5 +1,4 @@
 using Teams.CORE.Layer.CoreInterfaces;
-
 namespace Teams.CORE.Layer.Entities;
 
 public abstract class AggregateEntity

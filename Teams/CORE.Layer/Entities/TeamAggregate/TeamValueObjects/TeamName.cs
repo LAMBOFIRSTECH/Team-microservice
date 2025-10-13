@@ -3,7 +3,7 @@ using Teams.API.Layer.Middlewares;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
-public class TeamName
+public sealed class TeamName : IEquatable<TeamName>
 {
     public string Value { get; private set; }
     private TeamName(string value) => Value = value;
@@ -20,4 +20,6 @@ public class TeamName
         return new TeamName(value.Trim());
     }
     public override string ToString() => Value;
+
+    public bool Equals(TeamName? other)  => other != null && Value == other.Value;
 }

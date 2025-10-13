@@ -1,7 +1,7 @@
 namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 [Microsoft.EntityFrameworkCore.Owned]
-public class MemberId
+public sealed class MemberId : IEquatable<MemberId>
 {
     public Guid Value { get; private set; }
     public MemberId(Guid value) => Value = value;
@@ -9,6 +9,9 @@ public class MemberId
     => obj is MemberId other && Value == other.Value;
 
     public override int GetHashCode() => Value.GetHashCode();
+
+    public bool Equals(MemberId? other)  => other != null && Value == other.Value;
+
 
     public static bool operator ==(MemberId a, MemberId b) => a?.Equals(b) ?? b is null;
     public static bool operator !=(MemberId a, MemberId b) => !(a == b);

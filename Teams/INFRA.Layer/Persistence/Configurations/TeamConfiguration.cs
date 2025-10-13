@@ -7,6 +7,7 @@ namespace Teams.INFRA.Layer.Persistence.Configurations;
 
 public class TeamConfiguration : IEntityTypeConfiguration<Team>
 {
+
     public void Configure(EntityTypeBuilder<Team> builder)
     {
         builder.HasKey(t => t.Id);
@@ -23,7 +24,23 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
             ).IsRequired();
 
         builder.Property(t => t.State).IsRequired();
-        builder.Property(t => t.TeamCreationDate).IsRequired();
+        builder.Property(t => t.TeamCreationDate)
+     .HasConversion(
+         v => v.ToDateTimeUtc(),
+         v => EuropeanDate.FromDateTimeUtc(v)
+     )
+     .HasColumnType("datetime2")
+     .IsRequired();
+
+        builder.Property(t => t.TeamExpirationDate)
+            .HasConversion(
+                v => v.ToDateTimeUtc(),
+                v => EuropeanDate.FromDateTimeUtc(v)
+            )
+            .HasColumnType("datetime2")
+            .IsRequired();
+
+
         builder.OwnsMany(t => t.MembersIds, b =>
             {
                 b.WithOwner().HasForeignKey("TeamId"); // FK vers Team

@@ -32,8 +32,8 @@ public class TeamProfile : Profile
     CreateMap<Team, TeamDetailsDto>()
     .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Value))
     .ForMember(dest => dest.TeamManagerId, opt => opt.MapFrom(src => src.TeamManagerId.Value))
-    .ForMember(dest => dest.TeamCreationDate, opt => opt.MapFrom(src => src.TeamCreationDate.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)))
-    .ForMember(dest => dest.TeamExpirationDate, opt => opt.MapFrom(src => src.TeamExpirationDate.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)))
+    .ForMember(dest => dest.TeamCreationDate, opt => opt.MapFrom(src => src.TeamCreationDate.Value.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)))
+    .ForMember(dest => dest.TeamExpirationDate, opt => opt.MapFrom(src => src.TeamExpirationDate.Value.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)))
     .ForMember(dest => dest.HasAnyProject, opt => opt.MapFrom(src => src.MembersIds.Any() && src.Project != null && src.Project.HasActiveProject() ? true : false))
     .ForMember(dest => dest.State, opt => opt.MapFrom(src => src.State));
   }

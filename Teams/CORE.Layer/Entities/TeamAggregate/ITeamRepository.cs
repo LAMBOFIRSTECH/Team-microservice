@@ -1,6 +1,10 @@
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
-public interface ITeamRepository
+public interface IRepository<T> where T : IAggregateRoot
+{
+    // IUnitOfWork UnitOfWork { get; } // On va comprendre ça plustard
+}
+public interface ITeamRepository : IRepository<Team>
 {
     Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default, bool asNoTracking = false);
     Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);

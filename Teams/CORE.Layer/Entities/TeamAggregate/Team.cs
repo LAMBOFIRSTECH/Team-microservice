@@ -1,3 +1,5 @@
+using Humanizer;
+using NodaTime;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities.GeneralValueObjects;
@@ -34,11 +36,17 @@ public class Team : AggregateEntity, IAggregateRoot
     private const int ValidityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
     private const int MaturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
     private int ExtraDays { get; set; } = 0;
-    public DateTime TeamCreationDate { get; private set; }
-    public DateTime TeamExpirationDate { get; private set; }
+    public EuropeanDate TeamCreationDate { get; private set; }
+    public EuropeanDate TeamExpirationDate { get; private set; }
     public DateTime LastActivityDate { get; set; }
-    public DateTime ExpirationDate => TeamCreationDate.AddSeconds(ValidityPeriodInDays + ExtraDays);
-    // Datetime.Now Couplage fort avec le systeme use IClock à la place
+    public EuropeanDate Expiration => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
+    /// <summary>
+    /// Méthode interne pour obtenir la date actuelle à partir de l'horloge encapsulée.
+    /// </summary>
+    private EuropeanDate GetCurrentDateTime() => EuropeanDate.FromInstant(SystemClock.Instance.GetCurrentInstant()); // la date actuelle à 2heures de retard
+    public bool IsTeamExpired() => GetCurrentDateTime().Value.ToInstant() >= Expiration.Value.ToInstant() && State != TeamState.Archived;
+
+
     #region Constructors
 #pragma warning disable CS8618
     /// <summary>
@@ -48,7 +56,9 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
     /// </remarks>
-    private Team() { }
+    public Team()
+    {
+    }
 #pragma warning restore CS8618
 
     /// <summary>
@@ -58,7 +68,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="name"></param>
     /// <param name="teamManagerId"></param>
     /// <param name="members"></param>
-    /// <param name="creationDate"></param>
+    /// <param name="clock"></param>
     /// <exception cref="DomainException"></exception>
     /// <returns></returns>
     /// <remarks>
@@ -71,19 +81,18 @@ public class Team : AggregateEntity, IAggregateRoot
         string name,
         Guid teamManagerId,
         IEnumerable<Guid> members,
-        DateTime creationDate
+        IClock clock
     )
     {
         Id = id;
         _name = TeamName.Create(name);
         _teamManagerId = new MemberId(teamManagerId);
         _members = members.Select(m => new MemberId(m)).ToHashSet();
-        TeamCreationDate = creationDate;
-        TeamExpirationDate = creationDate.AddSeconds(ValidityPeriodInDays);
+        TeamCreationDate = EuropeanDate.Now(clock);
+        TeamExpirationDate = TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays));
+
     }
 
-    public bool IsTeamExpired() =>
-         GetLocalDateTime() >= ExpirationDate && State != TeamState.Archived;
 
     /// <summary>
     /// Calculates the maximum percentage of common members between a new team and a collection of existing teams.
@@ -97,9 +106,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <exception cref="DomainException">
     /// Thrown when <paramref name="newTeamMembers"/> is null or contains fewer than two members.
     /// </exception>
-    private static double GetCommonMembersStats(
-        IEnumerable<Guid> newTeamMembers,
-        IEnumerable<Team> existingTeams)
+    private static double GetCommonMembersStats(IEnumerable<Guid> newTeamMembers, IEnumerable<Team> existingTeams)
     {
         if (newTeamMembers == null || newTeamMembers.Count() == 0)
             throw new DomainException("The new team must have at least two member.");
@@ -157,7 +164,8 @@ public class Team : AggregateEntity, IAggregateRoot
         if (GetCommonMembersStats(memberIds, teams) >= 50)
             throw new DomainException("Cannot create a team with more than 50% common members with existing team.");
 
-        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), GetLocalDateTime());
+        var clock = SystemClock.Instance;
+        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), clock);
         team.ValidateTeamInvariants();
         team.RecalculateStates();
         team.AddDomainEvent(new TeamCreatedEvent(team.Id));
@@ -242,7 +250,7 @@ public class Team : AggregateEntity, IAggregateRoot
         bool hasDependencies = Project.HasActiveProject() || Project.HasSuspendedProject();
         if (Project.HasActiveProject())
         {
-            TeamExpirationDate = Project!.GetprojectMaxEndDate();
+            TeamExpirationDate = EuropeanDate.FromInstant(Instant.FromDateTimeUtc(Project.GetprojectMaxEndDate().ToUniversalTime()));
             return true;
         }
         return hasDependencies;
@@ -261,7 +269,7 @@ public class Team : AggregateEntity, IAggregateRoot
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
 
-        if (!((GetLocalDateTime() - TeamCreationDate).TotalSeconds >= MaturityThresholdInDays)) // C'est 180 jours pour les tests on a mis 180 secondes
+        if (!((GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant()).TotalSeconds >= MaturityThresholdInDays)) // C'est 180 jours pour les tests on a mis 180 secondes
             return false;
         return true;
     }
@@ -280,7 +288,7 @@ public class Team : AggregateEntity, IAggregateRoot
         if (!IsTeamExpired())
             throw new DomainException("Team has not yet exceeded the validity period.");
         State = TeamState.Archived;
-        AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid()));
+        AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate.ToInstant(), Guid.NewGuid()));
     }
     #endregion
 
@@ -336,20 +344,20 @@ public class Team : AggregateEntity, IAggregateRoot
         if (new MemberId(project.TeamManagerId) != _teamManagerId)
             throw new DomainException($"Project manager {project.TeamManagerId} does not match current team manager {_teamManagerId}.");
 
-        if (project.GetprojectStartDate() < TeamCreationDate)
+        if (project.GetprojectStartDate() < TeamCreationDate.ToDateTimeUtc())
             throw new DomainException($"Project start date {project.GetprojectStartDate()} cannot be earlier than team creation date {TeamCreationDate}");
 
         if (project.Details.Count > 3)
             throw new DomainException("A team cannot be associated with more than 3 projects.");
 
         Project = project;
-        var delay = Project.GetprojectStartDate() - TeamCreationDate;
+        var delay = Project.GetprojectStartDate() - TeamCreationDate.ToDateTimeUtc();
         if (delay.TotalDays > 7)
             throw new DomainException(
                 $"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}."
             );
         ExtraDays = 150;
-        TeamExpirationDate = TeamExpirationDate.AddSeconds(ExtraDays);
+        TeamExpirationDate = TeamExpirationDate.Plus(Duration.FromSeconds(ExtraDays));
         RecalculateStates();
         AddDomainEvent(new ProjectDateChangedEvent(Id));
     }
@@ -467,15 +475,4 @@ public class Team : AggregateEntity, IAggregateRoot
         RecalculateStates();
     }
     #endregion
-
-    /// <summary>
-    /// Get the current local date and time.
-    /// </summary>
-    /// <returns></returns>
-    /// <remarks>
-    /// This method ensures that all date and time operations within the Team entity
-    /// are based on the local time zone, promoting consistency across the application.
-    /// </remarks>
-    public static DateTime GetLocalDateTime() =>
-        DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Local);
 }
