@@ -5,6 +5,7 @@ using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.CORE.Layer.CoreServices;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Teams.APP.Layer.Scheldulers.Services;
 
@@ -48,7 +49,7 @@ public class TeamLifecycleScheduler(
         }
         return Task.CompletedTask;
     }
-    
+
     public void Dispose()
     {
         lock (_lock) _timer?.Dispose();
@@ -61,7 +62,7 @@ public class TeamLifecycleScheduler(
     }
     private async Task CheckTeams(CancellationToken ct = default)
     {
-        LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.Now}", _log);
+        LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.UtcNow}", _log);
 
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
@@ -105,8 +106,8 @@ public class TeamLifecycleScheduler(
             lock (_lock) _timer = null;
             return;
         }
-        _nextCheckDate = nextEvents.Min().ToDateTimeUtc(); // revoir car créé une boucle infernale
-        var delay = _nextCheckDate.Value - DateTime.Now;
+        _nextCheckDate = nextEvents.Min().ToDateTimeUtc().ToLocalTime();
+        var delay = _nextCheckDate.Value - DateTime.UtcNow;
         if (delay < TimeSpan.Zero)
             delay = TimeSpan.Zero;
 

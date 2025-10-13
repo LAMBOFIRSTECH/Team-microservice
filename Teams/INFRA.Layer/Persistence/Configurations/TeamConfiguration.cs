@@ -27,7 +27,7 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
         builder.Property(t => t.TeamCreationDate)
      .HasConversion(
          v => v.ToDateTimeUtc(),
-         v => EuropeanDate.FromDateTimeUtc(v)
+         v => LocalizationDateTime.FromDateTimeUtc(v)
      )
      .HasColumnType("datetime2")
      .IsRequired();
@@ -35,7 +35,7 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
         builder.Property(t => t.TeamExpirationDate)
             .HasConversion(
                 v => v.ToDateTimeUtc(),
-                v => EuropeanDate.FromDateTimeUtc(v)
+                v => LocalizationDateTime.FromDateTimeUtc(v)
             )
             .HasColumnType("datetime2")
             .IsRequired();

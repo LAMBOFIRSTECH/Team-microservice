@@ -36,14 +36,14 @@ public class Team : AggregateEntity, IAggregateRoot
     private const int ValidityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
     private const int MaturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
     private int ExtraDays { get; set; } = 0;
-    public EuropeanDate TeamCreationDate { get; private set; }
-    public EuropeanDate TeamExpirationDate { get; private set; }
+    public LocalizationDateTime TeamCreationDate { get; private set; }
+    public LocalizationDateTime TeamExpirationDate { get; private set; }
     public DateTime LastActivityDate { get; set; }
-    public EuropeanDate Expiration => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
+    public LocalizationDateTime Expiration => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
     /// <summary>
     /// Méthode interne pour obtenir la date actuelle à partir de l'horloge encapsulée.
     /// </summary>
-    private EuropeanDate GetCurrentDateTime() => EuropeanDate.FromInstant(SystemClock.Instance.GetCurrentInstant()); // la date actuelle à 2heures de retard
+    private LocalizationDateTime GetCurrentDateTime() => LocalizationDateTime.FromInstant(SystemClock.Instance.GetCurrentInstant()); // la date actuelle à 2heures de retard
     public bool IsTeamExpired() => GetCurrentDateTime().Value.ToInstant() >= Expiration.Value.ToInstant() && State != TeamState.Archived;
 
 
@@ -88,7 +88,7 @@ public class Team : AggregateEntity, IAggregateRoot
         _name = TeamName.Create(name);
         _teamManagerId = new MemberId(teamManagerId);
         _members = members.Select(m => new MemberId(m)).ToHashSet();
-        TeamCreationDate = EuropeanDate.Now(clock);
+        TeamCreationDate = LocalizationDateTime.Now(clock);
         TeamExpirationDate = TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays));
 
     }
@@ -250,7 +250,7 @@ public class Team : AggregateEntity, IAggregateRoot
         bool hasDependencies = Project.HasActiveProject() || Project.HasSuspendedProject();
         if (Project.HasActiveProject())
         {
-            TeamExpirationDate = EuropeanDate.FromInstant(Instant.FromDateTimeUtc(Project.GetprojectMaxEndDate().ToUniversalTime()));
+            TeamExpirationDate = LocalizationDateTime.FromInstant(Instant.FromDateTimeUtc(Project.GetprojectMaxEndDate().ToUniversalTime()));
             return true;
         }
         return hasDependencies;

@@ -12,10 +12,10 @@ public class TeamLifecycleDomainService
 
     public IEnumerable<Instant> GetfutureMaturities(IEnumerable<Team> teams)
         => teams.Select(t => t.TeamCreationDate.Plus(Duration.FromSeconds(30)).ToInstant())
-                .Where(d => d > now)
+                .Where(d => d >  SystemClock.Instance.GetCurrentInstant())
                 .ToList(); // en prod : AddDays(180)
     public IEnumerable<Instant> GetfutureExpirations(IEnumerable<Team> teams)
-        => teams.Where(t => t.Expiration.ToInstant() > now)
+        => teams.Where(t => t.Expiration.ToInstant() >  SystemClock.Instance.GetCurrentInstant())
                 .Select(t => t.Expiration.ToInstant());
     public void ArchiveTeams(IEnumerable<Team> teams)
     {
