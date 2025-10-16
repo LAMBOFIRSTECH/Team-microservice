@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.EFQueries;
+using Teams.INFRA.Layer.Persistence.DAL;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
-public class TeamRepository(TeamDbContext _context) : ITeamRepository
+public class TeamRepository(ApiContext _context) : ITeamRepository
 {
     #region Get Methods
     public async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default)
@@ -88,5 +89,5 @@ public class TeamRepository(TeamDbContext _context) : ITeamRepository
            .MinAsync(d => (DateTime?)d.ProjectEndDate, cancellationToken);
 
     #endregion
-    public async Task SaveAsync(CancellationToken cancellationToken = default) => await _context.SaveChangesAsync(cancellationToken);
+    public async Task SaveAsync(CancellationToken cancellationToken = default) => await _context.SaveChangesAsync(cancellationToken); // dans UoW et rien que
 }

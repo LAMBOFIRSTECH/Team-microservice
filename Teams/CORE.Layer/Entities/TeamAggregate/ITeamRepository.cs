@@ -1,10 +1,6 @@
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
-public interface IRepository<T> where T : IAggregateRoot
-{
-    // IUnitOfWork UnitOfWork { get; } // On va comprendre ça plustard
-}
-public interface ITeamRepository : IRepository<Team>
+public interface ITeamRepository // doit hériter de l'interface générique ICommonRepository: IRepository<Team>
 {
     Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default, bool asNoTracking = false);
     Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);
@@ -21,8 +17,8 @@ public interface ITeamRepository : IRepository<Team>
         Guid teamManager,
         CancellationToken cancellationToken = default
     );
-    Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default);
-    Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
+    Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default); // service du domaine
+    Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default); // service du domaine
     Task<Team> CreateTeamAsync(Team team, CancellationToken cancellationToken = default);
     Task AddTeamMemberAsync(CancellationToken cancellationToken = default);
     Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default);

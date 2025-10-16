@@ -12,8 +12,9 @@ using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence;
+using Teams.INFRA.Layer.Persistence.DAL;
 using Teams.INFRA.Layer.Persistence.Repositories;
-using Teams.INFRA.Layer.UnitOfWork;
+using Teams.INFRA.Layer.OtherUOW;
 
 namespace Teams.INFRA.Layer;
 
@@ -26,9 +27,9 @@ public static class DependancyInjection
     {
         var conStrings = configuration.GetSection("ConnectionStrings")["DefaultConnection"];
         if (string.IsNullOrEmpty(conStrings) || conStrings == "TeamMemoryDb")
-            services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase("TeamMemoryDb"));
+            services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase("TeamMemoryDb"));
         else
-            services.AddDbContext<TeamDbContext>(opt => opt.UseInMemoryDatabase(conStrings));
+            services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase(conStrings));
 
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();

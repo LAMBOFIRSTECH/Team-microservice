@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.INFRA.Layer.Exceptions;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 

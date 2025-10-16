@@ -5,13 +5,14 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
 using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.CoreServices;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
-
 public class CreateTeamHandler(
     ITeamRepository teamRepository,
+    TeamLifeCycleCoreService teamLifeCycleCoreService,
     IMapper mapper,
     ILogger<CreateTeamHandler> log,
     IDomainEventDispatcher dispatcher
@@ -22,7 +23,7 @@ public class CreateTeamHandler(
         var existingTeams = await teamRepository.GetAllTeamsAsync(cancellationToken);
         try
         {
-            var team = Team.Create(command.Name, command.TeamManagerId, command.MembersIds, existingTeams);
+            var team = await teamLifeCycleCoreService.CreateTeamAsync(command.Name, command.TeamManagerId, command.MembersIds, existingTeams);
             await teamRepository.CreateTeamAsync(team, cancellationToken);
             LogHelper.Info($"✅ Team {team.Name} has been created successfully.", log);
             await dispatcher.DispatchAsync(team.DomainEvents, cancellationToken);

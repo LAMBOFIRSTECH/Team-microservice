@@ -1,4 +1,4 @@
-namespace Teams.INFRA.Layer;
+namespace Teams.INFRA.Layer.Exceptions;
 
 public class InfrastructureException : Exception
 {

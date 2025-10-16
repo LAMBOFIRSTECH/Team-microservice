@@ -17,7 +17,7 @@ public class EmployeeService(
     IRedisCacheService redisCache
 ) : IEmployeeService
 {
-    public bool CanMemberJoinNewTeam(Team team, TransfertMemberDto transfertMemberDto)
+    public bool CanMemberJoinNewTeam(Team team, TransfertMemberDto transfertMemberDto) 
     {
         if (team.MembersIds.Count == 0)
             return false;

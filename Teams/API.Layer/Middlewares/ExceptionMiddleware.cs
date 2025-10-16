@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Teams.API.Layer.Common;
 using Teams.INFRA.Layer;
+using Teams.INFRA.Layer.Exceptions;
 
 namespace Teams.API.Layer.Middlewares;
 

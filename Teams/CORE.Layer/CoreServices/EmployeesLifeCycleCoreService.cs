@@ -8,5 +8,5 @@ using Teams.CORE.Layer.Entities;
 
 namespace Teams.CORE.Layer.CoreServices;
 
-public class ProjectExpiryDomainService
+public class EmployeesLifeCycleCoreService
 { }

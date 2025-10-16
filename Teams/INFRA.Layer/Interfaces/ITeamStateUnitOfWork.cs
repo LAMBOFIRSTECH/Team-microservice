@@ -4,5 +4,5 @@ namespace Teams.INFRA.Layer.Interfaces;
 
 public interface ITeamStateUnitOfWork
 {
-    void RecalculateTeamStates(IEnumerable<Team> teams);
+    void RecalculateTeamStates(IEnumerable<Team> teams); // pertinence
 }

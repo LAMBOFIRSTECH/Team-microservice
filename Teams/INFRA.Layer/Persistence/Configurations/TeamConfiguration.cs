@@ -67,6 +67,8 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                     d.HasKey("Id");
                 });
             });
+     
+
     }
 }
 
