@@ -21,8 +21,8 @@ public enum TeamState
 
 public class Team : AggregateEntity, IAggregateRoot
 {
-    private const int ValidityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
-    private const int MaturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
+    private const int ValidityPeriodInDays = 250;
+    private const int MaturityThresholdInDays = 280;
     private int ExtraDays { get; set; } = 0;
     private TeamName _name;
     public TeamName Name => _name;
@@ -32,7 +32,7 @@ public class Team : AggregateEntity, IAggregateRoot
     public IReadOnlyCollection<MemberId> MembersIds => _members;
     public TeamState State { get; private set; } = TeamState.Draft;
     public ProjectAssignmentState ProjectState { get; private set; } = ProjectAssignmentState.Unassigned;
-    public ProjectAssociation? Project { get; private set; } // C'est une entité interne de AR qui sera mappé avec le dto externe
+    public ProjectAssociation? Project { get; private set; } 
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
     public LocalizationDateTime TeamCreationDate { get; init; }
@@ -59,10 +59,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
     /// </remarks>
-    public Team()
-    {
-
-    }
+    public Team(){}
 #pragma warning restore CS8618
 
     /// <summary>
@@ -112,7 +109,7 @@ public class Team : AggregateEntity, IAggregateRoot
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), SystemClock.Instance);
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id)); // voir comment enrichir cet event
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
 
@@ -214,14 +211,7 @@ public class Team : AggregateEntity, IAggregateRoot
 
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
-
-        if (
-            !(
-                (
-                    GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant()
-                ).TotalSeconds >= MaturityThresholdInDays
-            )
-        ) // C'est 180 jours pour les tests on a mis 180 secondes
+        if (!(( GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant() ).TotalSeconds >= MaturityThresholdInDays)) 
             return false;
         return true;
     }
@@ -241,9 +231,7 @@ public class Team : AggregateEntity, IAggregateRoot
         if (!IsTeamExpired())
             throw new DomainException("Team has not yet exceeded the validity period.");
         State = TeamState.Archived;
-        AddDomainEvent(
-            new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate.ToInstant(), Guid.NewGuid())
-        );
+        AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate.ToInstant(), Guid.NewGuid()));
     }
     #endregion
 
@@ -317,9 +305,7 @@ public class Team : AggregateEntity, IAggregateRoot
         Project = project;
         var delay = Project.GetprojectStartDate().Value.ToInstant() - TeamCreationDate.Value.ToInstant();
         if (delay.TotalDays > 7)
-            throw new DomainException(
-                $"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}."
-            );
+            throw new DomainException($"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}.");
         ExtraDays = 150;
         TeamExpirationDate = TeamExpirationDate.Plus(Duration.FromSeconds(ExtraDays));
         RecalculateStates();
