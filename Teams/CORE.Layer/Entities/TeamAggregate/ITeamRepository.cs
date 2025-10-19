@@ -1,6 +1,6 @@
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
-public interface ITeamRepository // doit hériter de l'interface générique ICommonRepository: IRepository<Team>
+public interface ITeamRepository : IDisposable
 {
     Task<List<Team>> GetAllTeamsAsync(CancellationToken cancellationToken = default, bool asNoTracking = false);
     Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default);

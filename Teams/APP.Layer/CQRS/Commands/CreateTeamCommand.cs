@@ -1,10 +1,8 @@
-using System.Collections.Generic;
 using MediatR;
 using Teams.API.Layer.DTOs;
 
 namespace Teams.APP.Layer.CQRS.Commands;
-
-public class CreateTeamCommand : IRequest<TeamDto>
+public sealed class CreateTeamCommand : IRequest<TeamDto>
 {
     public string Name { get; set; }
     public Guid TeamManagerId { get; set; }

@@ -10,6 +10,7 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
+
 public class CreateTeamHandler(
     ITeamRepository teamRepository,
     TeamLifeCycleCoreService teamLifeCycleCoreService,
@@ -33,7 +34,6 @@ public class CreateTeamHandler(
         catch (DomainException ex)
         {
             LogHelper.BusinessRuleFailure(log, "Team creation failed", ex.Message, null);
-
             throw HandlerException.DomainError(
                 title: "Team creation failed",
                 statusCode: 422, // La requete a été comprise cependant le traitement n'aboutit pas à cause d'une exception levée par le domaine.

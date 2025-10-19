@@ -1,44 +1,20 @@
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.DAL;
 
-namespace Teams.INFRA.Layer
+namespace Teams.INFRA.Layer;
+
+public class UnitOfWork : IDisposable
 {
-    public class UnitOfWork : IDisposable
+    private readonly ApiContext _context;
+    private GenericRepository<Team>? _teamRepository;
+    public UnitOfWork(ApiContext context) => _context = context;
+    public GenericRepository<Team> TeamRepository
     {
-        private ApiContext context = new ApiContext();
-        private CommonRepository<Team>? teamRepository;
-        public CommonRepository<Team>  TeamRepository
+        get
         {
-            get
-            {
-
-                if (this.teamRepository == null)
-                {
-                    this.teamRepository = new CommonRepository<Team>(context);
-                }
-                return teamRepository;
-            }
-        }
-        public void Save() => context.SaveChanges();
-
-        private bool disposed = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!this.disposed)
-            {
-                if (disposing)
-                {
-                    context.Dispose();
-                }
-            }
-            this.disposed = true;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            _teamRepository ??= new GenericRepository<Team>(_context); return _teamRepository;
         }
     }
+    public async Task SaveAsync() => await _context.SaveChangesAsync();
+    public void Dispose() => _context.Dispose();
 }

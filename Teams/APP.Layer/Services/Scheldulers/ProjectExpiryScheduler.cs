@@ -31,17 +31,9 @@ public class ProjectExpiryScheduler(
     private async Task CheckExpiredProjects(CancellationToken ct = default)
     {
         LogHelper.Info($"⏱ Running CheckExpiredProjects at {DateTime.Now}", _log);
-
         using var scope = _scopeFactory.CreateScope();
-        var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
-
-        var expiredTeams = await teamRepository.GetTeamsWithExpiredProject(ct);
-        foreach (var team in expiredTeams)
-        {
-            team.RemoveExpiredProjects();
-            await teamRepository.UpdateTeamAsync(team, ct);
-            LogHelper.Info($"✅ Project has been dissociated from team {team.Name}", _log);
-        }
+        var teamProjectLife = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
+        await teamProjectLife.RemoveProjects(ct);
         await ScheduleNextCheckAsync(ct);
     }
     private async Task ScheduleNextCheckAsync(CancellationToken ct)

@@ -2,11 +2,31 @@ using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.EFQueries;
 using Teams.INFRA.Layer.Persistence.DAL;
+using NodaTime;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
-public class TeamRepository(ApiContext _context) : ITeamRepository
+public class TeamRepository(ApiContext _context) : ITeamRepository, IDisposable
 {
+    private bool disposed = false;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!this.disposed)
+        {
+            if (disposing)
+            {
+                _context.Dispose();
+            }
+        }
+        this.disposed = true;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     #region Get Methods
     public async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default)
     => await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
@@ -65,8 +85,11 @@ public class TeamRepository(ApiContext _context) : ITeamRepository
         await SaveAsync(cancellationToken);
     }
 
-    public async Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default) =>
-        await SaveAsync(cancellationToken); // voir si on doit faire un attach avant de SaveChangesAsync
+    public async Task UpdateTeamAsync(Team team, CancellationToken cancellationToken = default)
+    {
+        _context.Teams.Update(team);
+        await _context.SaveChangesAsync();
+    }
 
     public async Task AddTeamMemberAsync(CancellationToken cancellationToken = default) =>
         await SaveAsync(cancellationToken);
@@ -78,16 +101,21 @@ public class TeamRepository(ApiContext _context) : ITeamRepository
 
     #region Project Expiry / Computation
     public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
-    => await _context.Teams.Where(t => t.Project!.Details.Any(d => d.ProjectEndDate <= DateTime.Now))
-            .ToListAsync(cancellationToken);
+        => await _context.Teams.Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= SystemClock.Instance.GetCurrentInstant()))
+                .ToListAsync(cancellationToken);
+
 
     public async Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
-    => await _context.Teams
-           .Where(t => t.Project!.Details.Any(d => d.ProjectEndDate > DateTime.Now))
-           .SelectMany(t => t.Project!.Details)
-           .Where(d => d.ProjectEndDate > DateTime.Now)
-           .MinAsync(d => (DateTime?)d.ProjectEndDate, cancellationToken);
-
+    {
+        return await _context.Teams
+            .Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant()))
+            .SelectMany(t => t.Project!.Details)
+            .Where(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant())
+            .MinAsync(d => (DateTime?)d.ProjectEndDate.Value.ToDateTimeUtc(), cancellationToken);
+    }
     #endregion
     public async Task SaveAsync(CancellationToken cancellationToken = default) => await _context.SaveChangesAsync(cancellationToken); // dans UoW et rien que
+
+
+
 }

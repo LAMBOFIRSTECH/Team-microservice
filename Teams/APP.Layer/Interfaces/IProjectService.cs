@@ -1,5 +1,5 @@
 using Teams.API.Layer.DTOs;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 namespace Teams.APP.Layer.Interfaces;
 

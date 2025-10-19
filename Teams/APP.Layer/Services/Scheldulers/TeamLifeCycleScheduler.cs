@@ -25,14 +25,13 @@ public class TeamLifeCycleScheduler(
     IServiceScopeFactory _scopeFactory,
     IDomainEventDispatcher dispatcher,
     IMapper mapper,
-    TeamLifeCycleCoreService teamLifeCycleCoreService,
     ILogger<TeamLifeCycleScheduler> _log
 ) : IHostedService, IDisposable, ITeamLifecycleScheduler
 {
     private Timer? _timer;
     private readonly object _lock = new();
     private DateTime? _nextCheckDate;
-    private IServiceScope scope = _scopeFactory.CreateScope();
+
 
     public async Task StartAsync(CancellationToken ct)
     {
@@ -64,9 +63,10 @@ public class TeamLifeCycleScheduler(
     {
         LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.Now}", _log);
 
-        // using var scope = _scopeFactory.CreateScope();
+        using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
+        var teamLifeCycleCoreService = scope.ServiceProvider.GetRequiredService<TeamLifeCycleCoreService>();
         var teams = await teamRepository.GetAllTeamsAsync(ct, asNoTracking: true);
         var matureTeams = teamLifeCycleCoreService.GetMatureTeams(teams);
         foreach (var team in matureTeams)
@@ -79,6 +79,7 @@ public class TeamLifeCycleScheduler(
         teamLifeCycleCoreService.ArchiveTeams(expiredTeams);
         foreach (var team in expiredTeams)
         {
+             Console.WriteLine($"voici l'etat {team.State}");
             await teamRepository.UpdateTeamAsync(team, ct); // C'est  ça le commit en DB
             LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
             var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
@@ -93,7 +94,9 @@ public class TeamLifeCycleScheduler(
 
     private async Task ScheduleNextCheckAsync()
     {
+        using var scope = _scopeFactory.CreateScope();
         var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
+        var teamLifeCycleCoreService = scope.ServiceProvider.GetRequiredService<TeamLifeCycleCoreService>();
         var teams = await teamRepository.GetAllTeamsAsync();
         // Calcul des prochaines dates (maturité + expiration)
         var futureMaturities = teamLifeCycleCoreService.GetfutureMaturities(teams);

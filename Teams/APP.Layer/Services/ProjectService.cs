@@ -4,7 +4,7 @@ using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.CoreServices;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
@@ -14,7 +14,7 @@ namespace Teams.APP.Layer.Services;
 public class ProjectService(
     ITeamRepository teamRepository,
     TeamExternalService teamExternalService,
-    ProjectLifeCycleCoreService projectLifeCycleCore,
+    ProjectLifeCycle projectLifeCycleCore,
     TeamLifeCycleCoreService teamLifeCycleCoreService,
     ILogger<ProjectService> log,
     IValidator<ProjectAssociationDto> projectRecordValidator,
@@ -48,7 +48,6 @@ public class ProjectService(
 
         return mapper.Map<ProjectAssociation>(dto);
     }
-
     public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
     {
         var teamProject = await GetProjectAssociationDataAsync(managerId, teamName);
@@ -69,7 +68,6 @@ public class ProjectService(
            log
        );
     }
-
     public async Task SuspendProjectAsync(Guid managerId, string projectName)
     {
         var existingTeams = await teamRepository.GetTeamsByManagerIdAsync(managerId);
@@ -91,9 +89,9 @@ public class ProjectService(
         }
         else
         {
-            teamDto.TeamExpirationDate = projectAssociation
-                .GetprojectMaxEndDate()
-                .ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            teamDto.TeamExpirationDate = projectAssociation.GetprojectMaxEndDate()
+                                         .Value.ToInstant()
+                                         .ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
 
             teamDto.HasAnyProject = true;
             teamDto.TeamManagerId = projectAssociation.TeamManagerId;

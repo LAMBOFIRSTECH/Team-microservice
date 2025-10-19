@@ -1,8 +1,8 @@
 using NodaTime;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
@@ -32,17 +32,16 @@ public class Team : AggregateEntity, IAggregateRoot
     public IReadOnlyCollection<MemberId> MembersIds => _members;
     public TeamState State { get; private set; } = TeamState.Draft;
     public ProjectAssignmentState ProjectState { get; private set; } = ProjectAssignmentState.Unassigned;
-    public ProjectAssociation? Project { get; private set; }
+    public ProjectAssociation? Project { get; private set; } // C'est une entité interne de AR qui sera mappé avec le dto externe
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
-    public LocalizationDateTime TeamCreationDate { get; private set; }
+    public LocalizationDateTime TeamCreationDate { get; init; }
     public LocalizationDateTime TeamExpirationDate { get; private set; }
     public LocalizationDateTime LastActivityDate { get; private set; }
-    public LocalizationDateTime Expiration
-        => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
+    public LocalizationDateTime Expiration => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
 
     /// <summary>
-    /// Internal method used to obtain  actual date for encapsulated clock.
+    /// Internal method used to obtain actual date for encapsulated clock.
     /// </summary>
     private LocalizationDateTime GetCurrentDateTime() =>
         LocalizationDateTime.FromInstant(SystemClock.Instance.GetCurrentInstant());
@@ -60,7 +59,10 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
     /// </remarks>
-    public Team() { }
+    public Team()
+    {
+
+    }
 #pragma warning restore CS8618
 
     /// <summary>
@@ -110,7 +112,7 @@ public class Team : AggregateEntity, IAggregateRoot
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), SystemClock.Instance);
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id)); // voir comment enrichir cet event
         return team;
     }
 
@@ -193,9 +195,7 @@ public class Team : AggregateEntity, IAggregateRoot
         bool hasDependencies = Project.HasActiveProject() || Project.HasSuspendedProject();
         if (Project.HasActiveProject())
         {
-            TeamExpirationDate = LocalizationDateTime.FromInstant(
-                Instant.FromDateTimeUtc(Project.GetprojectMaxEndDate().ToUniversalTime())
-            );
+            TeamExpirationDate = Project.GetprojectMaxEndDate();
             return true;
         }
         return hasDependencies;
@@ -211,6 +211,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <exception cref="DomainException"></exception>
     public bool IsMature()
     {
+
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
 
@@ -305,7 +306,7 @@ public class Team : AggregateEntity, IAggregateRoot
                 $"Project manager {project.TeamManagerId} does not match current team manager {_teamManagerId}."
             );
 
-        if (project.GetprojectStartDate() < TeamCreationDate.ToDateTimeUtc())
+        if (project.GetprojectStartDate().Value.ToInstant() < TeamCreationDate.Value.ToInstant())
             throw new DomainException(
                 $"Project start date {project.GetprojectStartDate()} cannot be earlier than team creation date {TeamCreationDate}"
             );
@@ -314,7 +315,7 @@ public class Team : AggregateEntity, IAggregateRoot
             throw new DomainException("A team cannot be associated to more than 3 projects.");
 
         Project = project;
-        var delay = Project.GetprojectStartDate() - TeamCreationDate.ToDateTimeUtc();
+        var delay = Project.GetprojectStartDate().Value.ToInstant() - TeamCreationDate.Value.ToInstant();
         if (delay.TotalDays > 7)
             throw new DomainException(
                 $"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}."
@@ -335,10 +336,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// </remarks>
     public void RemoveExpiredProjects()
     {
-        if (Project == null)
-            return;
-
-        Project.RemoveExpiredDetails();
+        Project?.RemoveExpiredDetails();
         AddDomainEvent(new ProjectDateChangedEvent(Id));
         RecalculateStates();
     }

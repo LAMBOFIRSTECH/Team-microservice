@@ -58,8 +58,16 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                 pa.OwnsMany(p => p.Details, d =>
                 {
                     d.Property(dd => dd.ProjectName).HasMaxLength(200).IsRequired();
-                    d.Property(dd => dd.ProjectStartDate).IsRequired();
-                    d.Property(dd => dd.ProjectEndDate).IsRequired();
+                    d.Property(dd => dd.ProjectStartDate)
+                       .HasConversion(
+                            v => v.ToDateTimeUtc(),
+                            v => LocalizationDateTime.FromDateTimeUtc(v))
+                        .IsRequired();
+                    d.Property(dd => dd.ProjectEndDate)
+                        .HasConversion(
+                            v => v.ToDateTimeUtc(),
+                            v => LocalizationDateTime.FromDateTimeUtc(v))
+                        .IsRequired();
                     d.Property(dd => dd.State).IsRequired();
                     d.ToTable("ProjectDetails"); // table séparée pour Details
                     d.WithOwner().HasForeignKey("ProjectAssociationId");
@@ -67,7 +75,7 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                     d.HasKey("Id");
                 });
             });
-     
+
 
     }
 }

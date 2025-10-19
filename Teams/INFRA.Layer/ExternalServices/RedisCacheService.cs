@@ -15,7 +15,6 @@ public class RedisCacheService(
 ) : IRedisCacheService
 {
     private static string BuildKey(string key) => $"DevCache:{key}";
-
     private async Task EnsureKeyDoesNotExistAsync(string cacheKey, CancellationToken cancellationToken)
     {
         var cachedData = await cache.GetStringAsync(cacheKey, cancellationToken);
@@ -30,7 +29,6 @@ public class RedisCacheService(
             );
         }
     }
-
     private async Task<string> EnsureKeyExistsAsync(string cacheKey, CancellationToken cancellationToken)
     {
         var cachedData = await cache.GetStringAsync(cacheKey, cancellationToken);

@@ -1,5 +1,7 @@
 using AutoMapper;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using NodaTime.Extensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.API.Layer.Mappings;
@@ -12,8 +14,8 @@ public class ProjectProfile : Profile
         CreateMap<DetailDto, Detail>()
             .ConvertUsing(src => new Detail(
                 src.ProjectName,
-                src.ProjectStartDate,
-                src.ProjectEndDate,
+                LocalizationDateTime.FromDateTimeUtc(src.ProjectStartDate),
+                LocalizationDateTime.FromDateTimeUtc(src.ProjectEndDate),
                 src.VoState.State
             ));
 

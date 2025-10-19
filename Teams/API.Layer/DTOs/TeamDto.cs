@@ -2,27 +2,19 @@ namespace Teams.API.Layer.DTOs;
 
 public class TeamDto
 {
-    public Guid Id { get; set; }
-    public string? Name { get; set; }
-    public Guid TeamManagerId { get; set; }
-    public IEnumerable<Guid> MembersIds { get; set; }
-
-#pragma warning disable CS8618 
+    public Guid Id { get; init; }
+    public string? Name { get; init; }
+    public Guid TeamManagerId { get; init; }
+    public IEnumerable<Guid> MembersIds { get; set; } = Array.Empty<Guid>();
+    /// <summary>
+    /// Pour EF Core et la désérialisation | n'existerait pas si toutes les propriétés étaient init (non modifiable après initialisation de l'objet)
+    /// </summary>
     public TeamDto() { }
-#pragma warning restore CS8618
 
-    public TeamDto(
-        Guid managerId,
-        string teamName,
-        IEnumerable<Guid> memberIds,
-        bool includeMembers = false
-    )
+    public TeamDto(Guid managerId, string teamName, IEnumerable<Guid> memberIds, bool includeMembers = false)
     {
         TeamManagerId = managerId;
         Name = teamName;
-        if (includeMembers)
-            MembersIds = memberIds ?? [];
-        else
-            MembersIds = [];
+        MembersIds = includeMembers ? memberIds ?? Array.Empty<Guid>() : Array.Empty<Guid>();
     }
 }

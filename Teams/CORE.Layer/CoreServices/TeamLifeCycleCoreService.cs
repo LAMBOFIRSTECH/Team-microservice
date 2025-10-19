@@ -14,8 +14,13 @@ public class TeamLifeCycleCoreService
     private readonly int _maturityPeriod = 30;  // En prod : >= 180 jours
     public IEnumerable<Team> GetExpiredTeams(IEnumerable<Team> teams) => teams.Where(t => t.IsTeamExpired()).ToList();
     public IEnumerable<Team> GetMatureTeams(IEnumerable<Team> teams)
-        => teams.Where(t => (SystemClock.Instance.GetCurrentInstant() - t.TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityPeriod)
-                .ToList(); // 30 pour les tests refactoriser
+    {
+        Console.WriteLine($"voici le temps {SystemClock.Instance.GetCurrentInstant() }");
+        return teams.Where(t => (SystemClock.Instance.GetCurrentInstant() - t.TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityPeriod)
+               .ToList(); // 30 pour les tests refactoriser
+    }
+
+    
     public IEnumerable<Instant> GetfutureMaturities(IEnumerable<Team> teams)
         => teams.Select(t => t.TeamCreationDate.Plus(Duration.FromSeconds(30)).ToInstant())
                 .Where(d => d > SystemClock.Instance.GetCurrentInstant())
@@ -27,14 +32,17 @@ public class TeamLifeCycleCoreService
     {
         foreach (var team in teams) team.ArchiveTeam();
     }
+
     public string MatureTeam(Team team)
     {
         if (!team.IsMature())
         {
+            Console.WriteLine($"voici le state avant que l'équipe soit mature {team.State}");
             verdict = "not yet mature";
             _ = StateMappings[team.State];
             return $"✅ Team is {team.State} with {team.ProjectState} project however {StateMappings[team.State]}.";
         }
+        Console.WriteLine($"voici le state après que l'équipe soit mature {team.State}");
         verdict = "Mature";
         _ = StateMappings[team.State];
         return $"✅ Team is {team.State} with {team.ProjectState} project and {StateMappings[team.State]}.";
@@ -45,7 +53,7 @@ public class TeamLifeCycleCoreService
             throw new DomainException($"A team with the name '{name}' already exists.");
 
         if (teams.Count(t => t.TeamManagerId.Value == teamManagerId) > 3)
-            throw new DomainException("A manager cannot manage more than 3 teams.");
+            throw new DomainException("A manager cannot handle with more than 3 teams.");
 
         if (teams.Any(t => t.MembersIds.Count == memberIds.Count() && !t.MembersIds.Select(m => m.Value).Except(memberIds).Any() && t.TeamManagerId.Value == teamManagerId))
             throw new DomainException("A team with exactly the same members and manager already exists.");
@@ -53,7 +61,7 @@ public class TeamLifeCycleCoreService
         if (GetCommonMembersStats(memberIds, teams) >= 50)
             throw new DomainException("Cannot create a team with more than 50% common members with existing team.");
 
-        return Team.Create(name, teamManagerId, memberIds);;
+        return Team.Create(name, teamManagerId, memberIds);
     }
     /// <summary>
     /// Calculates the maximum percentage of common members between a new team and a collection of existing teams.
@@ -67,10 +75,7 @@ public class TeamLifeCycleCoreService
     /// <exception cref="DomainException">
     /// Thrown when <paramref name="newTeamMembers"/> is null or contains fewer than two members.
     /// </exception>
-    private double GetCommonMembersStats(
-       IEnumerable<Guid> newTeamMembers,
-       IEnumerable<Team> existingTeams
-   )
+    private double GetCommonMembersStats(IEnumerable<Guid> newTeamMembers, IEnumerable<Team> existingTeams)
     {
         if (newTeamMembers == null || newTeamMembers.Count() == 0)
             throw new DomainException("The new team must have at least three members.");

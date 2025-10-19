@@ -5,8 +5,13 @@ namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 public sealed class TeamName : IEquatable<TeamName>
 {
-    public string Value { get; private set; }
-    private TeamName(string value) => Value = value;
+    public string Value { get; init; }
+    public TeamName(string value)
+    {
+        if (value == string.Empty)
+            throw new ArgumentException("Team name cannot be empty.", nameof(value));
+        Value = value;
+    }
     public static TeamName Create(string value)
     {
 
@@ -20,6 +25,9 @@ public sealed class TeamName : IEquatable<TeamName>
         return new TeamName(value.Trim());
     }
     public override string ToString() => Value;
-
-    public bool Equals(TeamName? other)  => other != null && Value == other.Value;
+    public override bool Equals(object obj) => obj is TeamName tn && Equals(tn);
+    public override int GetHashCode() => Value.GetHashCode();
+    public bool Equals(TeamName? other) => other != null && Value == other.Value;
+    public static bool operator ==(TeamName? left, TeamName? right) => left is null ? right is null : left.Equals(right);
+    public static bool operator !=(TeamName? left, TeamName? right) => !(left == right);
 }

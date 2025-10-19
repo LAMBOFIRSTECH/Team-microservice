@@ -1,4 +1,7 @@
-namespace Teams.CORE.Layer.Entities.GeneralValueObjects;
+using NodaTime;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+
+namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
 /// <summary>
 /// Statut d'un projet venant d'un service externe
@@ -13,10 +16,10 @@ public enum VoState
 
 public class Detail
 {
-    public Guid Id { get; private set; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid(); // init ?
     public string ProjectName { get; private set; }
-    public DateTime ProjectStartDate { get; private set; }
-    public DateTime ProjectEndDate { get; private set; }
+    public LocalizationDateTime ProjectStartDate { get; private set; }
+    public LocalizationDateTime ProjectEndDate { get; private set; }
     public VoState State { get; }
 
     /// <summary>
@@ -27,8 +30,8 @@ public class Detail
     private Detail()
     {
         ProjectName = string.Empty;
-        ProjectStartDate = DateTime.MinValue;
-        ProjectEndDate = DateTime.MinValue;
+        ProjectStartDate = LocalizationDateTime.MinValue;
+        ProjectEndDate = LocalizationDateTime.MinValue;
         State = VoState.Active;
     }
 
@@ -42,8 +45,8 @@ public class Detail
     /// <param name="state"></param>
     public Detail(
         string projectName,
-        DateTime projectStartDate,
-        DateTime projectEndDate,
+        LocalizationDateTime projectStartDate,
+        LocalizationDateTime projectEndDate,
         VoState state
     )
     {
@@ -91,7 +94,8 @@ public class ProjectAssociation
     {
         TeamManagerId = teamManagerId;
         TeamName = teamName;
-        _details = details;
+        if (details != null)
+            _details.AddRange(details);
     }
 
     // Constructeur EF Core
@@ -104,16 +108,16 @@ public class ProjectAssociation
     {
         TeamName = string.Empty;
         TeamManagerId = Guid.Empty;
-        _details = new List<Detail>();
     }
 
-    public bool IsEmpty() => TeamManagerId == Guid.Empty && string.IsNullOrWhiteSpace(TeamName) && (Details == null || Details.Count == 0);
-    public bool IsExpired() => Details.Any(d => d.ProjectEndDate <= DateTime.Now);
+    public bool IsEmpty() => TeamManagerId == Guid.Empty && string.IsNullOrWhiteSpace(TeamName) && (Details == null || Details.Count == 0); // service du domaine projet
+    public bool IsExpired() => Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= LocalizationDateTime.Now(SystemClock.Instance).Value.ToInstant());
     public bool HasSuspendedProject() => Details.Any(d => d.State == VoState.Suspended);
     public bool HasActiveProject() => Details.Any(d => d.State == VoState.Active);
-    public DateTime GetprojectStartDate() => Details.Select(p => p.ProjectStartDate).FirstOrDefault();
-    public DateTime GetprojectEndDate() => Details.Select(p => p.ProjectEndDate).FirstOrDefault();
-    public DateTime GetprojectMaxEndDate() => Details.Select(p => p.ProjectEndDate).Max();
+    public LocalizationDateTime GetprojectStartDate() => Details.First().ProjectStartDate;
+
+    public LocalizationDateTime GetprojectEndDate() => Details.First().ProjectEndDate;
+    public LocalizationDateTime GetprojectMaxEndDate() => LocalizationDateTime.FromInstant(Details.Max(p => p.ProjectEndDate.Value.ToInstant()));
     public bool IsUnderReview { get; set; } = false; // à implémenter plus tard
 
     /// <summary>
@@ -153,6 +157,13 @@ public class ProjectAssociation
             throw new ArgumentNullException(nameof(detail), "Detail cannot be null");
 
         _details.Add(detail);
+    }
+     public void RemoveDetail(Detail detail)
+    {
+        if (detail == null)
+            throw new ArgumentNullException(nameof(detail), "Detail cannot be null");
+
+        _details.Remove(detail);
     }
     public void TobeSuspended(string projectName)
     {
@@ -194,14 +205,16 @@ public class ProjectAssociation
     /// </remarks>
     public void RemoveExpiredDetails()
     {
-        if (HasActiveProject())
-        {
-            var expired = Details
-                .Where(d => d.ProjectEndDate <= DateTime.Now)
-                .ToList();
-            if (expired.Count == 0) return;
-            expired.ForEach(d => _details.Remove(d));
-        }
-        else return;
+        var expired = ExpiredProjects();
+        if (expired.Count == 0) return;
+        expired.ForEach(d => _details.Remove(d));
+    }
+    public List<Detail> ExpiredProjects()
+    {
+        if (!HasActiveProject()) return [];
+        var expired = Details
+              .Where(d => d.ProjectEndDate.Value.ToInstant() <= LocalizationDateTime.Now(SystemClock.Instance).Value.ToInstant())
+              .ToList();
+        return expired;
     }
 }

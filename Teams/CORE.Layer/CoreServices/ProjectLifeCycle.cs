@@ -1,10 +1,10 @@
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.BusinessExceptions;
 
 namespace Teams.CORE.Layer.CoreServices;
 
-public class ProjectLifeCycleCoreService
+public class ProjectLifeCycle
 {
     public void AddProjectToTeamAsync(Team team, ProjectAssociation project)
     {
@@ -14,7 +14,7 @@ public class ProjectLifeCycleCoreService
 
         if (team.Project is not null) team.Project!.AddDetail(lastDetail); else team.AssignProject(project);
 
-        Console.WriteLine($"Voici le nombre de détails présent: {project.Details.Last().ProjectName}");
+        // Console.WriteLine($"Voici le nombre de détails présent: {project.Details.Last().ProjectName}");
     }
     public async Task<Team> SuspendProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
     {
@@ -24,4 +24,5 @@ public class ProjectLifeCycleCoreService
         team.RemoveSuspendedProjects(projectName);
         return team;
     }
+  
 }
