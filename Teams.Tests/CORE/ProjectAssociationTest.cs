@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Teams.CORE.Layer.ValueObjects;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Xunit;
 
 namespace Teams.Tests.CORE;
@@ -14,7 +15,7 @@ public class ProjectAssociationTest
         var projectName = "Project A";
         var startDate = new DateTime(2025, 1, 1);
         var endDate = new DateTime(2025, 12, 31);
-        var state = ProjectState.Active;
+        var state = VoState.Active;
 
         // Act
         var detail = new Detail(projectName, startDate, endDate, state);
@@ -34,12 +35,12 @@ public class ProjectAssociationTest
         var teamName = "Team Alpha";
         var details = new List<Detail>
         {
-            new Detail("Project A", DateTime.Now, DateTime.Now.AddMonths(6), ProjectState.Active),
+            new Detail("Project A", DateTime.Now, DateTime.Now.AddMonths(6), VoState.Active),
             new Detail(
                 "Project B",
                 DateTime.Now,
                 DateTime.Now.AddMonths(3),
-                ProjectState.Suspended
+                VoState.Suspended
             ),
         };
 
@@ -62,7 +63,7 @@ public class ProjectAssociationTest
 
         // Act
         details.Add(
-            new Detail("Project X", DateTime.Now, DateTime.Now.AddMonths(1), ProjectState.Active)
+            new Detail("Project X", DateTime.Now, DateTime.Now.AddMonths(1), VoState.Active)
         );
 
         // Assert

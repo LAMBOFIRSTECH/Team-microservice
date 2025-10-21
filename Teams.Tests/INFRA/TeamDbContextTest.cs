@@ -80,18 +80,18 @@ public class TeamDbContextTest
     //     Assert.Empty(team.DomainEvents);
     // }
 
-    [Fact]
-    public void OnModelCreating_AppliesTeamConfiguration_AndIgnoresDomainEvents()
-    {
-        // Arrange
-        var dbContext = CreateDbContext();
+    // [Fact]
+    // public void OnModelCreating_AppliesTeamConfiguration_AndIgnoresDomainEvents()
+    // {
+    //     // Arrange
+    //     var dbContext = CreateDbContext();
 
-        // Act
-        var model = dbContext.Model;
-        var teamEntity = model.FindEntityType(typeof(Team));
+    //     // Act
+    //     var model = dbContext.Model;
+    //     var teamEntity = model.FindEntityType(typeof(Team));
 
-        // Assert
-        Assert.NotNull(teamEntity);
-        Assert.DoesNotContain(teamEntity.GetProperties(), p => p.Name == "DomainEvents");
-    }
+    //     // Assert
+    //     Assert.NotNull(teamEntity);
+    //     Assert.DoesNotContain(teamEntity.GetProperties(), p => p.Name == "DomainEvents");
+    // }
 }

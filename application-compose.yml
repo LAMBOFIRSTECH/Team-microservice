@@ -3,7 +3,7 @@ networks:
     external: true
 
 services:
-  authentication:
+  team-management:
     image: $CI_REGISTRY/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:$DOCKER_TAG
     container_name: dev-$CI_PROJECT_NAME
     healthcheck:
@@ -19,8 +19,8 @@ services:
     volumes:
       - ./appsettings.json:/app/Teams/API.Layer/appsettings.Development.json
     environment:
-      - ASPNETCORE_Kestrel__Certificates__Default__Password=$CERT_PASSWORD  
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=$CERT_PASSWORD
       - ASPNETCORE_Kestrel__Certificates__Default__Path=/etc/ssl/certs/localhost.pfx
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8181
+      - ASPNETCORE_URLS=https://+:8181
   redis:
