@@ -1,5 +1,5 @@
 using NodaTime;
-using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
@@ -16,7 +16,7 @@ public enum VoState
 
 public class Detail
 {
-    public Guid Id { get; init; } = Guid.NewGuid(); // init ?
+    public Guid Id { get; init; } = Guid.NewGuid();
     public string ProjectName { get; private set; }
     public LocalizationDateTime ProjectStartDate { get; private set; }
     public LocalizationDateTime ProjectEndDate { get; private set; }

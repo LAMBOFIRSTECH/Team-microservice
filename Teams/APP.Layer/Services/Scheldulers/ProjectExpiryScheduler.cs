@@ -69,7 +69,7 @@ public class ProjectExpiryScheduler(
             },
             null,
             delay,
-            Timeout.InfiniteTimeSpan // one-shot → will reschedule after execution
+            Timeout.InfiniteTimeSpan
         );
     }
 

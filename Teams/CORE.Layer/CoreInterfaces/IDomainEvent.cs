@@ -1,3 +1,8 @@
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
+
 namespace Teams.CORE.Layer.CoreInterfaces;
 
-public record IDomainEvent { }
+public interface IDomainEvent
+{
+    LocalizationDateTime OccurredOn { get; }
+}

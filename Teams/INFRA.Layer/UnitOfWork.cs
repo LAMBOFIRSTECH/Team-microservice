@@ -1,20 +1,37 @@
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.DAL;
+using Teams.INFRA.Layer.Interfaces;
+using Teams.INFRA.Layer.Dispatchers;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.INFRA.Layer;
 
-public class UnitOfWork : IDisposable
+public class UnitOfWork(ApiContext _context,  IDomainEventDispatcher _dispatcher, ITeamStateUnitOfWork _stateUnitOfWork) : IUnitOfWork
 {
-    private readonly ApiContext _context;
     private GenericRepository<Team>? _teamRepository;
-    public UnitOfWork(ApiContext context) => _context = context;
-    public GenericRepository<Team> TeamRepository
+
+    public IGenericRepository<Team> TeamRepository
+        =>  _teamRepository ??= new GenericRepository<Team>(_context);
+
+    public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        get
+        // Récupère toutes les entités avec des DomainEvents
+        var entitiesWithEvents = _context.ChangeTracker
+            .Entries<IHasDomainEvents>() // interface que tes entités implémentent
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+        // _stateUnitOfWork.RecalculateTeamStates(teams);
+        await _context.SaveChangesAsync();
+
+        // Dispatcher les événements après commit
+        foreach (var entity in entitiesWithEvents)
         {
-            _teamRepository ??= new GenericRepository<Team>(_context); return _teamRepository;
+            var events = entity.DomainEvents.ToList();
+            entity.ClearDomainEvents();
+            await _dispatcher.DispatchAsync(events, cancellationToken);
         }
     }
-    public async Task SaveAsync() => await _context.SaveChangesAsync();
     public void Dispose() => _context.Dispose();
+
 }

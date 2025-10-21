@@ -6,21 +6,21 @@ namespace Teams.CORE.Layer.CoreServices;
 
 public class TeamLifeCycleCoreService
 {
-    private string verdict = string.Empty;
+    private string _verdict = string.Empty;
     public Dictionary<TeamState, string> StateMappings =>
        Enum.GetValues(typeof(TeamState))
            .Cast<TeamState>()
-           .ToDictionary(state => state, state => verdict);
+           .ToDictionary(state => state, state => _verdict);
     private readonly int _maturityPeriod = 30;  // En prod : >= 180 jours
     public IEnumerable<Team> GetExpiredTeams(IEnumerable<Team> teams) => teams.Where(t => t.IsTeamExpired()).ToList();
     public IEnumerable<Team> GetMatureTeams(IEnumerable<Team> teams)
     {
-        Console.WriteLine($"voici le temps {SystemClock.Instance.GetCurrentInstant() }");
+        Console.WriteLine($"voici le temps {SystemClock.Instance.GetCurrentInstant()}");
         return teams.Where(t => (SystemClock.Instance.GetCurrentInstant() - t.TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityPeriod)
                .ToList(); // 30 pour les tests refactoriser
     }
 
-    
+
     public IEnumerable<Instant> GetfutureMaturities(IEnumerable<Team> teams)
         => teams.Select(t => t.TeamCreationDate.Plus(Duration.FromSeconds(30)).ToInstant())
                 .Where(d => d > SystemClock.Instance.GetCurrentInstant())
@@ -37,13 +37,11 @@ public class TeamLifeCycleCoreService
     {
         if (!team.IsMature())
         {
-            Console.WriteLine($"voici le state avant que l'équipe soit mature {team.State}");
-            verdict = "not yet mature";
+            _verdict = "not yet mature";
             _ = StateMappings[team.State];
             return $"✅ Team is {team.State} with {team.ProjectState} project however {StateMappings[team.State]}.";
         }
-        Console.WriteLine($"voici le state après que l'équipe soit mature {team.State}");
-        verdict = "Mature";
+        _verdict = "Mature";
         _ = StateMappings[team.State];
         return $"✅ Team is {team.State} with {team.ProjectState} project and {StateMappings[team.State]}.";
     }

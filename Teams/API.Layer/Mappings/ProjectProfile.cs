@@ -1,7 +1,7 @@
 using AutoMapper;
 using NodaTime.Extensions;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
-using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.API.Layer.Mappings;

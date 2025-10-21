@@ -11,7 +11,6 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;
-using Teams.INFRA.Layer.Persistence;
 using Teams.INFRA.Layer.Persistence.DAL;
 using Teams.INFRA.Layer.Persistence.Repositories;
 using Teams.INFRA.Layer.OtherUOW;
@@ -32,6 +31,7 @@ public static class DependancyInjection
             services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase(conStrings));
 
         services.AddScoped<ITeamRepository, TeamRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
         services.AddScoped<TeamExternalService>();
         services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();

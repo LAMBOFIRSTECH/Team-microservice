@@ -79,8 +79,7 @@ public class TeamLifeCycleScheduler(
         teamLifeCycleCoreService.ArchiveTeams(expiredTeams);
         foreach (var team in expiredTeams)
         {
-             Console.WriteLine($"voici l'etat {team.State}");
-            await teamRepository.UpdateTeamAsync(team, ct); // C'est  ça le commit en DB
+            await teamRepository.UpdateTeamAsync(team, ct);
             LogHelper.Info($"📦 Archiving team {team.Name} in Redis Cache memory for 7 days.", _log);
             var redisTeamDto = mapper.Map<TeamDetailsDto>(team);
             await redisCacheService.StoreArchivedTeamInRedisAsync(redisTeamDto, ct);

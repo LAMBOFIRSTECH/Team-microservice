@@ -1,7 +1,7 @@
 using Teams.CORE.Layer.CoreInterfaces;
 namespace Teams.CORE.Layer.Entities;
 
-public abstract class AggregateEntity
+public abstract class AggregateEntity : IHasDomainEvents
 {
    public Guid Id { get; protected set; }
    private readonly List<IDomainEvent> _domainEvents = new();
@@ -16,5 +16,3 @@ public abstract class AggregateEntity
    }
    public override int GetHashCode() => Id.GetHashCode();
 }
-
-

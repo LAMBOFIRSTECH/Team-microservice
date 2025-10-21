@@ -1,6 +1,7 @@
 using NodaTime;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
@@ -19,11 +20,17 @@ public enum TeamState
     Archived = 2,
 }
 
-public class Team : AggregateEntity, IAggregateRoot
+public class Team : AggregateEntity, IAggregateRoot 
 {
+<<<<<<< HEAD
     private const int ValidityPeriodInDays = 250;
     private const int MaturityThresholdInDays = 280;
     private int ExtraDays { get; set; } = 0;
+=======
+    private const int _validityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
+    private const int _maturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
+    private int _extraDays { get; set; } = 0;
+>>>>>>> b6019ff (refactoring core and implemented UoW)
     private TeamName _name;
     public TeamName Name => _name;
     private MemberId _teamManagerId;
@@ -32,13 +39,17 @@ public class Team : AggregateEntity, IAggregateRoot
     public IReadOnlyCollection<MemberId> MembersIds => _members;
     public TeamState State { get; private set; } = TeamState.Draft;
     public ProjectAssignmentState ProjectState { get; private set; } = ProjectAssignmentState.Unassigned;
+<<<<<<< HEAD
     public ProjectAssociation? Project { get; private set; } 
+=======
+    public ProjectAssociation? Project { get; private set; }
+>>>>>>> b6019ff (refactoring core and implemented UoW)
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
     public LocalizationDateTime TeamCreationDate { get; init; }
     public LocalizationDateTime TeamExpirationDate { get; private set; }
     public LocalizationDateTime LastActivityDate { get; private set; }
-    public LocalizationDateTime Expiration => TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays + ExtraDays));
+    public LocalizationDateTime Expiration => TeamCreationDate.Plus(Duration.FromSeconds(_validityPeriodInDays + _extraDays));
 
     /// <summary>
     /// Internal method used to obtain actual date for encapsulated clock.
@@ -84,7 +95,7 @@ public class Team : AggregateEntity, IAggregateRoot
         _teamManagerId = new MemberId(teamManagerId);
         _members = members.Select(m => new MemberId(m)).ToHashSet();
         TeamCreationDate = LocalizationDateTime.Now(clock);
-        TeamExpirationDate = TeamCreationDate.Plus(Duration.FromSeconds(ValidityPeriodInDays));
+        TeamExpirationDate = TeamCreationDate.Plus(Duration.FromSeconds(_validityPeriodInDays));
         LastActivityDate = LocalizationDateTime.Now(clock); // Revoir
     }
 
@@ -211,7 +222,18 @@ public class Team : AggregateEntity, IAggregateRoot
 
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
+<<<<<<< HEAD
         if (!(( GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant() ).TotalSeconds >= MaturityThresholdInDays)) 
+=======
+
+        if (
+            !(
+                (
+                    GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant()
+                ).TotalSeconds >= _maturityThresholdInDays
+            )
+        ) // C'est 180 jours pour les tests on a mis 180 secondes
+>>>>>>> b6019ff (refactoring core and implemented UoW)
             return false;
         return true;
     }
@@ -305,9 +327,17 @@ public class Team : AggregateEntity, IAggregateRoot
         Project = project;
         var delay = Project.GetprojectStartDate().Value.ToInstant() - TeamCreationDate.Value.ToInstant();
         if (delay.TotalDays > 7)
+<<<<<<< HEAD
             throw new DomainException($"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}.");
         ExtraDays = 150;
         TeamExpirationDate = TeamExpirationDate.Plus(Duration.FromSeconds(ExtraDays));
+=======
+            throw new DomainException(
+                $"Project start date {project.GetprojectStartDate()} must be within 7 days of team creation date {TeamCreationDate}."
+            );
+        _extraDays = 150;
+        TeamExpirationDate = TeamExpirationDate.Plus(Duration.FromSeconds(_extraDays));
+>>>>>>> b6019ff (refactoring core and implemented UoW)
         RecalculateStates();
         AddDomainEvent(new ProjectDateChangedEvent(Id));
     }
@@ -340,7 +370,6 @@ public class Team : AggregateEntity, IAggregateRoot
     {
         if (Project == null)
             return;
-
         Project.TobeSuspended(projectName);
         AddDomainEvent(new ProjectDateChangedEvent(Id));
         RecalculateStates();
