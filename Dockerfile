@@ -16,7 +16,7 @@ ENV PATH="${PATH}:${DOTNET_ROOT}"
 
 RUN apk add --no-cache bash curl icu-libs krb5-libs zlib libgcc libstdc++
 
-RUN adduser -D -u 1000 backend_api && \
+RUN adduser -D -u 1000 team_api && \
     mkdir -p /opt/dotnet
 
 WORKDIR /opt/dotnet
@@ -34,7 +34,7 @@ RUN dotnet restore
 RUN dotnet publish Team-management.sln -c Release -r linux-musl-x64 --self-contained false -o /app
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
-RUN adduser -D -u 1000 backend_api
+RUN adduser -D -u 1000 team_api
 WORKDIR /app
 COPY --from=builder /app .
 COPY Teams/API.Layer/appsettings.* .
@@ -44,7 +44,7 @@ ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/etc/ssl/certs/backend.pfx
 
 EXPOSE 8181
-USER backend_api
+USER team_api
 
 ENTRYPOINT ["dotnet", "/app/Teams.dll"]
 
