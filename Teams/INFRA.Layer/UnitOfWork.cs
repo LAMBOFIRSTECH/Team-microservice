@@ -3,15 +3,23 @@ using Teams.INFRA.Layer.Persistence.DAL;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.CORE.Layer.CoreInterfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Teams.INFRA.Layer;
 
-public class UnitOfWork(ApiContext _context,  IDomainEventDispatcher _dispatcher) : IUnitOfWork
+public class UnitOfWork(ApiContext _context, IDomainEventDispatcher _dispatcher) : IUnitOfWork
 {
     private GenericRepository<Team>? _teamRepository;
 
     public IGenericRepository<Team> TeamRepository
-        =>  _teamRepository ??= new GenericRepository<Team>(_context);
+        => _teamRepository ??= new GenericRepository<Team>(_context);
+
+    public ApiContext Context => _context; // Expose the context if needed only for debugging purposes
+     public EntityState GetEntityState(object entity)
+    {
+        return _context.Entry(entity).State;
+    }
+
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {

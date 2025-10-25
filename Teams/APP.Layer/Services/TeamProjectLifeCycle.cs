@@ -3,15 +3,16 @@ using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
-using Humanizer;
 using Teams.API.Layer.DTOs;
 using AutoMapper;
 using Teams.CORE.Layer.CoreServices;
+using NodaTime;
+using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Microsoft.EntityFrameworkCore;
 
 namespace Teams.APP.Layer.Services;
 
 public class TeamProjectLifeCycle(
-    ITeamRepository _teamRepository,
     IUnitOfWork _unitOfWork,
     ILogger<TeamProjectLifeCycle> _log,
     IConfiguration _configuration,
@@ -21,32 +22,33 @@ public class TeamProjectLifeCycle(
 {
     public async Task AddProjectToTeamAsync(Team team, ProjectAssociation project)
     {
-        var lastDetail = project.Details.LastOrDefault();
-        if (lastDetail == null)
-            throw new InvalidOperationException("Details cannot be null");
+        if (project == null)
+            throw new ArgumentNullException(nameof(project), "ProjectAssociation cannot be null");
 
-        if (team.Project is not null)
-        {
-            // L'équipe a déjà un projet → ajout d'un nouveau détail
-            team.Project.AddDetail(lastDetail);
-            Console.WriteLine($"Added new project detail '{lastDetail.ProjectName}' to existing project.");
-        }
+        if (project.Details == null || !project.Details.Any())
+            throw new InvalidOperationException("ProjectAssociation must contain at least one Detail");
+
+        // Si l'équipe a déjà un projet, ajouter tous les nouveaux détails
+        if (team.Project != null) foreach (var detail in project.Details) team.Project.AddDetail(detail);
         else team.AssignProject(project);
 
-        team.ApplyProjectAttachmentGracePeriod(_configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration"));
-        await _unitOfWork.SaveAsync(CancellationToken.None); // Save changes immediately find a way to optimize this later async calls.
+        team.ApplyProjectAttachmentGracePeriod(
+            _configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration")
+        );
+        await _unitOfWork.SaveAsync(CancellationToken.None);
         BuildDto(team);
+
         LogHelper.Info(
-           $"🔗 Team '{project.TeamName}' successfully attached to [{project.Details.Count}] project(s)",
-           _log
-       );
+            $"🔗 Team '{project.TeamName}' successfully attached to [{project.Details.Count}] project(s)",
+            _log
+        );
     }
+
     public TeamDetailsDto BuildDto(Team team)
     {
         var teamDto = _mapper.Map<TeamDetailsDto>(team);
         if (team.Project == null || team.Project.Details.Count == 0)
         {
-            Console.WriteLine("No project associated with the team.");
             teamDto.HasAnyProject = false;
             teamDto.ProjectNames = null;
         }
@@ -66,7 +68,7 @@ public class TeamProjectLifeCycle(
     }
     public async Task RemoveProjects(CancellationToken ct)
     {
-        var teams = await _teamRepository.GetTeamsWithExpiredProject(ct);
+        var teams = await GetTeamsWithExpiredProject(ct);
         foreach (var team in teams)
         {
             team.RemoveExpiredProjects();
@@ -81,4 +83,23 @@ public class TeamProjectLifeCycle(
         team.MarkAsDeleted();
         _unitOfWork.TeamRepository.Delete(team);
     }
+    public async Task<Instant?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
+    {
+        // Charger uniquement les projets et détails nécessaires
+        var nextDateUtc = await _unitOfWork.Context.Teams
+            .Where(t => t.Project != null) 
+            .SelectMany(t => t.Project!.Details) 
+            .Where(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant()) // Date future
+            .OrderBy(d => d.ProjectEndDate.Value.ToDateTimeUtc())
+            .Select(d => (DateTime?)d.ProjectEndDate.Value.ToDateTimeUtc())
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return nextDateUtc.HasValue
+            ? LocalizationDateTime.FromDateTimeUtc(nextDateUtc.Value).ToInstant()
+            : null;
+    }
+    public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
+       => await _unitOfWork.TeamRepository.GetAll(cancellationToken)
+           .Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= SystemClock.Instance.GetCurrentInstant()))
+           .ToListAsync(cancellationToken);
 }

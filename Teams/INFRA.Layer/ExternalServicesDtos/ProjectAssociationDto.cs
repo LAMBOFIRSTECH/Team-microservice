@@ -18,6 +18,7 @@ public record DetailDto(
 );
 
 public record ProjectAssociationDto(
+    [property: JsonProperty(Required = Required.Always)] Guid ProjectId,
     [property: JsonProperty(Required = Required.Always)] Guid TeamManagerId,
     [property: JsonProperty(Required = Required.Always)] string TeamName,
     [property: JsonProperty(Required = Required.Always)] List<DetailDto> Details

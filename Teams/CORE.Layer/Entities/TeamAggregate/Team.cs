@@ -22,7 +22,7 @@ public enum TeamState
 
 public class Team : AggregateEntity, IAggregateRoot
 {
-    private const int _validityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (150 jours)
+    private const int _validityPeriodInDays = 250; // 250 pour les tests | Durée de validité standard en secondes (15 jours)
     private const int _maturityThresholdInDays = 280; // Seuil de maturité en secondes (180 jours)
     private int _extraDays { get; set; } = 0;
     private TeamName _name;
@@ -92,7 +92,7 @@ public class Team : AggregateEntity, IAggregateRoot
         _teamManagerId = new MemberId(teamManagerId);
         _members = members.Select(m => new MemberId(m)).ToHashSet();
         TeamCreationDate = LocalizationDateTime.Now(clock);
-        TeamExpirationDate = TeamCreationDate.Plus(Duration.FromSeconds(_validityPeriodInDays));
+        TeamExpirationDate = Expiration;
         LastActivityDate = LocalizationDateTime.Now(clock); // Revoir
     }
     #endregion

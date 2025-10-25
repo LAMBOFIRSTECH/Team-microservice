@@ -2,10 +2,10 @@ using AutoMapper;
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.CORE.Layer.CoreServices;
 using Teams.INFRA.Layer.Interfaces;
+using NodaTime;
 
 namespace Teams.APP.Layer.Services.Scheldulers;
 
@@ -62,7 +62,7 @@ public class TeamLifeCycleScheduler(
     }
     private async Task CheckTeams(CancellationToken ct = default)
     {
-        LogHelper.Info($" ⏱ Running CheckTeams at {DateTime.Now}", _log);
+        LogHelper.Info($" ⏱ Running CheckTeams at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc()}", _log);
 
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
@@ -104,7 +104,7 @@ public class TeamLifeCycleScheduler(
         var nextEvents = futureMaturities.Concat(futureExpirations).ToList();
         if (!nextEvents.Any())
         {
-            LogHelper.Info("⏸ No upcoming maturities or expirations. Timer stopped.", _log);
+            LogHelper.Info("⏸ No upcoming maturities or expirations teams found. Timer stopped.", _log);
             lock (_lock) _timer = null;
             return;
         }
@@ -114,7 +114,7 @@ public class TeamLifeCycleScheduler(
             delay = TimeSpan.Zero;
 
         LogHelper.Info(
-            $"▶️ Next lifecycle check scheduled for {_nextCheckDate} (in {delay.Value.TotalSeconds}s)",
+            $"▶️ Next team lifecycle check scheduled for {_nextCheckDate} (in {delay.Value.TotalSeconds}s)",
             _log
         );
         lock (_lock)

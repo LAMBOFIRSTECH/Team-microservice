@@ -1,6 +1,6 @@
+using NodaTime;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.Entities.TeamAggregate;
 
 namespace Teams.APP.Layer.Services.Scheldulers;
 
@@ -9,68 +9,99 @@ public class ProjectExpiryScheduler(
     ILogger<ProjectExpiryScheduler> _log
 ) : IHostedService, IDisposable, IProjectExpirySchedule
 {
+    private readonly object _lock = new();
     private Timer? _timer;
-    private DateTime? _nextProjectDateExpiration;
 
     public async Task StartAsync(CancellationToken ct)
     {
-        LogHelper.Info("🚀 ProjectExpiryChecker starting...", _log);
+        LogHelper.Info("🚀 ProjectExpiryScheduler starting...", _log);
         await ScheduleNextCheckAsync(ct);
     }
 
     public Task StopAsync(CancellationToken ct)
     {
-        LogHelper.Info("🛑 ProjectExpiryChecker stopping timer...", _log);
-        _timer?.Change(Timeout.Infinite, 0);
-        _timer = null;
+        LogHelper.Info("🛑 ProjectExpiryScheduler stopping timer...", _log);
+        lock (_lock)
+        {
+            _timer?.Change(Timeout.Infinite, 0);
+            _timer = null;
+        }
         return Task.CompletedTask;
     }
 
-    public void Dispose() => _timer?.Dispose();
-    public async Task RescheduleAsync(CancellationToken ct) => await ScheduleNextCheckAsync(ct);
+    public void Dispose()
+    {
+        lock (_lock)
+        {
+            _timer?.Dispose();
+        }
+    }
+
+    public async Task RescheduleAsync(CancellationToken ct = default)
+    {
+        LogHelper.Info("🔄 ProjectExpiryScheduler reschedule requested...", _log);
+        await ScheduleNextCheckAsync(ct);
+    }
+
     private async Task CheckExpiredProjects(CancellationToken ct = default)
     {
-        LogHelper.Info($"⏱ Running CheckExpiredProjects at {DateTime.Now}", _log);
+        LogHelper.Info($"⏱ Running CheckExpiredProjects at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc()}", _log);
         using var scope = _scopeFactory.CreateScope();
         var teamProjectLife = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
         await teamProjectLife.RemoveProjects(ct);
         await ScheduleNextCheckAsync(ct);
     }
-    private async Task ScheduleNextCheckAsync(CancellationToken ct)
+
+    private async Task ScheduleNextCheckAsync(CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
-        var teamRepository = scope.ServiceProvider.GetRequiredService<ITeamRepository>();
-        _nextProjectDateExpiration = await teamRepository.GetNextProjectExpirationDate(ct);
+        var teamProjectLifeCycle = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
 
-        if (_nextProjectDateExpiration is null)
+        // On récupère la prochaine expiration (Instant? ou null)
+        var nextExpiration = await teamProjectLifeCycle.GetNextProjectExpirationDate(ct);
+
+        if (!nextExpiration.HasValue)
         {
-            LogHelper.Info("⏸ No future deadlines found. Timer stopped.", _log);
-            _timer?.Change(Timeout.Infinite, Timeout.Infinite);
-            _timer = null;
+            LogHelper.Info("⏸ No future project expirations found. Timer stopped.", _log);
+            lock (_lock)
+            {
+                _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+                _timer = null;
+            }
             return;
         }
-        var now = DateTime.Now;
-        var delay = _nextProjectDateExpiration.Value - now;
-        if (delay < TimeSpan.Zero) delay = TimeSpan.Zero;
-        LogHelper.Info($"▶️ Next check scheduled for {_nextProjectDateExpiration}", _log);
 
-        _timer?.Dispose();
-        _timer = new Timer(
-            async _ =>
-            {
-                try
+        // On calcule 3 minutes avant la date d'expiration
+        var now = NodaTime.SystemClock.Instance.GetCurrentInstant();
+        var targetInstant = nextExpiration.Value - Duration.FromMinutes(3);
+
+        var delay = targetInstant > now
+            ? targetInstant - now
+            : Duration.Zero;
+
+        var delayMs = (long)delay.TotalMilliseconds;
+
+        LogHelper.Info($"▶️ Next project expiry check scheduled for {targetInstant.ToDateTimeUtc()} (in {delayMs / 1000}s)", _log);
+
+        lock (_lock)
+        {
+            _timer?.Dispose();
+            _timer = new Timer(
+                async _ =>
                 {
-                    await CheckExpiredProjects();
-                }
-                catch (Exception ex)
-                {
-                    _log.LogError(ex, "❌ Error while checking expired projects");
-                }
-            },
-            null,
-            delay,
-            Timeout.InfiniteTimeSpan
-        );
+                    try
+                    {
+                        await CheckExpiredProjects(ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogError(ex, "❌ Error while checking expired projects");
+                    }
+                },
+                null,
+                TimeSpan.FromMilliseconds(delayMs),
+                Timeout.InfiniteTimeSpan
+            );
+        }
     }
-
 }

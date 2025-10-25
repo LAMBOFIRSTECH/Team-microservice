@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using NodaTime;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities.GeneralValueObjects;
@@ -18,7 +19,7 @@ public enum VoState
 
 public class Detail
 {
-    public Guid Id { get; init; } = Guid.NewGuid();
+    public Guid DetailId { get; init; } = Guid.NewGuid();
     public string ProjectName { get; private set; }
     public LocalizationDateTime ProjectStartDate { get; private set; }
     public LocalizationDateTime ProjectEndDate { get; private set; }
@@ -76,6 +77,7 @@ public enum ProjectAssignmentState
 }
 public class ProjectAssociation
 {
+    public Guid ProjectId { get; private set; }
     public Guid TeamManagerId { get; private set; }
     public string TeamName { get; private set; }
     private readonly List<Detail> _details = new();
@@ -86,14 +88,16 @@ public class ProjectAssociation
     /// <summary>
     /// Domain constructor for ProjectAssociation
     /// </summary>
+    /// <param name="projectId">The unique identifier for the project association</param>
     /// <param name="teamManagerId">The ID of the team manager</param>
     /// <param name="teamName">The name of the team</param>
     /// <param name="details">The list of project details</param>
     /// <remarks>
     /// This constructor enforces domain rules and validations.
     /// </remarks>
-    public ProjectAssociation(Guid teamManagerId, string teamName, List<Detail> details)
+    public ProjectAssociation(Guid projectId, Guid teamManagerId, string teamName, List<Detail> details)
     {
+        ProjectId = projectId;
         TeamManagerId = teamManagerId;
         TeamName = teamName;
         if (details != null)
@@ -108,6 +112,7 @@ public class ProjectAssociation
     /// </summary>
     private ProjectAssociation()
     {
+        ProjectId = Guid.Empty;
         TeamName = string.Empty;
         TeamManagerId = Guid.Empty;
     }
@@ -119,6 +124,7 @@ public class ProjectAssociation
     public LocalizationDateTime GetprojectStartDate() => Details.First().ProjectStartDate;
     public LocalizationDateTime GetprojectEndDate() => Details.First().ProjectEndDate;
     public LocalizationDateTime GetprojectMaxEndDate() => LocalizationDateTime.FromInstant(Details.Max(p => p.ProjectEndDate.Value.ToInstant()));
+   
     public bool IsUnderReview { get; set; } = false; // à implémenter plus tard
     /// <summary>
     /// Assign a project to the team with validation checks.

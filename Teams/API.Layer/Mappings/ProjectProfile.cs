@@ -23,6 +23,7 @@ public class ProjectProfile : Profile
             .ConstructUsing(
                 (dto, context) =>
                     new ProjectAssociation(
+                        dto.ProjectId,
                         dto.TeamManagerId,
                         dto.TeamName,
                         context.Mapper.Map<List<Detail>>(dto.Details)

@@ -18,7 +18,7 @@ public class GetTeamQueryHandler(
 {
     public async Task<TeamDetailsDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
-        var team = await _teamRepository.GetTeamWithProjectsByIdAsync(request.Id, cancellationToken);
+        var team = await _teamRepository.GetTeamByIdAsync(request.Id, cancellationToken);
         if (team is not null)
         {
             LogHelper.Info($"✅ Team with ID={request.Id} exist in database.", _log);

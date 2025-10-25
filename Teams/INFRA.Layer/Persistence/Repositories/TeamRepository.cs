@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Persistence.EFQueries;
 using Teams.INFRA.Layer.Persistence.DAL;
-using NodaTime;
 
 namespace Teams.INFRA.Layer.Persistence.Repositories;
 
@@ -22,11 +21,14 @@ public class TeamRepository : GenericRepository<Team>, ITeamRepository
     }
     public async Task<Team?> GetTeamWithProjectsByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await dbSet
+        return await context.Teams
+            .AsNoTracking()
             .Include(t => t.Project)
                 .ThenInclude(p => p.Details)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
     }
+    public async Task<Team?> GetTeamByIdAsync(Guid teamId, CancellationToken cancellationToken = default)
+   => await context.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
 
     #endregion
 
@@ -86,22 +88,6 @@ public class TeamRepository : GenericRepository<Team>, ITeamRepository
     public async Task DeleteTeamMemberAsync(CancellationToken cancellationToken = default) =>
         await SaveAsync(cancellationToken);
 
-    #endregion
-
-    #region Project Expiry / Computation
-    public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
-        => await context.Teams.Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= SystemClock.Instance.GetCurrentInstant()))
-                .ToListAsync(cancellationToken);
-
-
-    public async Task<DateTime?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
-    {
-        return await context.Teams
-            .Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant()))
-            .SelectMany(t => t.Project!.Details)
-            .Where(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant())
-            .MinAsync(d => (DateTime?)d.ProjectEndDate.Value.ToDateTimeUtc(), cancellationToken);
-    }
     #endregion
     public async Task SaveAsync(CancellationToken cancellationToken = default) => await context.SaveChangesAsync(cancellationToken); // dans UoW et rien que
 
