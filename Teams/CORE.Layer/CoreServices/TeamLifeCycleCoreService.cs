@@ -1,4 +1,5 @@
 using NodaTime;
+using NodatimePackage.Classes;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 
@@ -15,11 +16,11 @@ public class TeamLifeCycleCoreService
     public IEnumerable<Team> GetExpiredTeams(IEnumerable<Team> teams) => teams.Where(t => t.IsTeamExpired()).ToList();
     public IEnumerable<Team> GetMatureTeams(IEnumerable<Team> teams)
     {
-        return teams.Where(t => (SystemClock.Instance.GetCurrentInstant() - t.TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityPeriod)
+        return teams.Where(t => (TimeOperations.GetCurrentTime("UTC") - t.TeamCreationDate).TotalSeconds >= _maturityPeriod)
                .ToList(); // 30 pour les tests refactoriser
     }
     public int CountMatureTeams(IEnumerable<Team> teams)
-        => teams.Count(t => (SystemClock.Instance.GetCurrentInstant() - t.TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityPeriod);
+        => teams.Count(t => (TimeOperations.GetCurrentTime("UTC") - t.TeamCreationDate).TotalSeconds >= _maturityPeriod);
 
     public int CountExpiredTeams(IEnumerable<Team> teams)
         => teams.Count(t => t.IsTeamExpired());
@@ -29,33 +30,33 @@ public class TeamLifeCycleCoreService
 
     public int CountTeamsNearingExpiration(IEnumerable<Team> teams)
     {
-        var now = SystemClock.Instance.GetCurrentInstant();
+        var now = TimeOperations.GetCurrentTime("UTC");
         return teams.Count(t =>
         {
-            var timeToExpiration = t.Expiration.ToInstant() - now;
+            var timeToExpiration = t.Expiration - now;
             return timeToExpiration.TotalSeconds <= 15 && timeToExpiration.TotalSeconds > 0; // en prod : AddDays(30)
         });
     }
 
     public int CountTeamsNearingMaturity(IEnumerable<Team> teams)
     {
-        var now = SystemClock.Instance.GetCurrentInstant();
+        var now = TimeOperations.GetCurrentTime("UTC");
         return teams.Count(t =>
         {
-            var timeToMaturity = t.TeamCreationDate.Plus(Duration.FromSeconds(_maturityPeriod)).ToInstant() - now;
+            var timeToMaturity = t.TeamCreationDate.AddSeconds(_maturityPeriod) - now;
             return timeToMaturity.TotalSeconds <= 15 && timeToMaturity.TotalSeconds > 0; // en prod : AddDays(30)
         });
     }
     public int CountArchivedTeams(IEnumerable<Team> teams)
         => teams.Count(t => t.State == TeamState.Archived);
 
-    public IEnumerable<Instant> GetfutureMaturities(IEnumerable<Team> teams)
-        => teams.Select(t => t.TeamCreationDate.Plus(Duration.FromSeconds(30)).ToInstant())
-                .Where(d => d > SystemClock.Instance.GetCurrentInstant())
+    public IEnumerable<DateTimeOffset> GetfutureMaturities(IEnumerable<Team> teams)
+        => teams.Select(t => t.TeamCreationDate.AddSeconds(30))
+                .Where(d => d > TimeOperations.GetCurrentTime("UTC"))
                 .ToList(); // en prod : AddDays(180)
-    public IEnumerable<Instant> GetfutureExpirations(IEnumerable<Team> teams)
-        => teams.Where(t => t.Expiration.ToInstant() > SystemClock.Instance.GetCurrentInstant())
-                .Select(t => t.Expiration.ToInstant());
+    public IEnumerable<DateTimeOffset> GetfutureExpirations(IEnumerable<Team> teams)
+        => teams.Where(t => t.Expiration > TimeOperations.GetCurrentTime("UTC"))
+                .Select(t => t.Expiration);
     public void ArchiveTeams(IEnumerable<Team> teams)
     {
         foreach (var team in teams) team.ArchiveTeam();

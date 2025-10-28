@@ -14,8 +14,8 @@ public class ProjectProfile : Profile
         CreateMap<DetailDto, Detail>()
             .ConvertUsing(src => new Detail(
                 src.ProjectName,
-                LocalizationDateTime.FromDateTimeUtc(src.ProjectStartDate),
-                LocalizationDateTime.FromDateTimeUtc(src.ProjectEndDate),
+                src.ProjectStartDate,
+                src.ProjectEndDate,
                 src.VoState.State
             ));
 

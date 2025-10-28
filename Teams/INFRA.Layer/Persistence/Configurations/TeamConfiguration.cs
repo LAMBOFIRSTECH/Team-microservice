@@ -26,18 +26,18 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
 
         builder.Property(t => t.State).IsRequired();
         builder.Property(t => t.TeamCreationDate)
-     .HasConversion(
-         v => v.ToDateTimeUtc(),
-         v => LocalizationDateTime.FromDateTimeUtc(v)
-     )
+    //  .HasConversion(
+    //      v => v.ToDateTimeUtc(),
+    //      v => LocalizationDateTime.FromDateTimeUtc(v)
+    //  )
      .HasColumnType("datetime2")
      .IsRequired();
 
         builder.Property(t => t.TeamExpirationDate)
-            .HasConversion(
-                v => v.ToDateTimeUtc(),
-                v => LocalizationDateTime.FromDateTimeUtc(v)
-            )
+            // .HasConversion(
+            //     v => v.ToDateTimeUtc(),
+            //     v => LocalizationDateTime.FromDateTimeUtc(v)
+            // )
             .HasColumnType("datetime2")
             .IsRequired();
 
@@ -60,14 +60,14 @@ public class TeamConfiguration : IEntityTypeConfiguration<Team>
                 {
                     d.Property(dd => dd.ProjectName).HasMaxLength(200).IsRequired();
                     d.Property(dd => dd.ProjectStartDate)
-                       .HasConversion(
-                            v => v.ToDateTimeUtc(),
-                            v => LocalizationDateTime.FromDateTimeUtc(v))
+                    //    .HasConversion(
+                    //         v => v.ToDateTimeUtc(),
+                    //         v => LocalizationDateTime.FromDateTimeUtc(v))
                         .IsRequired();
                     d.Property(dd => dd.ProjectEndDate)
-                        .HasConversion(
-                            v => v.ToDateTimeUtc(),
-                            v => LocalizationDateTime.FromDateTimeUtc(v))
+                        // .HasConversion(
+                        //     v => v.ToDateTimeUtc(),
+                        //     v => LocalizationDateTime.FromDateTimeUtc(v))
                         .IsRequired();
                     d.Property(dd => dd.State).IsRequired();
                     d.ToTable("ProjectDetails"); // table séparée pour Details

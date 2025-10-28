@@ -8,20 +8,20 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
-
 public class GetTeamQueryHandler(
-    ITeamRepository _teamRepository,
     IRedisCacheService _redisCache,
+    IUnitOfWork _unitOfWork,
     ILogger<GetTeamQueryHandler> _log,
     ITeamProjectLifeCycle _teamProjectLife
 ) : IRequestHandler<GetTeamQuery, TeamDetailsDto>
 {
     public async Task<TeamDetailsDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
-        var team = await _teamRepository.GetTeamByIdAsync(request.Id, cancellationToken);
+        var team = await _unitOfWork.TeamRepository.GetById(cancellationToken, request.Id);
         if (team is not null)
         {
             LogHelper.Info($"✅ Team with ID={request.Id} exist in database.", _log);
+            Console.WriteLine($"Voici la date d'expiration de l'équipe {team.TeamExpirationDate}");
             return _teamProjectLife.BuildDto(team);
         }
         var archivedTeamDto = await _redisCache.GetArchivedTeamFromRedisAsync(request.Id, cancellationToken);

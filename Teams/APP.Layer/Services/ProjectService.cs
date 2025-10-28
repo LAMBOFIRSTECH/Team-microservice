@@ -8,6 +8,7 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 using Teams.INFRA.Layer.Interfaces;
+using Teams.CORE.Layer.CommonExtensions;
 
 namespace Teams.APP.Layer.Services;
 
@@ -62,8 +63,8 @@ public class ProjectService(
             throw new InvalidOperationException("At least one project must be active to associate with the team");
 
         await _teamProjectLifeCycle.AddProjectToTeamAsync(existingTeam, teamProject);
-    
-      
+
+
     }
     public async Task SuspendProjectAsync(Guid managerId, string projectName)
     {
@@ -75,6 +76,6 @@ public class ProjectService(
             _log
         );
     }
- 
+
 
 }

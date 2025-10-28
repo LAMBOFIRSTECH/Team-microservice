@@ -11,5 +11,5 @@ public interface ITeamProjectLifeCycle
     Task DeleteTeamProjectAsync(CancellationToken cancellationToken, Guid teamId);
     Task AddProjectToTeamAsync(Team team, ProjectAssociation project);
     TeamDetailsDto BuildDto(Team team);
-    Task<Instant?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
+    Task<DateTimeOffset?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
 }

@@ -7,6 +7,11 @@ public sealed class LocalizationDateTime : IEquatable<LocalizationDateTime>
     private static readonly DateTimeZone zoneId =
         DateTimeZoneProviders.Tzdb.GetZoneOrNull("Europe/Paris") ?? DateTimeZone.Utc;
 
+    public static LocalizationDateTime FromZoned(ZonedDateTime zoned)
+        => new LocalizationDateTime(zoned);
+
+
+
     public static LocalizationDateTime MinValue => FromInstant(Instant.FromUnixTimeSeconds(0));
     public static LocalizationDateTime MaxValue => FromInstant(Instant.FromUtc(9999, 12, 31, 23, 59, 59));
 
@@ -29,6 +34,20 @@ public sealed class LocalizationDateTime : IEquatable<LocalizationDateTime>
 
     public LocalizationDateTime Plus(Duration duration)
         => new LocalizationDateTime(Value.Plus(duration));
+
+    public static LocalizationDateTime FromLocal(DateTime localDateTime)
+    {
+        var local = LocalDateTime.FromDateTime(localDateTime);
+        return new LocalizationDateTime(local.InZoneLeniently(zoneId));
+    }
+
+    public static LocalizationDateTime FromJsonAsLocal(DateTime dateTimeUtc)
+    {
+        var local = Instant.FromDateTimeUtc(dateTimeUtc); // prend l’heure brute
+        var zoned = local.InZone(DateTimeZoneProviders.Tzdb["Europe/Paris"]);
+        return new LocalizationDateTime(zoned);
+    }
+
 
     public Instant ToInstant() => Value.ToInstant();
 

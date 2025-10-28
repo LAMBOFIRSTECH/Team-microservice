@@ -21,21 +21,20 @@ public class ProjectExpiryScheduler(
     public Task StopAsync(CancellationToken ct)
     {
         LogHelper.Info("🛑 ProjectExpiryScheduler stopping timer...", _log);
-        lock (_lock)
-        {
-            _timer?.Change(Timeout.Infinite, 0);
-            _timer = null;
-        }
+        StopTimer();
         return Task.CompletedTask;
     }
-
-    public void Dispose()
+    private void StopTimer()
     {
         lock (_lock)
         {
+            _timer?.Change(Timeout.Infinite, 0);
             _timer?.Dispose();
+            _timer = null;
         }
     }
+
+    public void Dispose() => StopTimer();
 
     public async Task RescheduleAsync(CancellationToken ct = default)
     {
@@ -45,63 +44,71 @@ public class ProjectExpiryScheduler(
 
     private async Task CheckExpiredProjects(CancellationToken ct = default)
     {
-        LogHelper.Info($"⏱ Running CheckExpiredProjects at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc()}", _log);
+        LogHelper.Info($"⏱ Running CheckExpiredProjects at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc().ToLocalTime()}", _log);
         using var scope = _scopeFactory.CreateScope();
         var teamProjectLife = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
         await teamProjectLife.RemoveProjects(ct);
         await ScheduleNextCheckAsync(ct);
     }
 
-    private async Task ScheduleNextCheckAsync(CancellationToken ct = default)
+    private async Task ScheduleNextCheckAsync(CancellationToken ct)
     {
         using var scope = _scopeFactory.CreateScope();
         var teamProjectLifeCycle = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
-
-        // On récupère la prochaine expiration (Instant? ou null)
         var nextExpiration = await teamProjectLifeCycle.GetNextProjectExpirationDate(ct);
 
         if (!nextExpiration.HasValue)
         {
             LogHelper.Info("⏸ No future project expirations found. Timer stopped.", _log);
-            lock (_lock)
-            {
-                _timer?.Change(Timeout.Infinite, Timeout.Infinite);
-                _timer = null;
-            }
+            StopTimer();
             return;
         }
 
-        // On calcule 3 minutes avant la date d'expiration
-        var now = NodaTime.SystemClock.Instance.GetCurrentInstant();
-        var targetInstant = nextExpiration.Value - Duration.FromMinutes(3);
+        // Convertir Instant en DateTime local pour un calcul correct du délai
+        var targetLocal = nextExpiration.Value;
+        var delay = targetLocal - DateTime.UtcNow;
+        Console.WriteLine($"delay : {delay}");
 
-        var delay = targetInstant > now
-            ? targetInstant - now
-            : Duration.Zero;
+        if (delay <= TimeSpan.Zero)
+        {
+            LogHelper.Info("⚠️ Expiration just reached. Will recheck in 1 minute.", _log);
+            ResetTimer(TimeSpan.FromMinutes(1), async _ => await ScheduleNextCheckAsync(ct));
+            return;
+        }
 
-        var delayMs = (long)delay.TotalMilliseconds;
 
-        LogHelper.Info($"▶️ Next project expiry check scheduled for {targetInstant.ToDateTimeUtc()} (in {delayMs / 1000}s)", _log);
+        LogHelper.Info(
+            $"▶️ Next project expiry check scheduled for {targetLocal:yyyy-MM-dd HH:mm:ss} (in {delay.TotalMinutes:F1} min)",
+            _log
+        );
 
+        ResetTimer(delay, async _ => await CheckExpiredProjects(ct));
+    }
+
+    private void ResetTimer(TimeSpan dueTime, Func<object?, Task> callback)
+    {
         lock (_lock)
         {
             _timer?.Dispose();
-            _timer = new Timer(
-                async _ =>
+            _timer = new Timer(_ =>
+            {
+                Task.Run(async () =>
                 {
                     try
                     {
-                        await CheckExpiredProjects(ct);
+                        if (callback != null)
+                            await callback(_timer);
                     }
                     catch (Exception ex)
                     {
-                        _log.LogError(ex, "❌ Error while checking expired projects");
+                        _log.LogError(ex, "❌ Timer callback execution failed");
                     }
-                },
-                null,
-                TimeSpan.FromMilliseconds(delayMs),
-                Timeout.InfiniteTimeSpan
-            );
+                });
+            }, null, dueTime, Timeout.InfiniteTimeSpan);
         }
     }
+
 }
+
+
+

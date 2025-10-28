@@ -6,9 +6,9 @@ using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.API.Layer.DTOs;
 using AutoMapper;
 using Teams.CORE.Layer.CoreServices;
-using NodaTime;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Microsoft.EntityFrameworkCore;
+using Teams.CORE.Layer.CommonExtensions;
+using NodatimePackage.Classes;
 
 namespace Teams.APP.Layer.Services;
 
@@ -20,6 +20,14 @@ public class TeamProjectLifeCycle(
     TeamLifeCycleCoreService _teamLifeCycleCoreService
 ) : ITeamProjectLifeCycle
 {
+
+
+    public string GetTimeZoneId()
+    {
+        var timeZoneId = _configuration.GetValue<string>("TimeZone");
+        if (string.IsNullOrEmpty(timeZoneId)) throw new ArgumentNullException("Cannot get timezone id check the configuration file");
+        return timeZoneId;
+    }
     public async Task AddProjectToTeamAsync(Team team, ProjectAssociation project)
     {
         if (project == null)
@@ -54,9 +62,19 @@ public class TeamProjectLifeCycle(
         }
         else
         {
-            teamDto.TeamExpirationDate = team.Project.GetprojectMaxEndDate()
-                                         .Value.ToInstant()
-                                         .ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            var teamExpiration = GetTimeZoneId().ConvertDatetimeIntoDateTimeOffset(team.TeamExpirationDate);
+            var projetEndDateZoneTimeConverted = GetTimeZoneId().ConvertDatetimeIntoDateTimeOffset(team.Project.GetprojectMaxEndDate());
+            if (teamExpiration > projetEndDateZoneTimeConverted)
+                Console.WriteLine($"✅ Team expiration {teamExpiration} est sup à project end {projetEndDateZoneTimeConverted}");
+            else
+                Console.WriteLine($"❌ Team expiration {teamExpiration} est inf à project end {projetEndDateZoneTimeConverted}");
+
+            if (projetEndDateZoneTimeConverted > teamExpiration)
+            {
+                teamDto.TeamExpirationDate = projetEndDateZoneTimeConverted.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            else
+                teamDto.TeamExpirationDate = teamExpiration.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
 
             teamDto.HasAnyProject = true;
             teamDto.TeamManagerId = team.Project.TeamManagerId;
@@ -73,6 +91,7 @@ public class TeamProjectLifeCycle(
         {
             team.RemoveExpiredProjects();
             _unitOfWork.TeamRepository.Update(team);
+            await _unitOfWork.SaveAsync(ct);
             LogHelper.Info($"✅ Project has been dissociated from team {team.Name}", _log);
         }
     }
@@ -83,23 +102,25 @@ public class TeamProjectLifeCycle(
         team.MarkAsDeleted();
         _unitOfWork.TeamRepository.Delete(team);
     }
-    public async Task<Instant?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
+    public async Task<DateTimeOffset?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
     {
         // Charger uniquement les projets et détails nécessaires
         var nextDateUtc = await _unitOfWork.Context.Teams
-            .Where(t => t.Project != null) 
-            .SelectMany(t => t.Project!.Details) 
-            .Where(d => d.ProjectEndDate.Value.ToInstant() > SystemClock.Instance.GetCurrentInstant()) // Date future
-            .OrderBy(d => d.ProjectEndDate.Value.ToDateTimeUtc())
-            .Select(d => (DateTime?)d.ProjectEndDate.Value.ToDateTimeUtc())
+            .Where(t => t.Project != null)
+            .SelectMany(t => t.Project!.Details)
+            .Where(d => d.ProjectEndDate > TimeOperations.GetCurrentTime("UTC"))
+            .OrderBy(d => d.ProjectEndDate)
+            .Select(d => (DateTimeOffset?)d.ProjectEndDate)
             .FirstOrDefaultAsync(cancellationToken);
 
         return nextDateUtc.HasValue
-            ? LocalizationDateTime.FromDateTimeUtc(nextDateUtc.Value).ToInstant()
+            ? nextDateUtc.Value
             : null;
     }
     public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
-       => await _unitOfWork.TeamRepository.GetAll(cancellationToken)
-           .Where(t => t.Project!.Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= SystemClock.Instance.GetCurrentInstant()))
-           .ToListAsync(cancellationToken);
+    {
+        var existingTeams = _unitOfWork.TeamRepository.GetAll(cancellationToken);
+        var teams = existingTeams.GetTeamsWithExpiredProject();
+        return teams;
+    }
 }

@@ -4,6 +4,9 @@ using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
+using Teams.CORE.Layer.CommonExtensions;
+using NodatimePackage.Classes;
+using NodatimePackage.Models.Regions;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
@@ -36,24 +39,40 @@ public class Team : AggregateEntity, IAggregateRoot
     public ProjectAssociation? Project { get; private set; }
     public double AverageProductivity { get; private set; }
     public double TauxTurnover { get; private set; }
-    public LocalizationDateTime TeamCreationDate { get; init; }
-    public LocalizationDateTime TeamExpirationDate { get; private set; }
-    public LocalizationDateTime LastActivityDate { get; private set; }
-    public LocalizationDateTime Expiration => TeamCreationDate.Plus(Duration.FromSeconds(_validityPeriodInDays + _extraDays));
+    public DateTimeOffset TeamCreationDate { get; init; }
+    public DateTimeOffset LastActivityDate { get; private set; }
+    public DateTimeOffset Expiration => TeamCreationDate.AddSeconds(_validityPeriodInDays + _extraDays);
+    public DateTimeOffset TeamExpirationDate { get; private set; }
 
     /// <summary>
     /// Get the current date and time as a LocalizationDateTime.
     /// </summary>
-    private LocalizationDateTime GetCurrentDateTime() =>
-        LocalizationDateTime.FromInstant(SystemClock.Instance.GetCurrentInstant());
+    private DateTimeOffset GetCurrentDateTime() => TimeOperations.GetCurrentTime("UTC").UtcDateTime;
+
 
     ///<summary>
     /// /// Determine if the team has exceeded its validity period.
     /// </summary>
     /// <returns></returns> 
-    public bool IsTeamExpired() =>
-        GetCurrentDateTime().Value.ToInstant() >= Expiration.Value.ToInstant()
-        && State != TeamState.Archived;
+    public bool IsTeamExpired()
+      => TimeOperations.GetCurrentTime("UTC").UtcDateTime >= TeamExpirationDate.UtcDateTime && State != TeamState.Archived;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="timeZoneId"></param>
+    /// <returns></returns>
+    public DateTimeOffset GetExpirationDateInTimeZone(string timeZoneId)
+            => timeZoneId.ConvertDatetimeIntoDateTimeOffset(TeamExpirationDate);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="timeZoneId"></param>
+    /// <returns></returns>
+    public DateTimeOffset GetLastActivityInTimeZone(string timeZoneId)
+            => timeZoneId.ConvertDatetimeIntoDateTimeOffset(LastActivityDate);
+
 
     #region Constructors
 #pragma warning disable CS8618
@@ -64,10 +83,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <remarks>
     /// Ce constructeur est requis par Entity Framework Core pour la matérialisation.
     /// </remarks>
-    public Team()
-    {
-
-    }
+    public Team() { }
 #pragma warning restore CS8618
 
     /// <summary>
@@ -77,7 +93,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="name"></param>
     /// <param name="teamManagerId"></param>
     /// <param name="members"></param>
-    /// <param name="clock"></param>
+    /// <param name="createAt"></param>
     /// <exception cref="DomainException"></exception>
     /// <returns></returns>
     /// <remarks>
@@ -85,15 +101,15 @@ public class Team : AggregateEntity, IAggregateRoot
     /// Sur la date de création et la période de validité standard.
     /// La validation des données de l'équipe est effectuée via la méthode ValidateTeamData.
     /// </remarks>
-    private Team(Guid id, string name, Guid teamManagerId, IEnumerable<Guid> members, IClock clock)
+    private Team(Guid id, string name, Guid teamManagerId, IEnumerable<Guid> members, DateTimeOffset createAt)
     {
         Id = id;
         _name = TeamName.Create(name);
         _teamManagerId = new MemberId(teamManagerId);
         _members = members.Select(m => new MemberId(m)).ToHashSet();
-        TeamCreationDate = LocalizationDateTime.Now(clock);
+        TeamCreationDate = createAt;
         TeamExpirationDate = Expiration;
-        LastActivityDate = LocalizationDateTime.Now(clock); // Revoir
+        LastActivityDate = createAt;
     }
     #endregion
     #region Factory Method
@@ -116,9 +132,9 @@ public class Team : AggregateEntity, IAggregateRoot
     /// </exception>
     public static Team Create(string name, Guid teamManagerId, IEnumerable<Guid> memberIds)
     {
-        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), SystemClock.Instance);
+        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(),  DateTimeOffset.Now);
         team.ValidateTeamInvariants();
-        team.RecalculateStates(); // Pertinence ici ? On pourrait donner l'état directement après validation des invariants.
+        team.RecalculateStates();
         team.AddDomainEvent(new TeamCreatedEvent(team.Id));
         return team;
     }
@@ -189,18 +205,6 @@ public class Team : AggregateEntity, IAggregateRoot
     }
     #endregion
 
-    /// <summary>
-    /// Verify if the team has any active or suspended project dependencies.
-    /// if there are active projects, extend the team's expiration date accordingly.
-    /// If there are no dependencies, return false.
-    /// </summary>
-    /// <returns></returns>
-    // public void HasAnyDependencies()
-    // {
-    //     if (Project == null || Project.IsEmpty()) return;
-    //     if (Project.HasAnyDependencies())
-    //         TeamExpirationDate = Project.GetprojectMaxEndDate();
-    // }
     #region Team project deletion Methods
     /// <summary>
     /// Mark the team as deleted after ensuring it can be deleted.
@@ -209,7 +213,7 @@ public class Team : AggregateEntity, IAggregateRoot
     public void MarkAsDeleted()
     {
         EnsureCanBeDeleted();
-        AddDomainEvent(new TeamDeletedEvent(Id, Name.Value, TeamExpirationDate.ToInstant(), Guid.NewGuid()));
+        AddDomainEvent(new TeamDeletedEvent(Id, Name.Value, TeamExpirationDate.UtcDateTime, Guid.NewGuid()));
     }
 
     public void EnsureCanBeDeleted()
@@ -233,7 +237,7 @@ public class Team : AggregateEntity, IAggregateRoot
         if (State != TeamState.Active)
             throw new DomainException("Only active teams can be evaluated for maturity.");
 
-        if (!((GetCurrentDateTime().Value.ToInstant() - TeamCreationDate.Value.ToInstant()).TotalSeconds >= _maturityThresholdInDays))
+        if (!((GetCurrentDateTime() - TeamCreationDate.UtcDateTime).TotalSeconds >= _maturityThresholdInDays))
             // C'est 180 jours pour les tests on a mis 180 secondes
             return false;
         return true;
@@ -255,7 +259,7 @@ public class Team : AggregateEntity, IAggregateRoot
             throw new DomainException("Team has not yet exceeded the validity period.");
         State = TeamState.Archived;
         AddDomainEvent(
-            new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate.ToInstant(), Guid.NewGuid())
+            new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid())
         );
     }
 
@@ -378,7 +382,7 @@ public class Team : AggregateEntity, IAggregateRoot
     public void ApplyProjectAttachmentGracePeriod(int days)
     {
         _extraDays += days;
-        TeamExpirationDate = TeamExpirationDate.Plus(Duration.FromSeconds(days));
+        TeamExpirationDate = TeamExpirationDate.AddSeconds(days);
     }
     public void AssignProject(ProjectAssociation proj)
     {

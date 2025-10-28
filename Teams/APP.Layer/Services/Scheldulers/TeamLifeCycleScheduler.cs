@@ -31,7 +31,7 @@ public class TeamLifeCycleScheduler(
 {
     private Timer? _timer;
     private readonly object _lock = new();
-    private DateTime? _nextCheckDate;
+    private DateTimeOffset? _nextCheckDate;
 
 
     public async Task StartAsync(CancellationToken ct)
@@ -62,7 +62,7 @@ public class TeamLifeCycleScheduler(
     }
     private async Task CheckTeams(CancellationToken ct = default)
     {
-        LogHelper.Info($" ⏱ Running CheckTeams at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc()}", _log);
+        LogHelper.Info($" ⏱ Running CheckTeams at {SystemClock.Instance.GetCurrentInstant().ToDateTimeUtc().ToLocalTime()}", _log);
 
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
@@ -108,13 +108,13 @@ public class TeamLifeCycleScheduler(
             lock (_lock) _timer = null;
             return;
         }
-        _nextCheckDate = nextEvents.Min().ToDateTimeUtc().ToLocalTime();
-        var delay = _nextCheckDate - DateTime.Now;
+        _nextCheckDate = nextEvents.Min();
+        var delay = _nextCheckDate.Value - DateTimeOffset.Now;
         if (delay < TimeSpan.Zero)
             delay = TimeSpan.Zero;
 
         LogHelper.Info(
-            $"▶️ Next team lifecycle check scheduled for {_nextCheckDate} (in {delay.Value.TotalSeconds}s)",
+            $"▶️ Next team lifecycle check scheduled for {_nextCheckDate:yyyy-MM-dd HH:mm:ss} (in {delay.TotalSeconds}s)",
             _log
         );
         lock (_lock)
@@ -133,7 +133,7 @@ public class TeamLifeCycleScheduler(
                     }
                 },
                 null,
-                delay.Value,
+                delay,
                 Timeout.InfiniteTimeSpan
             );
         }

@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
-using NodaTime;
+using NodatimePackage.Classes;
 using Teams.CORE.Layer.BusinessExceptions;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
@@ -21,8 +20,8 @@ public class Detail
 {
     public Guid DetailId { get; init; } = Guid.NewGuid();
     public string ProjectName { get; private set; }
-    public LocalizationDateTime ProjectStartDate { get; private set; }
-    public LocalizationDateTime ProjectEndDate { get; private set; }
+    public DateTimeOffset ProjectStartDate { get; private set; }
+    public DateTimeOffset ProjectEndDate { get; private set; }
     public VoState State { get; }
 
     /// <summary>
@@ -33,8 +32,8 @@ public class Detail
     private Detail()
     {
         ProjectName = string.Empty;
-        ProjectStartDate = LocalizationDateTime.MinValue;
-        ProjectEndDate = LocalizationDateTime.MinValue;
+        ProjectStartDate = DateTimeOffset.MinValue;
+        ProjectEndDate = DateTimeOffset.MinValue;
         State = VoState.Active;
     }
 
@@ -48,8 +47,8 @@ public class Detail
     /// <param name="state"></param>
     public Detail(
         string projectName,
-        LocalizationDateTime projectStartDate,
-        LocalizationDateTime projectEndDate,
+        DateTimeOffset projectStartDate,
+        DateTimeOffset projectEndDate,
         VoState state
     )
     {
@@ -117,15 +116,8 @@ public class ProjectAssociation
         TeamManagerId = Guid.Empty;
     }
 
-    public bool IsEmpty() => TeamManagerId == Guid.Empty && string.IsNullOrWhiteSpace(TeamName) && (Details == null || Details.Count == 0); // service du domaine projet
-    public bool IsExpired() => Details.Any(d => d.ProjectEndDate.Value.ToInstant() <= LocalizationDateTime.Now(SystemClock.Instance).Value.ToInstant());
-    public bool HasSuspendedProject() => Details.Any(d => d.State == VoState.Suspended);
-    public bool HasActiveProject() => Details.Any(d => d.State == VoState.Active);
-    public LocalizationDateTime GetprojectStartDate() => Details.First().ProjectStartDate;
-    public LocalizationDateTime GetprojectEndDate() => Details.First().ProjectEndDate;
-    public LocalizationDateTime GetprojectMaxEndDate() => LocalizationDateTime.FromInstant(Details.Max(p => p.ProjectEndDate.Value.ToInstant()));
-   
     public bool IsUnderReview { get; set; } = false; // à implémenter plus tard
+
     /// <summary>
     /// Assign a project to the team with validation checks.
     /// This method ensures that the project being assigned meets
@@ -135,12 +127,12 @@ public class ProjectAssociation
     /// <param name="teamManagerId"></param>
     /// <param name="CreatedAt"></param>
     /// <exception cref="DomainException"></exception> Created a sub DomainException class for project association errors.
-    public void ValidateProjectAssignmentToTeam(TeamName name, MemberId teamManagerId, LocalizationDateTime CreatedAt)
+    public void ValidateProjectAssignmentToTeam(TeamName name, MemberId teamManagerId, DateTimeOffset CreatedAt)
     {
-        if (IsEmpty())
+        if (TeamManagerId == Guid.Empty && string.IsNullOrWhiteSpace(TeamName) && (Details == null || Details.Count == 0))
             throw new DomainException("Project association data cannot be null");
 
-        if (!HasActiveProject())
+        if (!Details.Any(d => d.State == VoState.Active))
             throw new DomainException("Project must be active to be associated with a team.");
 
         if (TeamName != name.Value)
@@ -149,35 +141,16 @@ public class ProjectAssociation
         if (new MemberId(TeamManagerId) != teamManagerId)
             throw new DomainException($"Project manager {TeamManagerId} does not match current team manager {teamManagerId}.");
 
-        if (GetprojectStartDate().Value.ToInstant() < CreatedAt.Value.ToInstant())
-            throw new DomainException($"Project start date {GetprojectStartDate()} cannot be earlier than team creation date {CreatedAt}");
+        if (Details.First().ProjectStartDate < CreatedAt)
+            throw new DomainException($"Project start date {Details.First().ProjectStartDate} cannot be earlier than team creation date {CreatedAt}");
 
         if (Details.Count > 3)
             throw new DomainException("A team cannot be associated to more than 3 projects.");
 
-        var delay = GetprojectStartDate().Value.ToInstant() - CreatedAt.Value.ToInstant();
+        var delay = Details.First().ProjectStartDate - CreatedAt;
         if (delay.TotalDays > 7)
-            throw new DomainException($"Project start date {GetprojectStartDate()} must be within 7 days of team creation date {CreatedAt}.");
+            throw new DomainException($"Project start date {Details.First().ProjectStartDate} must be within 7 days of team creation date {CreatedAt}.");
     }
-
-    /// <summary>
-    /// Verify if the team has any active or suspended project dependencies.
-    /// if there are active projects, extend the team's expiration date accordingly.
-    /// If there are no dependencies, return false.
-    /// </summary>
-    /// <returns></returns>
-
-    public bool DependencyExist()
-    {
-        ProjectAssociation Project = this;
-        if (Project == null || Project.IsEmpty())
-            return false;
-
-        bool hasDependencies = Project.HasActiveProject() || Project.HasSuspendedProject();
-        if (!Project.HasActiveProject()) return hasDependencies;
-        return hasDependencies;
-    }
-
 
     /// <summary>
     /// Derivation rule of the project's assignment state based on its details.
@@ -187,13 +160,13 @@ public class ProjectAssociation
         get
         {
             ProjectAssociation Project = this;
-            if (Project.HasSuspendedProject())
+            if (Project.Details.Any(d => d.State == VoState.Suspended))
                 return ProjectAssignmentState.Suspended;
 
             if (Project.IsUnderReview)
                 return ProjectAssignmentState.UnderReview;
 
-            if (Project.IsExpired())
+            if (Details.Any(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC")))
                 return ProjectAssignmentState.UnassignedAfterReview;
 
             return ProjectAssignmentState.Assigned;
@@ -230,7 +203,7 @@ public class ProjectAssociation
                 break;
             }
         }
-        if (HasSuspendedProject())
+        if (Details.Any(d => d.State == VoState.Suspended))
         {
             var suspended = Details
                 .Where(d => d.State == VoState.Suspended)
@@ -259,9 +232,9 @@ public class ProjectAssociation
     }
     public List<Detail> ExpiredProjects()
     {
-        if (!HasActiveProject()) return [];
+        if (!Details.Any(d => d.State == VoState.Active)) return new List<Detail>();
         var expired = Details
-              .Where(d => d.ProjectEndDate.Value.ToInstant() <= LocalizationDateTime.Now(SystemClock.Instance).Value.ToInstant())
+              .Where(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC"))
               .ToList();
         return expired;
     }

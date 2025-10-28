@@ -3,6 +3,7 @@ using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.CQRS.Queries;
 using NodaTime;
 using Teams.INFRA.Layer.Interfaces;
+using NodatimePackage.Classes;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
 
@@ -15,8 +16,8 @@ public class GetAllTeamsQueryHandler(IUnitOfWork _unitOfWork)
     ) // revoir l'orchestration asynchrone
     {
         var teams = _unitOfWork.TeamRepository.GetAll(cancellationToken);
-        var now = SystemClock.Instance.GetCurrentInstant();
-        if (request.OnlyMature) teams = teams.Where(t => (now - t.TeamCreationDate.ToInstant()).TotalSeconds >= 30).AsQueryable();
+        var now = TimeOperations.GetCurrentTime("UTC");
+        if (request.OnlyMature) teams = teams.Where(t => (now - t.TeamCreationDate).TotalSeconds >= 30).AsQueryable();
 
 
         var teamDtos = teams
