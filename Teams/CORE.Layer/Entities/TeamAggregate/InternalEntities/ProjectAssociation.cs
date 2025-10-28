@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
-using NodatimePackage.Classes;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
+using Teams.APP.Layer.Helpers;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
@@ -116,7 +116,8 @@ public class ProjectAssociation
         TeamManagerId = Guid.Empty;
     }
 
-    public bool IsUnderReview { get; set; } = false; // à implémenter plus tard
+    public bool IsUnderReview { get; set; } = false;
+   
 
     /// <summary>
     /// Assign a project to the team with validation checks.
@@ -166,7 +167,7 @@ public class ProjectAssociation
             if (Project.IsUnderReview)
                 return ProjectAssignmentState.UnderReview;
 
-            if (Details.Any(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC")))
+            if (Details.Any(d => d.ProjectEndDate <= DateTimeOffset.Now))
                 return ProjectAssignmentState.UnassignedAfterReview;
 
             return ProjectAssignmentState.Assigned;
@@ -234,7 +235,7 @@ public class ProjectAssociation
     {
         if (!Details.Any(d => d.State == VoState.Active)) return new List<Detail>();
         var expired = Details
-              .Where(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC"))
+              .Where(d => d.ProjectEndDate <= DateTimeOffset.Now)
               .ToList();
         return expired;
     }

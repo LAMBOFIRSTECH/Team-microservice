@@ -1,12 +1,10 @@
-using NodaTime;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.CoreEvents;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.CommonExtensions;
 using NodatimePackage.Classes;
-using NodatimePackage.Models.Regions;
+using Teams.APP.Layer.Helpers;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 
@@ -47,15 +45,14 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <summary>
     /// Get the current date and time as a LocalizationDateTime.
     /// </summary>
-    private DateTimeOffset GetCurrentDateTime() => TimeOperations.GetCurrentTime("UTC").UtcDateTime;
-
+    private DateTimeOffset GetCurrentDateTime() => DateTimeOffset.Now;
 
     ///<summary>
     /// /// Determine if the team has exceeded its validity period.
     /// </summary>
     /// <returns></returns> 
     public bool IsTeamExpired()
-      => TimeOperations.GetCurrentTime("UTC").UtcDateTime >= TeamExpirationDate.UtcDateTime && State != TeamState.Archived;
+      => DateTimeOffset.Now >= TeamExpirationDate.UtcDateTime && State != TeamState.Archived;
 
     /// <summary>
     /// 
@@ -63,7 +60,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="timeZoneId"></param>
     /// <returns></returns>
     public DateTimeOffset GetExpirationDateInTimeZone(string timeZoneId)
-            => timeZoneId.ConvertDatetimeIntoDateTimeOffset(TeamExpirationDate);
+            => timeZoneId.ParseToLocal(TeamExpirationDate);
 
     /// <summary>
     /// 
@@ -71,7 +68,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="timeZoneId"></param>
     /// <returns></returns>
     public DateTimeOffset GetLastActivityInTimeZone(string timeZoneId)
-            => timeZoneId.ConvertDatetimeIntoDateTimeOffset(LastActivityDate);
+            => timeZoneId.ParseToLocal(LastActivityDate);
 
 
     #region Constructors
@@ -132,7 +129,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// </exception>
     public static Team Create(string name, Guid teamManagerId, IEnumerable<Guid> memberIds)
     {
-        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(),  DateTimeOffset.Now);
+        var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), DateTimeOffset.Now);
         team.ValidateTeamInvariants();
         team.RecalculateStates();
         team.AddDomainEvent(new TeamCreatedEvent(team.Id));

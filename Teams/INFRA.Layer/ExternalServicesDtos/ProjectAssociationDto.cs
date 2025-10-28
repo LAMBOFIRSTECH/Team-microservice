@@ -12,8 +12,8 @@ public record ProjectStateDto(
 
 public record DetailDto(
     [property: JsonProperty(Required = Required.Always)] string ProjectName,
-    [property: JsonProperty(Required = Required.Always)] DateTime ProjectStartDate,
-    [property: JsonProperty(Required = Required.Always)] DateTime ProjectEndDate,
+    [property: JsonProperty(Required = Required.Always)] DateTimeOffset ProjectStartDate,
+    [property: JsonProperty(Required = Required.Always)] DateTimeOffset ProjectEndDate,
     [property: JsonProperty(Required = Required.Always)] ProjectStateDto VoState
 );
 

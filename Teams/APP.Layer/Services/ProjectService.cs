@@ -20,9 +20,16 @@ public class ProjectService(
     ITeamProjectLifeCycle _teamProjectLifeCycle,
     ILogger<ProjectService> _log,
     IValidator<ProjectAssociationDto> _projectRecordValidator,
+    IConfiguration _configuration,
     IMapper _mapper
 ) : IProjectService
 {
+    public string GetTimeZoneId()
+    {
+        var timeZoneId = _configuration.GetValue<string>("TimeZone");
+        if (string.IsNullOrEmpty(timeZoneId)) throw new ArgumentNullException("Cannot get timezone id check the configuration file");
+        return timeZoneId;
+    }
     public async Task<ProjectAssociation> GetProjectAssociationDataAsync(Guid? managerId, string teamName)
     {
         var dto = await _teamExternalService.RetrieveProjectAssociationDataAsync();
@@ -47,7 +54,6 @@ public class ProjectService(
             LogHelper.CriticalFailure(_log, "Data validation", $"{validationResult}", null);
             throw new InvalidOperationException("Project association data is invalid");
         }
-
         return _mapper.Map<ProjectAssociation>(dto);
     }
     public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
@@ -63,19 +69,12 @@ public class ProjectService(
             throw new InvalidOperationException("At least one project must be active to associate with the team");
 
         await _teamProjectLifeCycle.AddProjectToTeamAsync(existingTeam, teamProject);
-
-
     }
     public async Task SuspendProjectAsync(Guid managerId, string projectName)
     {
         var existingTeams = await _teamRepository.GetTeamsByManagerIdAsync(managerId);
         var suspendedTeam = await _projectLifeCycleCore.SuspendProjectAsync(managerId, projectName, existingTeams);
         _unitOfWork.TeamRepository.Update(suspendedTeam);
-        LogHelper.Info(
-            $"✅ Project '{projectName}' successfully removed from Team '{suspendedTeam.Name.Value}'",
-            _log
-        );
+        LogHelper.Info($"✅ Project '{projectName}' successfully removed from Team '{suspendedTeam.Name.Value}'", _log);
     }
-
-
 }

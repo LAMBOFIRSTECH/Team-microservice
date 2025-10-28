@@ -11,7 +11,6 @@ using Teams.CORE.Layer.CommonExtensions;
 using NodatimePackage.Classes;
 
 namespace Teams.APP.Layer.Services;
-
 public class TeamProjectLifeCycle(
     IUnitOfWork _unitOfWork,
     ILogger<TeamProjectLifeCycle> _log,
@@ -21,13 +20,13 @@ public class TeamProjectLifeCycle(
 ) : ITeamProjectLifeCycle
 {
 
-
     public string GetTimeZoneId()
     {
         var timeZoneId = _configuration.GetValue<string>("TimeZone");
         if (string.IsNullOrEmpty(timeZoneId)) throw new ArgumentNullException("Cannot get timezone id check the configuration file");
         return timeZoneId;
     }
+    public DateTimeOffset PrintTimeZoneDtateTimeOffset(DateTimeOffset date) => GetTimeZoneId().ParseToLocal(date);
     public async Task AddProjectToTeamAsync(Team team, ProjectAssociation project)
     {
         if (project == null)
@@ -62,22 +61,13 @@ public class TeamProjectLifeCycle(
         }
         else
         {
-            var teamExpiration = GetTimeZoneId().ConvertDatetimeIntoDateTimeOffset(team.TeamExpirationDate);
-            var projetEndDateZoneTimeConverted = GetTimeZoneId().ConvertDatetimeIntoDateTimeOffset(team.Project.GetprojectMaxEndDate());
-            if (teamExpiration > projetEndDateZoneTimeConverted)
-                Console.WriteLine($"✅ Team expiration {teamExpiration} est sup à project end {projetEndDateZoneTimeConverted}");
-            else
-                Console.WriteLine($"❌ Team expiration {teamExpiration} est inf à project end {projetEndDateZoneTimeConverted}");
-
-            if (projetEndDateZoneTimeConverted > teamExpiration)
-            {
-                teamDto.TeamExpirationDate = projetEndDateZoneTimeConverted.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
-            }
-            else
-                teamDto.TeamExpirationDate = teamExpiration.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
-
+            var teamExpiration = team.TeamExpirationDate;
+            var projetEndDate = team.Project?.GetprojectMaxEndDate() ?? teamExpiration;
+            DateTimeOffset maxDateUtc = projetEndDate > teamExpiration ? projetEndDate : teamExpiration;
+            var localMaxDate = maxDateUtc.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            teamDto.TeamExpirationDate = localMaxDate;
             teamDto.HasAnyProject = true;
-            teamDto.TeamManagerId = team.Project.TeamManagerId;
+            teamDto.TeamManagerId = team.Project!.TeamManagerId;
             teamDto.Name = team.Project.TeamName;
             teamDto.ProjectNames = team.Project.Details.Select(d => d.ProjectName).ToList();
         }

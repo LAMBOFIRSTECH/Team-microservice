@@ -2,7 +2,6 @@ using FluentValidation;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.APP.Layer.CQRS.Validators;
-
 public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
 {
     public ProjectRecordValidator()
@@ -39,9 +38,9 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
                     .RuleFor(x => x.ProjectStartDate)
                     .NotEmpty()
                     .WithMessage("Project start date cannot be empty.")
-                    .Must(date => date != DateTime.MinValue)
+                    .Must(date => date != DateTimeOffset.MinValue)
                     .WithMessage("Project start date must be a valid date.")
-                    .Must(date => date >= DateTime.UtcNow)
+                    .Must(date => date >= DateTimeOffset.UtcNow)
                     .WithMessage("Project start date cannot be in the past.");
             });
         RuleForEach(x => x.Details)
@@ -51,9 +50,9 @@ public class ProjectRecordValidator : AbstractValidator<ProjectAssociationDto>
                     .RuleFor(x => x.ProjectEndDate)
                     .NotEmpty()
                     .WithMessage("Project end date cannot be empty.")
-                    .Must(date => date != DateTime.MinValue)
+                    .Must(date => date != DateTimeOffset.MinValue)
                     .WithMessage("Project end date must be a valid date.")
-                    .Must(date => date >= DateTime.UtcNow)
+                    .Must(date => date >= DateTimeOffset.UtcNow)
                     .WithMessage("Project end date cannot be in the past.")
                     .Must((dto, endDate) => endDate > dto.ProjectStartDate)
                     .WithMessage("Project end date must be after the project start date.");

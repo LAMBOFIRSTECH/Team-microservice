@@ -76,7 +76,6 @@ public class ProjectExpiryScheduler(
             return;
         }
 
-
         LogHelper.Info(
             $"▶️ Next project expiry check scheduled for {targetLocal:yyyy-MM-dd HH:mm:ss} (in {delay.TotalMinutes:F1} min)",
             _log
@@ -84,7 +83,6 @@ public class ProjectExpiryScheduler(
 
         ResetTimer(delay, async _ => await CheckExpiredProjects(ct));
     }
-
     private void ResetTimer(TimeSpan dueTime, Func<object?, Task> callback)
     {
         lock (_lock)

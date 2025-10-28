@@ -2,31 +2,29 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
 using NodatimePackage.Classes;
-using Hangfire.States;
+using Teams.APP.Layer.Helpers;
 namespace Teams.CORE.Layer.CommonExtensions;
 
 public static class TeamProjectExtensions
 {
-
+   
     public static DateTimeOffset ConvertDatetimeIntoDateTimeOffset(this string timeZoneId, DateTimeOffset utcDateTimeOffset)
     {
         // Récupère le décalage exact du fuseau à la date donnée
         var (offset, _) = TimeOperations.GetTimeZoneOffsetWithDaylight(timeZoneId, utcDateTimeOffset.UtcDateTime);
-
-        // Applique l'offset à la date UTC
         return utcDateTimeOffset.ToOffset(offset);
     }
     public static List<Team> GetTeamsWithExpiredProject(this IQueryable<Team> teams) =>
         teams.Where(t => t.Project!.Details
-            .Any(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC")))
+            .Any(d => d.ProjectEndDate <= DateTimeOffset.Now))
         .ToList();
 
     public static async Task<DateTimeOffset?> GetNextProjectExpirationDate(this IQueryable<Team> teams, CancellationToken cancellationToken = default)
     {
         var nextDateUtc = await teams.SelectMany(t => t.Project!.Details)
-         .Where(d => d.ProjectEndDate > TimeOperations.GetCurrentTime("UTC"))
+         .Where(d => d.ProjectEndDate > DateTimeOffset.Now)
          .OrderBy(d => d.ProjectEndDate)
-         .Select(d => (DateTimeOffset?)d.ProjectEndDate)
+         .Select(d => d.ProjectEndDate)
          .FirstOrDefaultAsync(cancellationToken);
 
         return nextDateUtc;
@@ -38,7 +36,7 @@ public static class TeamProjectExtensions
         (projet.Details == null || projet.Details.Count == 0);
 
     public static bool IsExpired(this ProjectAssociation projet) =>
-        projet.Details.Any(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC"));
+        projet.Details.Any(d => d.ProjectEndDate <= DateTimeOffset.Now);
 
     public static bool HasSuspendedProject(this ProjectAssociation projet) =>
         projet.Details.Any(d => d.State == VoState.Suspended);
@@ -57,13 +55,5 @@ public static class TeamProjectExtensions
         bool hasDependencies = Project.HasActiveProject() || Project.HasSuspendedProject();
         if (!Project.HasActiveProject()) return hasDependencies;
         return hasDependencies;
-    }
-    public static List<Detail> ExpiredProjects(this ProjectAssociation Project)
-    {
-        if (!Project.HasActiveProject()) return new List<Detail>();
-        var expired = Project.Details
-              .Where(d => d.ProjectEndDate <= TimeOperations.GetCurrentTime("UTC"))
-              .ToList();
-        return expired;
     }
 }

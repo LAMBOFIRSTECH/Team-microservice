@@ -21,7 +21,6 @@ public class GetTeamQueryHandler(
         if (team is not null)
         {
             LogHelper.Info($"✅ Team with ID={request.Id} exist in database.", _log);
-            Console.WriteLine($"Voici la date d'expiration de l'équipe {team.TeamExpirationDate}");
             return _teamProjectLife.BuildDto(team);
         }
         var archivedTeamDto = await _redisCache.GetArchivedTeamFromRedisAsync(request.Id, cancellationToken);
