@@ -7,7 +7,7 @@ namespace Teams.APP.Layer.Services;
 
 public class BackgroundJobService(
     IEmployeeService employeeService,
-    ProjectService project,
+    IProjectService _project,
     ILogger<BackgroundJobService> log,
     CancellationToken cancellationToken = default
 ) : IBackgroundJobService
@@ -39,10 +39,7 @@ public class BackgroundJobService(
                 () =>
                     BackgroundJob.Schedule(
                         () =>
-                            employeeService.AddTeamMemberIntoRedisCacheAsync(
-                                memberId,
-                                cancellationToken
-                            ),
+                            employeeService.AddTeamMemberIntoRedisCacheAsync(memberId, cancellationToken),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,
@@ -89,11 +86,7 @@ public class BackgroundJobService(
                 () =>
                     BackgroundJob.Schedule(
                         () =>
-                            employeeService.DeleteTeamMemberAsync(
-                                memberId,
-                                teamName,
-                                cancellationToken
-                            ),
+                            employeeService.DeleteTeamMemberAsync(memberId, teamName, cancellationToken),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,
@@ -140,12 +133,8 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.SuspendProjectAsync(projectOperationId, projectOperationName),
-                        TimeSpan.FromSeconds(10)
-                    ),
-                retryCount: 3,
-                delay: TimeSpan.FromSeconds(5)
-            );
+                        () => _project.SuspendProjectAsync(projectOperationId, projectOperationName),
+                        TimeSpan.FromSeconds(10)), retryCount: 3, delay: TimeSpan.FromSeconds(5));
             if (string.IsNullOrEmpty(jobId))
             {
                 LogHelper.Error("❌ Job scheduling failed. jobId is null.", log);
@@ -185,7 +174,7 @@ public class BackgroundJobService(
             string jobId = TryScheduleJob(
                 () =>
                     BackgroundJob.Schedule(
-                        () => project.ManageTeamProjectAsync(projectOperationId, projectOperationName),
+                        () => _project.ManageTeamProjectAsync(projectOperationId, projectOperationName),
                         TimeSpan.FromSeconds(10)
                     ),
                 retryCount: 3,

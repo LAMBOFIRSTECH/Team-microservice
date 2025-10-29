@@ -45,7 +45,6 @@ public static class DependancyInjection
         services.AddSingleton<TeamLifeCycleScheduler>();
         services.AddSingleton<ITeamLifecycleScheduler>(sp =>sp.GetRequiredService<TeamLifeCycleScheduler>());
         services.AddHostedService(sp => sp.GetRequiredService<TeamLifeCycleScheduler>());
-        services.AddScoped<TeamLifeCycleCoreService>();
 
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);

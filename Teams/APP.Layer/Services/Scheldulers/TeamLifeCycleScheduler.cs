@@ -3,9 +3,9 @@ using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
 using Teams.INFRA.Layer.Dispatchers;
-using Teams.CORE.Layer.CoreServices;
 using Teams.INFRA.Layer.Interfaces;
 using NodaTime;
+using Teams.CORE.Layer.CommonExtensions;
 
 namespace Teams.APP.Layer.Services.Scheldulers;
 
@@ -66,18 +66,17 @@ public class TeamLifeCycleScheduler(
 
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
-        var teamLifeCycleCoreService = scope.ServiceProvider.GetRequiredService<TeamLifeCycleCoreService>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var teams = unitOfWork.TeamRepository.GetAll(ct);
-        var matureTeams = teamLifeCycleCoreService.GetMatureTeams(teams);
+        var matureTeams = teams.GetMatureTeams();
         foreach (var team in matureTeams)
         {
             unitOfWork.TeamRepository.Update(team);
             await _dispatcher.DispatchAsync(team.DomainEvents, ct);
             team.ClearDomainEvents();
         }
-        var expiredTeams = teamLifeCycleCoreService.GetExpiredTeams(teams);
-        teamLifeCycleCoreService.ArchiveTeams(expiredTeams);
+        var expiredTeams = teams.GetExpiredTeams();
+        expiredTeams.ArchiveTeams();
         foreach (var team in expiredTeams)
         {
             unitOfWork.TeamRepository.Update(team);
@@ -95,12 +94,11 @@ public class TeamLifeCycleScheduler(
     private async Task ScheduleNextCheckAsync(CancellationToken ct = default)
     {
         using var scope = _scopeFactory.CreateScope();
-        var teamLifeCycleCoreService = scope.ServiceProvider.GetRequiredService<TeamLifeCycleCoreService>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var teams = unitOfWork.TeamRepository.GetAll(ct);
         // Calcul des prochaines dates (maturité + expiration)
-        var futureMaturities = teamLifeCycleCoreService.GetfutureMaturities(teams);
-        var futureExpirations = teamLifeCycleCoreService.GetfutureExpirations(teams);
+        var futureMaturities = teams.GetfutureMaturities();
+        var futureExpirations = teams.GetfutureExpirations();
         var nextEvents = futureMaturities.Concat(futureExpirations).ToList();
         if (!nextEvents.Any())
         {

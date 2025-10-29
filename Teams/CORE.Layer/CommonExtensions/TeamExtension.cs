@@ -1,68 +1,69 @@
-using NodaTime;
-using NodatimePackage.Classes;
-using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate;
+using Teams.CORE.Layer.BusinessExceptions;
+namespace Teams.CORE.Layer.CommonExtensions;
 
-namespace Teams.CORE.Layer.CoreServices;
-
-public class TeamLifeCycleCoreService
+public static class TeamExtension
 {
-    private string _verdict = string.Empty;
-    public Dictionary<TeamState, string> StateMappings =>
+    private static readonly int _maturityPeriod = 30;  // En prod : >= 180 jours
+
+    private static string _verdict = string.Empty;
+    public static Dictionary<TeamState, string> StateMappings =>
        Enum.GetValues(typeof(TeamState))
            .Cast<TeamState>()
            .ToDictionary(state => state, state => _verdict);
-    private readonly int _maturityPeriod = 30;  // En prod : >= 180 jours
-    public IEnumerable<Team> GetExpiredTeams(IEnumerable<Team> teams) => teams.Where(t => t.IsTeamExpired()).ToList();
-    public IEnumerable<Team> GetMatureTeams(IEnumerable<Team> teams)
-    {
-        return teams.Where(t => (TimeOperations.GetCurrentTime("UTC") - t.TeamCreationDate).TotalSeconds >= _maturityPeriod)
-               .ToList(); // 30 pour les tests refactoriser
-    }
-    public int CountMatureTeams(IEnumerable<Team> teams)
-        => teams.Count(t => (TimeOperations.GetCurrentTime("UTC") - t.TeamCreationDate).TotalSeconds >= _maturityPeriod);
 
-    public int CountExpiredTeams(IEnumerable<Team> teams)
+
+    public static bool UseTeamArchivedState(this string state)
+    {
+        TeamState currentStatus;
+        Enum.TryParse(state, out currentStatus);
+        if (currentStatus != TeamState.Archived) return false;
+        return true;
+    }
+    public static IEnumerable<Team> GetExpiredTeams(this IEnumerable<Team> teams) => teams.Where(t => t.IsTeamExpired()).ToList();
+    public static IEnumerable<Team> GetMatureTeams(this IEnumerable<Team> teams)
+        => teams.Where(t => (DateTimeOffset.Now - t.TeamCreationDate).TotalSeconds >= _maturityPeriod).ToList(); // 30 pour les tests refactoriser
+
+    public static int CountMatureTeams(this IEnumerable<Team> teams)
+        => teams.Count(t => (DateTimeOffset.Now - t.TeamCreationDate).TotalSeconds >= _maturityPeriod);
+
+    public static int CountExpiredTeams(this IEnumerable<Team> teams)
         => teams.Count(t => t.IsTeamExpired());
 
-    public int CountActiveTeams(IEnumerable<Team> teams)
+    public static int CountActiveTeams(this IEnumerable<Team> teams)
         => teams.Count(t => !t.IsTeamExpired());
 
-    public int CountTeamsNearingExpiration(IEnumerable<Team> teams)
+    public static int CountTeamsNearingExpiration(this IEnumerable<Team> teams)
     {
-        var now = TimeOperations.GetCurrentTime("UTC");
         return teams.Count(t =>
         {
-            var timeToExpiration = t.Expiration - now;
+            var timeToExpiration = t.Expiration - DateTimeOffset.Now;
             return timeToExpiration.TotalSeconds <= 15 && timeToExpiration.TotalSeconds > 0; // en prod : AddDays(30)
         });
     }
-
-    public int CountTeamsNearingMaturity(IEnumerable<Team> teams)
+    public static int CountTeamsNearingMaturity(this IEnumerable<Team> teams)
     {
-        var now = TimeOperations.GetCurrentTime("UTC");
         return teams.Count(t =>
         {
-            var timeToMaturity = t.TeamCreationDate.AddSeconds(_maturityPeriod) - now;
+            var timeToMaturity = t.TeamCreationDate.AddSeconds(_maturityPeriod) - DateTimeOffset.Now;
             return timeToMaturity.TotalSeconds <= 15 && timeToMaturity.TotalSeconds > 0; // en prod : AddDays(30)
         });
     }
-    public int CountArchivedTeams(IEnumerable<Team> teams)
+    public static int CountArchivedTeams(this IEnumerable<Team> teams)
         => teams.Count(t => t.State == TeamState.Archived);
 
-    public IEnumerable<DateTimeOffset> GetfutureMaturities(IEnumerable<Team> teams)
+    public static IEnumerable<DateTimeOffset> GetfutureMaturities(this IEnumerable<Team> teams)
         => teams.Select(t => t.TeamCreationDate.AddSeconds(30))
-                .Where(d => d > TimeOperations.GetCurrentTime("UTC"))
+                .Where(d => d > DateTimeOffset.Now)
                 .ToList(); // en prod : AddDays(180)
-    public IEnumerable<DateTimeOffset> GetfutureExpirations(IEnumerable<Team> teams)
-        => teams.Where(t => t.Expiration > TimeOperations.GetCurrentTime("UTC"))
+    public static IEnumerable<DateTimeOffset> GetfutureExpirations(this IEnumerable<Team> teams)
+        => teams.Where(t => t.Expiration > DateTimeOffset.Now)
                 .Select(t => t.Expiration);
-    public void ArchiveTeams(IEnumerable<Team> teams)
+    public static void ArchiveTeams(this IEnumerable<Team> teams)
     {
         foreach (var team in teams) team.ArchiveTeam();
     }
-
-    public string MatureTeam(Team team)
+    public static string MatureTeam(this Team team)
     {
         if (!team.IsMature())
         {
@@ -74,7 +75,7 @@ public class TeamLifeCycleCoreService
         _ = StateMappings[team.State];
         return $"✅ Team is {team.State} with {team.ProjectState} project and {StateMappings[team.State]}.";
     }
-    public async Task<Team> CreateTeamAsync(string name, Guid teamManagerId, IEnumerable<Guid> memberIds, IEnumerable<Team> teams)
+    public static async Task<Team> CreateTeamAsync(this string name, Guid teamManagerId, IEnumerable<Guid> memberIds, IEnumerable<Team> teams)
     {
         if (teams.Any(t => t.Name.Value.Equals(name, StringComparison.OrdinalIgnoreCase)))
             throw new DomainException($"A team with the name '{name}' already exists.");
@@ -102,7 +103,7 @@ public class TeamLifeCycleCoreService
     /// <exception cref="DomainException">
     /// Thrown when <paramref name="newTeamMembers"/> is null or contains fewer than two members.
     /// </exception>
-    private double GetCommonMembersStats(IEnumerable<Guid> newTeamMembers, IEnumerable<Team> existingTeams)
+    private static double GetCommonMembersStats(IEnumerable<Guid> newTeamMembers, IEnumerable<Team> existingTeams)
     {
         if (newTeamMembers == null || newTeamMembers.Count() == 0)
             throw new DomainException("The new team must have at least three members.");
@@ -119,4 +120,3 @@ public class TeamLifeCycleCoreService
         return maxPercent;
     }
 }
-

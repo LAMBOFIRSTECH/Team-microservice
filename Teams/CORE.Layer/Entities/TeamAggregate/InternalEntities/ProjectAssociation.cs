@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Teams.CORE.Layer.BusinessExceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
-using Teams.APP.Layer.Helpers;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
