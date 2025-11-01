@@ -2,7 +2,7 @@ using MediatR;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Interfaces;
 
@@ -56,7 +56,7 @@ public class UpdateTeamManagerHandler(
                 "🚫 A manager cannot manage more than 3 teams.",
                 null
             );
-            throw new DomainException("A manager cannot manage more than 3 teams.");
+            throw new BusinessRuleException("A manager cannot manage more than 3 teams.");
         }
         if (team.TeamManagerId.Value == command.NewTeamManagerId)
         {
@@ -66,7 +66,7 @@ public class UpdateTeamManagerHandler(
                 "🚫 The new manager is already the current manager of the team.",
                 null
             );
-            throw new DomainException(
+            throw new BusinessRuleException(
                 "The new manager is already the current manager of the team."
             );
         }
@@ -81,7 +81,7 @@ public class UpdateTeamManagerHandler(
                 $"🚫 The member with contrat type {command.ContratType} cannot be assigned as a team manager.",
                 null
             );
-            throw new DomainException(
+            throw new BusinessRuleException(
                 $"🚫 The member with contrat type {command.ContratType} cannot be assigned as a team manager."
             );
         }

@@ -1,3 +1,4 @@
+using Teams.API.Layer.DTOs;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 
@@ -9,4 +10,5 @@ public interface ITeamProjectLifeCycle
     Task DeleteTeamProjectAsync(CancellationToken cancellationToken, Guid teamId);
     Task AddProjectToTeamAsync(Team team, ProjectAssociation project);
     Task<DateTimeOffset?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
+    Task<TeamDetailsDto> BuildDto(Team team);
 }

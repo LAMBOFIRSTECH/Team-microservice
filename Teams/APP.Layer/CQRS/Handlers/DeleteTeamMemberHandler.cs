@@ -1,7 +1,7 @@
 using MediatR;
 using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Interfaces;
 

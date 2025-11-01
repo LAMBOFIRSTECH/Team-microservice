@@ -8,11 +8,8 @@ using Teams.CORE.Layer.CommonExtensions;
 using Teams.INFRA.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
-public class GetTeamQueryHandler(
-    IRedisCacheService _redisCache,
-    IUnitOfWork _unitOfWork,
-    ILogger<GetTeamQueryHandler> _log
-) : IRequestHandler<GetTeamQuery, TeamDetailsDto>
+
+public class GetTeamQueryHandler(IRedisCacheService _redisCache, IUnitOfWork _unitOfWork, ITeamProjectLifeCycle _teamProjectLifeCycle, ILogger<GetTeamQueryHandler> _log) : IRequestHandler<GetTeamQuery, TeamDetailsDto>
 {
     public async Task<TeamDetailsDto> Handle(GetTeamQuery request, CancellationToken cancellationToken)
     {
@@ -20,7 +17,7 @@ public class GetTeamQueryHandler(
         if (team is not null)
         {
             LogHelper.Info($"✅ Team with ID={request.Id} exist in database.", _log);
-            return team.BuildDto();
+            return await _teamProjectLifeCycle.BuildDto(team);
         }
         var archivedTeamDto = await _redisCache.GetArchivedTeamFromRedisAsync(request.Id, cancellationToken);
         if (archivedTeamDto is not null)

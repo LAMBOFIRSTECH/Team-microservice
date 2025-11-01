@@ -14,7 +14,6 @@ namespace Teams.APP.Layer.Services;
 
 public class ProjectService(
     ITeamRepository _teamRepository,
-    TeamExternalService _teamExternalService,
     IUnitOfWork _unitOfWork,
     ProjectLifeCycle _projectLifeCycleCore,
     ITeamProjectLifeCycle _teamProjectLifeCycle,
@@ -30,24 +29,9 @@ public class ProjectService(
         if (string.IsNullOrEmpty(timeZoneId)) throw new ArgumentNullException("Cannot get timezone id check the configuration file");
         return timeZoneId;
     }
-    public async Task<ProjectAssociation> GetProjectAssociationDataAsync(Guid? managerId, string teamName)
+    public async Task<ProjectAssociation> GetMapProject(string message)
     {
-        var dto = await _teamExternalService.RetrieveProjectAssociationDataAsync();
-        if (dto == null)
-        {
-            LogHelper.Error("❌ Failed to retrieve project association data", _log);
-            throw new InvalidOperationException("Failed to retrieve project association data");
-        }
-
-        if (dto.TeamManagerId != managerId || dto.TeamName != teamName)
-        {
-            LogHelper.Error(
-                $"❌ Mismatch: Expected [{managerId}, {teamName}], Received [{dto.TeamManagerId}, {dto.TeamName}]",
-                _log
-            );
-            throw new InvalidOperationException("Mismatched team manager or team name");
-        }
-
+        var dto = await message.GetDtoConverted<ProjectAssociationDto>();
         var validationResult = await _projectRecordValidator.ValidateAsync(dto);
         if (!validationResult.IsValid)
         {
@@ -56,9 +40,11 @@ public class ProjectService(
         }
         return _mapper.Map<ProjectAssociation>(dto);
     }
-    public async Task ManageTeamProjectAsync(Guid managerId, string teamName)
+
+    public async Task ProjectAssociationDataAsync(string message)
     {
-        var teamProject = await GetProjectAssociationDataAsync(managerId, teamName);
+        Console.WriteLine("danas le service projet");
+        var teamProject = await GetMapProject(message);
         var existingTeam = await _teamRepository.GetTeamByNameAndTeamManagerIdAsync(teamProject.TeamName, teamProject.TeamManagerId);
         if (existingTeam == null)
         {
@@ -70,11 +56,12 @@ public class ProjectService(
 
         await _teamProjectLifeCycle.AddProjectToTeamAsync(existingTeam, teamProject);
     }
-    public async Task SuspendProjectAsync(Guid managerId, string projectName)
+    public async Task SuspendProjectAsync(string message)
     {
-        var existingTeams = await _teamRepository.GetTeamsByManagerIdAsync(managerId);
-        var suspendedTeam = await _projectLifeCycleCore.SuspendProjectAsync(managerId, projectName, existingTeams);
+        var teamProject = await GetMapProject(message);
+        var existingTeams = await _teamRepository.GetTeamsByManagerIdAsync(teamProject.TeamManagerId);
+        var suspendedTeam = await _projectLifeCycleCore.SuspendProjectAsync(teamProject.TeamManagerId, teamProject.TeamName, existingTeams); // a revoir pourquoi use la liste de team au lieu de l'équipe seule
         _unitOfWork.TeamRepository.Update(suspendedTeam);
-        LogHelper.Info($"✅ Project '{projectName}' successfully removed from Team '{suspendedTeam.Name.Value}'", _log);
+        LogHelper.Info($"✅ Project '{teamProject.TeamName}' successfully removed from Team '{suspendedTeam.Name.Value}'", _log);
     }
 }

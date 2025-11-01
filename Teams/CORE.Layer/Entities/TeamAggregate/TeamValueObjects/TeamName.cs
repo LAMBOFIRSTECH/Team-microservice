@@ -16,11 +16,7 @@ public sealed class TeamName : IEquatable<TeamName>
     {
 
         if (!Regex.IsMatch(value, @"^[\p{L}\s\-']+$"))
-            throw HandlerException.BadRequest(
-                title: "Entry format",
-                statusCode: 400,
-                message: $"Team name [[{value}]] contains invalid characters.",
-                reason: "Value Objet Validation Error"
+            throw new ArgumentException($"Team name [[{value}]] contains invalid characters.Value Objet Validation Error", nameof(value)
             );
         return new TeamName(value.Trim());
     }

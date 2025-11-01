@@ -2,14 +2,11 @@ using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
 using NodatimePackage.Classes;
-using Teams.CORE.Layer.BusinessExceptions;
-using Teams.API.Layer.DTOs;
-using AutoMapper;
+using Teams.CORE.Layer.Exceptions;
 namespace Teams.CORE.Layer.CommonExtensions;
 
 public static partial class TeamProjectExtensions
 {
-    private static readonly IMapper? _mapper;
     public static DateTimeOffset ConvertDatetimeIntoDateTimeOffset(this string timeZoneId, DateTimeOffset utcDateTimeOffset)
     {
         // Récupère le décalage exact du fuseau à la date donnée
@@ -23,7 +20,6 @@ public static partial class TeamProjectExtensions
          .OrderBy(d => d.ProjectEndDate)
          .Select(d => d.ProjectEndDate)
          .FirstOrDefaultAsync(cancellationToken);
-
         return nextDateUtc;
     }
     public static List<Team> GetTeamsWithExpiredProject(this IQueryable<Team> teams) =>
@@ -54,66 +50,43 @@ public static partial class TeamProjectExtensions
         if (!Project.HasActiveProject()) return hasDependencies;
         return hasDependencies;
     }
-    public static TeamDetailsDto BuildDto(this Team team)
-    {
-        var teamDto = _mapper!.Map<TeamDetailsDto>(team);
-        if (team.Project == null || team.Project.Details.Count == 0)
-        {
-            teamDto.HasAnyProject = false;
-            teamDto.ProjectNames = null;
-        }
-        else
-        {
-            var teamExpiration = team.TeamExpirationDate;
-            var projetMaxEndDate = team.Project?.GetprojectMaxEndDate() ?? teamExpiration;
-            DateTimeOffset maxDateUtc = projetMaxEndDate > teamExpiration ? projetMaxEndDate : teamExpiration;
-            var localMaxDate = maxDateUtc.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
-            teamDto.TeamExpirationDate = localMaxDate;
-            teamDto.HasAnyProject = true;
-            teamDto.TeamManagerId = team.Project!.TeamManagerId;
-            teamDto.Name = team.Project.TeamName;
-            teamDto.ProjectNames = team.Project.Details.Select(d => d.ProjectName).ToList();
-        }
-        teamDto.State = team.MatureTeam();
-        return teamDto;
-    }
-    public static async Task<Team> ReviewProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
+    public static Team ReviewProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
     {
         var team = teams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == managerId && t.Project.Details.Any(d => d.ProjectName == projectName));
         if (team == null)
-            throw new DomainException("No matching team with the specified project found");
+            throw new NotFoundException("Team", managerId);
         // team.MarkProjectUnderReview(projectName);
         return team;
     }
-    public static async Task<Team> ExpireProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
+    public static Team ExpireProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
     {
         var team = teams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == managerId && t.Project.Details.Any(d => d.ProjectName == projectName));
         if (team == null)
-            throw new DomainException("No matching team with the specified project found");
+            throw new NotFoundException("Team", managerId);
         // team.RemoveExpiredProjects(projectName);
         return team;
     }
-    public static async Task<Team> UnassignProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
+    public static Team UnassignProjectAsync(Guid managerId, string projectName, IEnumerable<Team> teams)
     {
         var team = teams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == managerId && t.Project.Details.Any(d => d.ProjectName == projectName));
         if (team == null)
-            throw new DomainException("No matching team with the specified project found");
+            throw new NotFoundException("Team", managerId);
         // team.UnassignProject(projectName);
         return team;
     }
-    public static async Task<Team> ReassignProjectAsync(Guid managerId, string projectName, DateTime newEndDate, IEnumerable<Team> teams)
+    public static Team ReassignProjectAsync(Guid managerId, string projectName, DateTime newEndDate, IEnumerable<Team> teams)
     {
         var team = teams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == managerId && t.Project.Details.Any(d => d.ProjectName == projectName));
         if (team == null)
-            throw new DomainException("No matching team with the specified project found");
+            throw new NotFoundException("Team", managerId);
         // team.ReassignProject(projectName, newEndDate);
         return team;
     }
-    public static async Task<Team> ExtendProjectAsync(Guid managerId, string projectName, DateTime newEndDate, IEnumerable<Team> teams)
+    public static Team ExtendProjectAsync(Guid managerId, string projectName, DateTime newEndDate, IEnumerable<Team> teams)
     {
         var team = teams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == managerId && t.Project.Details.Any(d => d.ProjectName == projectName));
         if (team == null)
-            throw new DomainException("No matching team with the specified project found");
+            throw new NotFoundException("Team", managerId);
         // team.ExtendProject(projectName, newEndDate);
         return team;
     }

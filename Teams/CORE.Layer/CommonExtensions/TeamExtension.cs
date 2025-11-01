@@ -1,17 +1,15 @@
 using Teams.CORE.Layer.Entities.TeamAggregate;
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 namespace Teams.CORE.Layer.CommonExtensions;
 
 public static class TeamExtension
 {
     private static readonly int _maturityPeriod = 30;  // En prod : >= 180 jours
-
     private static string _verdict = string.Empty;
     public static Dictionary<TeamState, string> StateMappings =>
        Enum.GetValues(typeof(TeamState))
            .Cast<TeamState>()
            .ToDictionary(state => state, state => _verdict);
-
 
     public static bool UseTeamArchivedState(this string state)
     {
@@ -78,16 +76,16 @@ public static class TeamExtension
     public static async Task<Team> CreateTeamAsync(this string name, Guid teamManagerId, IEnumerable<Guid> memberIds, IEnumerable<Team> teams)
     {
         if (teams.Any(t => t.Name.Value.Equals(name, StringComparison.OrdinalIgnoreCase)))
-            throw new DomainException($"A team with the name '{name}' already exists.");
+            throw new ConflictException($"A team with the name already exists.", nameof(name));
 
         if (teams.Count(t => t.TeamManagerId.Value == teamManagerId) > 3)
-            throw new DomainException("A manager cannot handle with more than 3 teams.");
+            throw new BusinessRuleException("A manager cannot handle with more than 3 teams.");
 
         if (teams.Any(t => t.MembersIds.Count == memberIds.Count() && !t.MembersIds.Select(m => m.Value).Except(memberIds).Any() && t.TeamManagerId.Value == teamManagerId))
-            throw new DomainException("A team with exactly the same members and manager already exists.");
+            throw new ConflictException("A team with exactly the same members and manager already exists.", nameof(name));
 
         if (GetCommonMembersStats(memberIds, teams) >= 50)
-            throw new DomainException("Cannot create a team with more than 50% common members with existing team.");
+            throw new BusinessRuleException("Cannot create a team with more than 50% common members with existing team.");
 
         return Team.Create(name, teamManagerId, memberIds);
     }
@@ -100,13 +98,13 @@ public static class TeamExtension
     /// A <see cref="double"/> representing the highest percentage of overlap in members
     /// between the new team and any existing team. Returns 0 if no existing teams are provided.
     /// </returns>
-    /// <exception cref="DomainException">
+    /// <exception cref="BusinessRuleException">
     /// Thrown when <paramref name="newTeamMembers"/> is null or contains fewer than two members.
     /// </exception>
     private static double GetCommonMembersStats(IEnumerable<Guid> newTeamMembers, IEnumerable<Team> existingTeams)
     {
         if (newTeamMembers == null || newTeamMembers.Count() == 0)
-            throw new DomainException("The new team must have at least three members.");
+            throw new BusinessRuleException("The new team must have at least three members.");
 
         if (existingTeams == null || existingTeams.Count() == 0) return 0;
         double maxPercent = 0;

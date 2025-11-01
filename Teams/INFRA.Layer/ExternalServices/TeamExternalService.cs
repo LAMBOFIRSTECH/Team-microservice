@@ -5,9 +5,6 @@ using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.ExternalServicesDtos;
 
 namespace Teams.INFRA.Layer.ExternalServices;
-/** 
-   A terme on aura plus besoin | les messages du serveur de messageries devront contenir toutes les infos necessaires
-**/
 public class TeamExternalService(
     HttpClient _httpClient,
     IConfiguration _configuration,
@@ -65,23 +62,6 @@ public class TeamExternalService(
         var settings = new JsonSerializerSettings();
         settings.Converters.Add(new UtcDateTimeConverter());
         var data = JsonConvert.DeserializeObject<DeleteTeamMemberDto>(record, settings);
-        return data;
-    }
-
-    public async Task<ProjectAssociationDto?> RetrieveProjectAssociationDataAsync()
-    {
-        var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            _configuration["ExternalsApi:Project:Url"]
-        );
-        request.Headers.Add(
-            "X-Master-Key",
-            _configuration["ExternalsApi:Project:Headers:X-Access-Key"]
-        );
-        var record = await GetContent(request);
-        var settings = new JsonSerializerSettings();
-        settings.Converters.Add(new UtcDateTimeConverter());
-        var data = JsonConvert.DeserializeObject<ProjectAssociationDto>(record, settings);
         return data;
     }
 

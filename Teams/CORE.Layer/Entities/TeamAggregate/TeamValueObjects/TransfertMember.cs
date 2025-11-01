@@ -1,4 +1,4 @@
-namespace Teams.CORE.Layer.Entities.GeneralValueObjects;
+namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 public class AffectationStatus
 {

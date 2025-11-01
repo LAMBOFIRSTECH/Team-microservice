@@ -1,4 +1,5 @@
 namespace Teams.API.Layer.Middlewares;
+
 public class HandlerException : Exception
 {
     public int StatusCode { get; }
@@ -33,4 +34,11 @@ public class HandlerException : Exception
         string title = "Bad Request",
         int statusCode = 400
     ) => new HandlerException(statusCode, message, title, reason);
+
+    public static HandlerException TechnicalError(
+     string message,
+     string reason,
+     string title = "Technical error",
+     int statusCode = 500
+ ) => new HandlerException(statusCode, message, title, reason);
 }

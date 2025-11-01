@@ -2,7 +2,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.Exceptions;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.INFRA.Layer.ExternalServices;
@@ -29,7 +29,7 @@ public class EmployeeService(
                 transfertMemberDto.MemberTeamId,
                 "The team member {MemberTeamId} is not allowed to be affected in a new team."
             );
-            throw DomainExceptionFactory.BusinessRule(
+            throw new BusinessRuleException(
                 $"The team member {transfertMemberDto.MemberTeamId} is not allowed to be affected in a new team.",
                 "Not allowed member"
             );
@@ -42,7 +42,7 @@ public class EmployeeService(
                 transfertMemberDto.MemberTeamId,
                 "Still in wait period"
             );
-            throw DomainExceptionFactory.BusinessRule(
+            throw new BusinessRuleException(
                 $"member {transfertMemberDto.MemberTeamId} must wait 7 days before being added to a new team.",
                 "Member Cooldown Period"
             );
@@ -77,7 +77,7 @@ public class EmployeeService(
                 "Teams.APP.Layer.Services EmployeeService",
                 $"RabbitMq Message show {memberId} whereas Employees Management microservice sented {transfertMemberDto.MemberTeamId}."
             );
-            throw DomainExceptionFactory.Conflict(
+            throw new ConflictException(
                 transfertMemberDto.MemberTeamId.ToString(),
                 $"Mismatch between member ID Rabbit : {memberId} | Employees Management microservice : {transfertMemberDto.MemberTeamId} "
             );
@@ -89,7 +89,7 @@ public class EmployeeService(
                 $"Cannot found team {transfertMemberDto.DestinationTeam} in database.",
                 log
             );
-            throw DomainExceptionFactory.NotFound(
+            throw new NotFoundException(
                 transfertMemberDto.DestinationTeam,
                 transfertMemberDto.MemberTeamId
             );
@@ -103,10 +103,8 @@ public class EmployeeService(
                 transfertMemberDto.MemberTeamId,
                 $"Team: {transfertMemberDto.DestinationTeam}"
             );
-            throw new DomainException(
-                404,
+            throw new BusinessRuleException(
                 "Cannot found team to add new member",
-                null,
                 "Business Rule Violation"
             );
         }
@@ -146,7 +144,7 @@ public class EmployeeService(
                 $"Team '{teamName}' not found. Please check the team name or ensure the team exists.",
                 log
             );
-            throw new DomainException($"Team '{teamName}' not found.");
+            throw new NotFoundException($"Team",nameof(teamName));
         }
         switch (action)
         {
@@ -158,7 +156,7 @@ public class EmployeeService(
                         memberId,
                         $"Team: {teamName}"
                     );
-                    throw new DomainException(
+                    throw new BusinessRuleException(
                         $"Member '{memberId}' already exists in team '{teamName}'."
                     );
                 }
@@ -173,7 +171,7 @@ public class EmployeeService(
                         memberId,
                         $"Team: {teamName}"
                     );
-                    throw new DomainException(
+                    throw new BusinessRuleException(
                         $"Member '{memberId}' does not exist in team '{teamName}'."
                     );
                 }
@@ -200,7 +198,7 @@ public class EmployeeService(
         if (teamMember == null)
         {
             LogHelper.Error($"Cannot found team member {memberId} in team {teamName}.", log);
-            throw DomainExceptionFactory.NotFound(teamName, memberId);
+            throw new ConflictException(teamName, memberId.ToString());
         }
         try
         {

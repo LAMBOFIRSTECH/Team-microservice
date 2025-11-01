@@ -35,7 +35,6 @@ public static class DependancyInjection
         services.AddScoped<IRedisCacheService, RedisCacheService>();
         services.AddScoped<TeamExternalService>();
         services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
-        services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddHostedService<RabbitListenerService>();
         services.AddHangfire(config => config.UseMemoryStorage());

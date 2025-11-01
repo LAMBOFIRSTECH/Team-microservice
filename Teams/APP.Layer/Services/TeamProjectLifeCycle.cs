@@ -6,10 +6,12 @@ using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.CommonExtensions;
 using NodatimePackage.Classes;
+using Teams.API.Layer.DTOs;
+using AutoMapper;
 
 namespace Teams.APP.Layer.Services;
 
-public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLifeCycle> _log, IConfiguration _configuration) : ITeamProjectLifeCycle
+public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLifeCycle> _log, IConfiguration _configuration, IMapper _mapper) : ITeamProjectLifeCycle
 {
     public string GetTimeZoneId()
     {
@@ -20,6 +22,7 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
     public DateTimeOffset PrintTimeZoneDtateTimeOffset(DateTimeOffset date) => GetTimeZoneId().ParseToLocal(date);
     public async Task AddProjectToTeamAsync(Team team, ProjectAssociation project)
     {
+        Console.WriteLine("dans la fonction d'ajout de projet de team projet lifecycle");
         if (project == null)
             throw new ArgumentNullException(nameof(project), "ProjectAssociation cannot be null");
 
@@ -29,11 +32,9 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
         if (team.Project != null) foreach (var detail in project.Details) team.Project.AddDetail(detail);
         else team.AssignProject(project);
 
-        team.ApplyProjectAttachmentGracePeriod(
-            _configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration")
-        );
+        team.ApplyProjectAttachmentGracePeriod(_configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration"));
         await _unitOfWork.SaveAsync(CancellationToken.None);
-        team.BuildDto();
+        await BuildDto(team);
         LogHelper.Info($"🔗 Team '{project.TeamName}' successfully attached to [{project.Details.Count}] project(s)", _log);
     }
     public async Task RemoveProjects(CancellationToken ct)
@@ -73,5 +74,28 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
         var existingTeams = _unitOfWork.TeamRepository.GetAll(cancellationToken);
         var teams = existingTeams.GetTeamsWithExpiredProject();
         return teams;
+    }
+    public async Task<TeamDetailsDto> BuildDto(Team team)
+    {
+        var teamDto = _mapper.Map<TeamDetailsDto>(team);
+        if (team.Project == null || team.Project.Details.Count == 0)
+        {
+            teamDto.HasAnyProject = false;
+            teamDto.ProjectNames = null;
+        }
+        else
+        {
+            var teamExpiration = team.TeamExpirationDate;
+            var projetMaxEndDate = team.Project?.GetprojectMaxEndDate() ?? teamExpiration;
+            DateTimeOffset maxDateUtc = projetMaxEndDate > teamExpiration ? projetMaxEndDate : teamExpiration;
+            var localMaxDate = maxDateUtc.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            teamDto.TeamExpirationDate = localMaxDate;
+            teamDto.HasAnyProject = true;
+            teamDto.TeamManagerId = team.Project!.TeamManagerId;
+            teamDto.Name = team.Project.TeamName;
+            teamDto.ProjectNames = team.Project.Details.Select(d => d.ProjectName).ToList();
+        }
+        teamDto.State = team.MatureTeam();
+        return teamDto;
     }
 }

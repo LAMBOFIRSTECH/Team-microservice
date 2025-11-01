@@ -1,9 +1,8 @@
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.CommonExtensions;
-using NodatimePackage.Classes;
 using Teams.APP.Layer.Helpers;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
@@ -91,7 +90,6 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="teamManagerId"></param>
     /// <param name="members"></param>
     /// <param name="createAt"></param>
-    /// <exception cref="DomainException"></exception>
     /// <returns></returns>
     /// <remarks>
     /// Le constructeur initialise les propriétés de l'équipe, y compris la date d'expiration basée
@@ -118,15 +116,12 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="teamManagerId">The identifier of the team manager.</param>
     /// <param name="memberIds">The collection of member identifiers to include in the team.</param>
     /// <returns>A newly created and valid <see cref="Team"/> instance.</returns>
-    /// <exception cref="DomainException">
-    /// Thrown when:
     /// <list type="bullet">
     /// <item><description> A team with the same name already exists. </description></item>
     /// <item><description> The manager already manages more than 3 teams. </description></item>
     /// <item><description> A team with the exact same members and manager already exists. </description></item>
     /// <item><description> The new team shares more than 50% of its members with an existing team. </description></item>
     /// </list>
-    /// </exception>
     public static Team Create(string name, Guid teamManagerId, IEnumerable<Guid> memberIds)
     {
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), DateTimeOffset.Now);
@@ -144,18 +139,18 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="newName"></param>
     /// <param name="newManagerId"></param>
     /// <param name="newMemberIds"></param>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     public void UpdateTeam(string newName, Guid newManagerId, IEnumerable<Guid> newMemberIds)
     {
         if (IsTeamExpired())
-            throw new DomainException("Cannot update an expired team.");
+            throw new BusinessRuleException("Cannot update an expired team.");
 
         bool isSameName = _name.Equals(TeamName.Create(newName));
         bool sameMembers = _members.SetEquals(newMemberIds.Select(m => new MemberId(m)));
         bool sameManager = _teamManagerId.Equals(new MemberId(newManagerId));
 
         if (isSameName && sameMembers && sameManager)
-            throw new DomainException("No changes detected in the team details.");
+            throw new BusinessRuleException("No changes detected in the team details.");
         _name = TeamName.Create(newName);
         _teamManagerId = new MemberId(newManagerId);
 
@@ -216,7 +211,7 @@ public class Team : AggregateEntity, IAggregateRoot
     public void EnsureCanBeDeleted()
     {
         if (Project != null && Project.DependencyExist())
-            throw new DomainException($"The team '{Name}' cannot be deleted because it has active or suspended project associations.");
+            throw new BusinessRuleException(rule: "Team deletion restricted", detail: $"The team '{Name}' cannot be deleted because it has active or suspended project associations.");
     }
     #endregion
 
@@ -227,12 +222,12 @@ public class Team : AggregateEntity, IAggregateRoot
     /// An exception is thrown if the team is not active.
     /// </summary>
     /// <returns></returns>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     public bool IsMature()
     {
 
         if (State != TeamState.Active)
-            throw new DomainException("Only active teams can be evaluated for maturity.");
+            throw new BusinessRuleException("Only active teams can be evaluated for maturity.");
 
         if (!((GetCurrentDateTime() - TeamCreationDate.UtcDateTime).TotalSeconds >= _maturityThresholdInDays))
             // C'est 180 jours pour les tests on a mis 180 secondes
@@ -245,7 +240,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// Only teams that are past their expiration date can be archived.
     /// An exception is thrown if the team is not yet eligible for archiving.
     /// </summary>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     /// <remarks>
     /// Archiving a team changes its state to Archived.
     /// This action is irreversible and should be performed with caution.
@@ -253,7 +248,7 @@ public class Team : AggregateEntity, IAggregateRoot
     public void ArchiveTeam()
     {
         if (!IsTeamExpired())
-            throw new DomainException("Team has not yet exceeded the validity period.");
+            throw new BusinessRuleException("Team has not yet exceeded the validity period.");
         State = TeamState.Archived;
         AddDomainEvent(
             new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid())
@@ -269,34 +264,34 @@ public class Team : AggregateEntity, IAggregateRoot
     /// - No more than 10 members.
     /// - Unique members.
     /// - Manager must be a member.
-    /// Throws DomainException if any invariant is violated.
+    /// Throws BusinessRuleException if any invariant is violated.
     /// </summary>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     /// <remarks>
     /// This method is called during team creation and updates to ensure the team remains valid.
     /// </remarks>
     private void ValidateTeamInvariants()
     {
         if (_members.Count < 3)
-            throw new DomainException("A team must have at least 3 members including team manager.");
+            throw new BusinessRuleException("A team must have at least 3 members including team manager.");
 
         if (_members.Count > 10)
-            throw new DomainException("A team cannot have more than 10 members.");
+            throw new BusinessRuleException("A team cannot have more than 10 members.");
 
         if (_members.Distinct().Count() != _members.Count)
-            throw new DomainException("Team members must be unique.");
+            throw new BusinessRuleException("Team members must be unique.");
 
         if (!_members.Contains(_teamManagerId))
-            throw new DomainException("The manager must be one of the team members.");
+            throw new BusinessRuleException("The manager must be one of the team members.");
     }
     /// <summary>
     /// Add a new member to the team.
     /// Validates that the member is not already in the team, that the team does not exceed
     /// the maximum number of members, and that the member being added is not the manager.
-    /// Throws DomainException if any validation fails.
+    /// Throws BusinessRuleException if any validation fails.
     /// </summary>
     /// <param name="memberId"></param>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     /// <remarks>
     /// This method ensures that the team remains valid after adding a new member.
     /// It also triggers a domain event to notify of the member addition.
@@ -305,10 +300,10 @@ public class Team : AggregateEntity, IAggregateRoot
     {
         var vo = new MemberId(memberId);
         if (_members.Contains(vo))
-            throw new DomainException("Member already exists in the team.");
+            throw new BusinessRuleException("Member already exists in the team.");
 
         if (_members.Count > 10)
-            throw new DomainException("A team cannot have more than 10 members.");
+            throw new BusinessRuleException("A team cannot have more than 10 members.");
 
         _members.Add(vo);
         AddDomainEvent(new TeamMemberAddedEvent(Id, memberId));
@@ -319,10 +314,10 @@ public class Team : AggregateEntity, IAggregateRoot
     /// Remove a member from the team.
     /// Validates that the member exists in the team, that the member being removed is not  the manager,
     /// and that the team does not fall below the minimum number of members.
-    /// Throws DomainException if any validation fails.
+    /// Throws BusinessRuleException if any validation fails.
     /// </summary>
     /// <param name="memberId"></param>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     /// <remarks>
     /// This method ensures that the team remains valid after removing a member.
     /// It also triggers a domain event to notify of the member removal.
@@ -331,13 +326,13 @@ public class Team : AggregateEntity, IAggregateRoot
     {
         var vo = new MemberId(memberId);
         if (vo == _teamManagerId)
-            throw new DomainException("Cannot remove the team manager from the team.");
+            throw new BusinessRuleException("Cannot remove the team manager from the team.");
 
         if (!_members.Contains(vo))
-            throw new DomainException("Member not found in the team.");
+            throw new BusinessRuleException("Member not found in the team.");
 
         if (_members.Count == 3)
-            throw new DomainException("A team cannot have fewer than 3 members.");
+            throw new BusinessRuleException("A team cannot have fewer than 3 members.");
 
         _members.Remove(vo);
         AddDomainEvent(new TeamMemberRemoveEvent(Id, memberId));
@@ -347,10 +342,10 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <summary>
     /// Change the team manager to a new member.
     /// Validates that the new manager is a member of the team and not an empty GUID
-    /// Throws DomainException if any validation fails.
+    /// Throws BusinessRuleException if any validation fails.
     /// </summary>
     /// <param name="newManagerId"></param>
-    /// <exception cref="DomainException"></exception>
+    /// <exception cref="BusinessRuleException"></exception>
     /// <remarks>
     /// This method updates the team manager and triggers a domain event to notify of the change.
     /// It also recalculates the team's state to ensure it remains valid.
@@ -359,10 +354,10 @@ public class Team : AggregateEntity, IAggregateRoot
     {
         var managerId = new MemberId(newManagerId);
         if (newManagerId == Guid.Empty)
-            throw new DomainException("New team manager ID cannot be empty.");
+            throw new BusinessRuleException("New team manager ID cannot be empty.");
 
         if (!_members.Contains(managerId))
-            throw new DomainException("New team manager must be a member of the team.");
+            throw new BusinessRuleException("New team manager must be a member of the team.");
 
         _teamManagerId = managerId;
         // AddDomainEvent(new TeamManagerChangedEvent(Id, newTeamManagerId));

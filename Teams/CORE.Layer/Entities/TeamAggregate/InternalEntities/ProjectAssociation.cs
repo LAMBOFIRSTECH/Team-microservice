@@ -1,5 +1,5 @@
 using Microsoft.CodeAnalysis;
-using Teams.CORE.Layer.BusinessExceptions;
+using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
@@ -126,30 +126,30 @@ public class ProjectAssociation
     /// <param name="name"></param>
     /// <param name="teamManagerId"></param>
     /// <param name="CreatedAt"></param>
-    /// <exception cref="DomainException"></exception> Created a sub DomainException class for project association errors.
+    /// <exception cref="BusinessRuleException"></exception> 
     public void ValidateProjectAssignmentToTeam(TeamName name, MemberId teamManagerId, DateTimeOffset CreatedAt)
     {
         if (TeamManagerId == Guid.Empty && string.IsNullOrWhiteSpace(TeamName) && (Details == null || Details.Count == 0))
-            throw new DomainException("Project association data cannot be null");
+            throw new BusinessRuleException("Project association data cannot be null");
 
         if (!Details.Any(d => d.State == VoState.Active))
-            throw new DomainException("Project must be active to be associated with a team.");
+            throw new BusinessRuleException("Project must be active to be associated with a team.");
 
         if (TeamName != name.Value)
-            throw new DomainException($"Project associated with team {TeamName} does not match current team {name}.");
+            throw new BusinessRuleException($"Project associated with team {TeamName} does not match current team {name}.");
 
         if (new MemberId(TeamManagerId) != teamManagerId)
-            throw new DomainException($"Project manager {TeamManagerId} does not match current team manager {teamManagerId}.");
+            throw new BusinessRuleException($"Project manager {TeamManagerId} does not match current team manager {teamManagerId}.");
 
         if (Details.First().ProjectStartDate < CreatedAt)
-            throw new DomainException($"Project start date {Details.First().ProjectStartDate} cannot be earlier than team creation date {CreatedAt}");
+            throw new BusinessRuleException($"Project start date {Details.First().ProjectStartDate} cannot be earlier than team creation date {CreatedAt}");
 
         if (Details.Count > 3)
-            throw new DomainException("A team cannot be associated to more than 3 projects.");
+            throw new BusinessRuleException("A team cannot be associated to more than 3 projects.");
 
         var delay = Details.First().ProjectStartDate - CreatedAt;
         if (delay.TotalDays > 7)
-            throw new DomainException($"Project start date {Details.First().ProjectStartDate} must be within 7 days of team creation date {CreatedAt}.");
+            throw new BusinessRuleException($"Project start date {Details.First().ProjectStartDate} must be within 7 days of team creation date {CreatedAt}.");
     }
 
     /// <summary>
@@ -175,14 +175,14 @@ public class ProjectAssociation
     public void AddDetail(Detail detail)
     {
         if (detail == null)
-            throw new ArgumentNullException(nameof(detail), "Project association must contain at least one project detail");
+            throw new BusinessRuleException(nameof(detail), "Project association must contain at least one project detail");
 
         _details.Add(detail);
     }
     public void RemoveDetail(Detail detail)
     {
         if (detail == null)
-            throw new ArgumentNullException(nameof(detail), "Detail cannot be null");
+            throw new BusinessRuleException(nameof(detail), "Detail cannot be null");
 
         _details.Remove(detail);
     }

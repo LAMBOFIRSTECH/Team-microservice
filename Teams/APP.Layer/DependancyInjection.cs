@@ -30,7 +30,6 @@ public static class DependancyInjection
 
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IProjectService, ProjectService>();
-        services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<ITeamProjectLifeCycle, TeamProjectLifeCycle>();
         
         services.AddScoped<ProjectService>();

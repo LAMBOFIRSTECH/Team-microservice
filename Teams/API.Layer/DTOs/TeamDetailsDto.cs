@@ -1,5 +1,4 @@
 namespace Teams.API.Layer.DTOs;
-
 public class TeamDetailsDto
 {
     public Guid Id { get; set; }

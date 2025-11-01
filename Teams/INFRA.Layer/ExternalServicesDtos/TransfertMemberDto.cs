@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 
 namespace Teams.INFRA.Layer.ExternalServicesDtos;
-
 public record AffectationStatus(
     [property: JsonProperty(Required = Required.Always)] bool IsTransferAllowed,
     [property: JsonProperty(Required = Required.Always)] string ContratType,
