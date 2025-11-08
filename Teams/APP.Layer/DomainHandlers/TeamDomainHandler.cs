@@ -2,7 +2,7 @@ using MediatR;
 using Teams.APP.Layer.WrapperEventToNotification;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.CoreEvents;
+using  Teams.CORE.Layer.CoreEvents.TeamEvents;
 
 namespace Teams.APP.Layer.DomainHandlers;
 public class TeamDomainHandler(

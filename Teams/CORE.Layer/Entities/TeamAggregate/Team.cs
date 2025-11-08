@@ -4,6 +4,7 @@ using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using Teams.APP.Layer.Helpers;
+using Teams.CORE.Layer.CoreEvents.TeamEvents;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
 

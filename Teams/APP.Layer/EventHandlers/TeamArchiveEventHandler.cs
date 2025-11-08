@@ -1,6 +1,6 @@
 using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.CoreEvents;
+using Teams.CORE.Layer.CoreEvents.TeamEvents;
 using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.Interfaces;
 namespace Teams.APP.Layer.EventHandlers;
