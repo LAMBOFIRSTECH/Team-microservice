@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Teams.INFRA.Layer.Interfaces;
 
-public interface IGenericRepository<TEntity> where TEntity : class, new()
+public interface IGenericRepository<TEntity> where TEntity : class
 {
-    DbSet<TEntity> dbSet { get; }
     Task<TEntity?> GetById(CancellationToken cancellationToken, Guid id, params string[] includes);
     IQueryable<TEntity> GetAll(CancellationToken cancellationToken = default, params string[] includes);
     IQueryable<TEntity> FindAll(Expression<Func<TEntity, bool>> expression = null, params string[] includes);

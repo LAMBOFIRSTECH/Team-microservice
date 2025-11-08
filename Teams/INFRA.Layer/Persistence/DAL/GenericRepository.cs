@@ -5,7 +5,7 @@ using Teams.INFRA.Layer.Interfaces;
 
 namespace Teams.INFRA.Layer.Persistence.DAL;
 
-public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class, new()
+public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : class
 {
     internal ApiContext context;
     public DbSet<TEntity> dbSet => context.Set<TEntity>();
@@ -24,6 +24,7 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         foreach (var include in includes) query = query.Include(include);
         return query.ToListAsync(cancellationToken).Result.AsQueryable();
     }
+    
     public virtual IQueryable<TEntity> FindAll(Expression<Func<TEntity, bool>> expression = null!, params string[] includes)
     {
         IQueryable<TEntity> query = dbSet;

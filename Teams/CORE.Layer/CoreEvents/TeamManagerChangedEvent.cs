@@ -1,8 +1,4 @@
 using Teams.CORE.Layer.CoreInterfaces;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
 namespace Teams.CORE.Layer.CoreEvents;
 
-public record TeamManagerChangedEvent(Guid teamId)  : IDomainEvent
-{
-    public LocalizationDateTime OccurredOn { get; init; } = LocalizationDateTime.FromDateTimeUtc(DateTime.UtcNow);
-}
+public record TeamManagerChangedEvent(Guid teamId) : IDomainEvent { }

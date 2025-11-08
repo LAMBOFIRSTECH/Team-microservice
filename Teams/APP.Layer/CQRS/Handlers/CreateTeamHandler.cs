@@ -5,7 +5,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Commands;
 using Teams.APP.Layer.Helpers;
 using Teams.INFRA.Layer.Interfaces;
-using Teams.CORE.Layer.CommonExtensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using System.ComponentModel.DataAnnotations;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
@@ -19,7 +19,7 @@ public class CreateTeamHandler(IUnitOfWork _unitOfWork, IMapper _mapper, ILogger
         {
             var team = await cmd.Name.CreateTeamAsync(cmd.TeamManagerId, cmd.MembersIds, existingTeams);
             await _unitOfWork.TeamRepository.Create(team, ct);
-            await _unitOfWork.SaveAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
             LogHelper.Info($"✅ Team {team.Name} has been created successfully.", _log);
             return _mapper.Map<TeamDto>(team);
         }

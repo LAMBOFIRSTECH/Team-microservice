@@ -11,7 +11,7 @@ using Teams.INFRA.Layer;
 
 var builder = WebApplication.CreateBuilder(args);
 builder
-    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "INFRA.Layer"))
+    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "INFRA.Layer/Persistence/Configurations"))
     .AddJsonFile(
         $"appsettings.{builder.Environment.EnvironmentName}.json",
         optional: false,
@@ -146,14 +146,6 @@ try
             teamApp.UseMiddleware<RequestLoggingMiddleware>();
         }
     );
-
     await app.RunAsync();
 }
-catch (Exception ex)
-{
-    Log.Fatal(ex, "❌ Application failed to start");
-}
-finally
-{
-    Log.CloseAndFlush();
-}
+catch (Exception ex) { Log.Fatal(ex, "❌ Application failed to start"); } finally { Log.CloseAndFlush(); }

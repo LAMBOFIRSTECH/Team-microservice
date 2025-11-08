@@ -1,5 +1,4 @@
 using Teams.API.Layer.DTOs;
-using Teams.CORE.Layer.Entities;
 
 namespace Teams.APP.Layer.Interfaces;
 

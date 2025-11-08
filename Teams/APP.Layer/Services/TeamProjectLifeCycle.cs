@@ -4,15 +4,26 @@ using Teams.APP.Layer.Interfaces;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
-using Teams.CORE.Layer.CommonExtensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using NodatimePackage.Classes;
 using Teams.API.Layer.DTOs;
 using AutoMapper;
+using Teams.INFRA.Layer.ExternalServicesDtos;
+using FluentValidation;
+using Teams.CORE.Layer.Exceptions;
 
 namespace Teams.APP.Layer.Services;
 
-public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLifeCycle> _log, IConfiguration _configuration, IMapper _mapper) : ITeamProjectLifeCycle
+public class TeamProjectLifeCycle(
+ IUnitOfWork _unitOfWork,
+ ITeamRepository _teamRepository,
+ ILogger<TeamProjectLifeCycle> _log,
+ IConfiguration _configuration,
+ IMapper _mapper,
+ IValidator<ProjectAssociationDto> _projectRecordValidator
+) : ITeamProjectLifeCycle
 {
+    
     public string GetTimeZoneId()
     {
         var timeZoneId = _configuration.GetValue<string>("TimeZone");
@@ -20,31 +31,59 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
         return timeZoneId;
     }
     public DateTimeOffset PrintTimeZoneDtateTimeOffset(DateTimeOffset date) => GetTimeZoneId().ParseToLocal(date);
-    public async Task AddProjectToTeamAsync(Team team, ProjectAssociation project)
+
+    public async Task<ProjectAssociation> GetMapProject(string message)
     {
-        Console.WriteLine("dans la fonction d'ajout de projet de team projet lifecycle");
-        if (project == null)
-            throw new ArgumentNullException(nameof(project), "ProjectAssociation cannot be null");
+        var dto = await message.GetDtoConverted<ProjectAssociationDto>();
+        var validationResult = await _projectRecordValidator.ValidateAsync(dto);
+        if (!validationResult.IsValid)
+        {
+            LogHelper.CriticalFailure(_log, "Data validation", $"{validationResult}", null);
+            throw new InvalidOperationException("Project association data is invalid");
+        }
+        return _mapper.Map<ProjectAssociation>(dto);
+    }
 
-        if (project.Details == null || !project.Details.Any())
-            throw new InvalidOperationException("ProjectAssociation must contain at least one Detail");
+    public async Task AddProjectToTeamAsync(string message)
+    {
+        Console.WriteLine("dans le service projet");
+        var teamProject = await GetMapProject(message);
+        var existingTeam = await _teamRepository.GetTeamByNameAndTeamManagerIdAsync(teamProject.TeamName, teamProject.TeamManagerId);
+        if (existingTeam == null)
+        {
+            LogHelper.Warning($"No team found for [{teamProject.TeamManagerId}, {teamProject.TeamName}]", _log);
+            throw new InvalidOperationException("No matching team found");
+        }
+        if (!teamProject.HasActiveProject())
+            throw new InvalidOperationException("At least one project must be active to associate with the team");
 
-        if (team.Project != null) foreach (var detail in project.Details) team.Project.AddDetail(detail);
-        else team.AssignProject(project);
-
+        var team = existingTeam.AddProjectToTeamExtension(teamProject);
         team.ApplyProjectAttachmentGracePeriod(_configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration"));
-        await _unitOfWork.SaveAsync(CancellationToken.None);
-        await BuildDto(team);
-        LogHelper.Info($"🔗 Team '{project.TeamName}' successfully attached to [{project.Details.Count}] project(s)", _log);
+        await _unitOfWork.CommitAsync(CancellationToken.None);
+        BuildDto(team);
+        LogHelper.Info($"🔗 Team '{teamProject.TeamName}' successfully attached to [{teamProject.Details.Count}] project(s)", _log);
+    }
+    public async Task SuspendProjectAsync(string message)
+    {
+        var teamProject = await GetMapProject(message);
+        var projectName = teamProject.GetprojectName();
+        Console.WriteLine($"voici le project name {projectName}");
+        var existingTeams = await _teamRepository.GetTeamsByManagerIdAsync(teamProject.TeamManagerId);
+        var suspendedTeam = existingTeams.FirstOrDefault(t => t.Project != null && t.Project.TeamManagerId == teamProject.TeamManagerId && t.Project.Details.Any(d => d.ProjectName == projectName));
+        if (suspendedTeam == null)
+            throw new NotFoundException("Team", teamProject.TeamManagerId);
+        suspendedTeam.RemoveSuspendedProjects(projectName);
+        _unitOfWork.TeamRepository.Update(suspendedTeam);
+        LogHelper.Info($"✅ Project '{teamProject.TeamName}' successfully removed from Team '{suspendedTeam.Name.Value}'", _log);
     }
     public async Task RemoveProjects(CancellationToken ct)
     {
-        var teams = await GetTeamsWithExpiredProject(ct);
+        var teams =  GetTeamsWithExpiredProject(ct);
         foreach (var team in teams)
         {
             team.RemoveExpiredProjects();
             _unitOfWork.TeamRepository.Update(team);
-            await _unitOfWork.SaveAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
             LogHelper.Info($"✅ Project has been dissociated from team {team.Name}", _log);
         }
     }
@@ -56,7 +95,7 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
     }
     public async Task<DateTimeOffset?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default)
     {
-        // Charger uniquement les projets et détails nécessaires
+        // On charge uniquement les projets et détails nécessaires
         var nextDateUtc = await _unitOfWork.Context.Teams
             .Where(t => t.Project != null)
             .SelectMany(t => t.Project!.Details)
@@ -69,13 +108,13 @@ public class TeamProjectLifeCycle(IUnitOfWork _unitOfWork, ILogger<TeamProjectLi
             ? nextDateUtc.Value
             : null;
     }
-    public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
+    public List<Team> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
     {
         var existingTeams = _unitOfWork.TeamRepository.GetAll(cancellationToken);
         var teams = existingTeams.GetTeamsWithExpiredProject();
         return teams;
     }
-    public async Task<TeamDetailsDto> BuildDto(Team team)
+    public TeamDetailsDto BuildDto(Team team)
     {
         var teamDto = _mapper.Map<TeamDetailsDto>(team);
         if (team.Project == null || team.Project.Details.Count == 0)

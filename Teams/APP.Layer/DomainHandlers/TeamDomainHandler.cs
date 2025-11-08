@@ -7,16 +7,16 @@ using Teams.CORE.Layer.CoreEvents;
 namespace Teams.APP.Layer.DomainHandlers;
 public class TeamDomainHandler(
     IProjectExpirySchedule _projectScheduler,
-    ITeamLifecycleScheduler _teamLifecycleScheduler,
+    ITeamExpiryScheduler _teamExpiryScheduler,
     ILogger<TeamDomainHandler> _log
 ) : INotificationHandler<DomainEventNotification<TeamCreatedEvent>>,
     INotificationHandler<DomainEventNotification<ProjectDateChangedEvent>>
-{
+{ // revoir ce handler urgemment
 
     public async Task Handle(DomainEventNotification<TeamCreatedEvent> notification, CancellationToken ct = default)
     {
         _log.LogWarning("🔥 TeamCreatedEvent handler triggered for TeamId {Id}", notification.DomainEvent.teamId);
-        await _teamLifecycleScheduler.RescheduleAsync(ct);
+        await _teamExpiryScheduler.RescheduleAsync(ct);
         _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
     }
 

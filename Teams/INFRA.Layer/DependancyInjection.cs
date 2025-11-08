@@ -6,17 +6,16 @@ using Hangfire.MemoryStorage;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using Teams.APP.Layer.Interfaces;
-using Teams.APP.Layer.Services;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence.DAL;
-using Teams.INFRA.Layer.Persistence.Repositories;
+using Teams.INFRA.Layer.Persistence.DAL.Repositories;
 using Teams.INFRA.Layer.OtherUOW;
+using Teams.INFRA.Layer.Notifications;
 
 namespace Teams.INFRA.Layer;
-
 public static class DependancyInjection
 {
     public static IServiceCollection AddInfrastructureDI(
@@ -29,12 +28,12 @@ public static class DependancyInjection
             services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase("TeamMemoryDb"));
         else
             services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase(conStrings));
-
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
         services.AddScoped<TeamExternalService>();
         services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddHostedService<RabbitListenerService>();
         services.AddHangfire(config => config.UseMemoryStorage());

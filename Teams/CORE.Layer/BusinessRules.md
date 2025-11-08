@@ -127,7 +127,7 @@ Les differents Etat d'une équipe et leur signification
 |---------------------------------------------------------------------| ----------------------------------------------------------------|
 | Calcul de productivité démarre à cette date de lancement du projet  | Moyenne des scores des membres (via Activités)                  |
 |                                                                     |                                                                 |
-| Calcul du nombre de membres                                         | `Membres.Count()`                                               |
+| ☑️ Calcul du nombre de membres                                         | `Membres.Count()`                                               |
 |                                                                     |                                                                 |
 | Score de stabilité d’équipe                                         | Basé sur turnover des membres (moyenne des jours dans l’équipe) |
 |                                                                     |                                                                 |

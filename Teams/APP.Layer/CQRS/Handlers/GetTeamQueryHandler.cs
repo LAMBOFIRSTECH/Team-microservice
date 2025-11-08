@@ -4,7 +4,7 @@ using Teams.API.Layer.Middlewares;
 using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.CORE.Layer.CommonExtensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using Teams.INFRA.Layer.Interfaces;
 
 namespace Teams.APP.Layer.CQRS.Handlers;
@@ -17,7 +17,7 @@ public class GetTeamQueryHandler(IRedisCacheService _redisCache, IUnitOfWork _un
         if (team is not null)
         {
             LogHelper.Info($"✅ Team with ID={request.Id} exist in database.", _log);
-            return await _teamProjectLifeCycle.BuildDto(team);
+            return  _teamProjectLifeCycle.BuildDto(team);
         }
         var archivedTeamDto = await _redisCache.GetArchivedTeamFromRedisAsync(request.Id, cancellationToken);
         if (archivedTeamDto is not null)

@@ -8,7 +8,8 @@ public interface ITeamProjectLifeCycle
 {
     Task RemoveProjects(CancellationToken ct);
     Task DeleteTeamProjectAsync(CancellationToken cancellationToken, Guid teamId);
-    Task AddProjectToTeamAsync(Team team, ProjectAssociation project);
+    Task AddProjectToTeamAsync(string message);
+    Task SuspendProjectAsync(string message);
     Task<DateTimeOffset?> GetNextProjectExpirationDate(CancellationToken cancellationToken = default);
-    Task<TeamDetailsDto> BuildDto(Team team);
+    TeamDetailsDto BuildDto(Team team);
 }

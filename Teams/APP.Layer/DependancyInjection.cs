@@ -10,6 +10,7 @@ using Teams.APP.Layer.Services.Scheldulers;
 using Teams.CORE.Layer.CoreServices;
 
 namespace Teams.APP.Layer;
+
 public static class DependancyInjection
 {
     public static IServiceCollection AddApplicationDI(this IServiceCollection services, IConfiguration configuration)
@@ -29,21 +30,21 @@ public static class DependancyInjection
         });
 
         services.AddScoped<IEmployeeService, EmployeeService>();
-        services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<ITeamProjectLifeCycle, TeamProjectLifeCycle>();
-        
-        services.AddScoped<ProjectService>();
-        
         services.AddSingleton<ProjectExpiryScheduler>();
         services.AddSingleton<IProjectExpirySchedule>(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
         services.AddHostedService(sp => sp.GetRequiredService<ProjectExpiryScheduler>());
         services.AddScoped<ProjectLifeCycle>();
-     
 
-        
-        services.AddSingleton<TeamLifeCycleScheduler>();
-        services.AddSingleton<ITeamLifecycleScheduler>(sp =>sp.GetRequiredService<TeamLifeCycleScheduler>());
-        services.AddHostedService(sp => sp.GetRequiredService<TeamLifeCycleScheduler>());
+
+
+        services.AddSingleton<TeamExpiryScheduler>();
+        services.AddSingleton<ITeamExpiryScheduler>(sp => sp.GetRequiredService<TeamExpiryScheduler>());
+        services.AddHostedService(sp => sp.GetRequiredService<TeamExpiryScheduler>());
+
+        services.AddSingleton<TeamMaturityScheduler>();
+        services.AddSingleton<ITeamMaturityScheduler>(sp => sp.GetRequiredService<TeamMaturityScheduler>());
+        services.AddHostedService(sp => sp.GetRequiredService<TeamMaturityScheduler>());
 
         AddAuthorizationPolicies(services);
         AddOpenTelemetryTracing(services, configuration);

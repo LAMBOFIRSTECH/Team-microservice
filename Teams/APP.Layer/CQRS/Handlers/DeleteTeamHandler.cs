@@ -12,7 +12,7 @@ public class DeleteTeamHandler(IUnitOfWork _unitOfWork, ILogger<DeleteTeamHandle
     public async Task Handle(DeleteTeamCommand command, CancellationToken cancellationToken)
     {
         await _teamProjectLifeCycle.DeleteTeamProjectAsync(cancellationToken, command.Id);
-        await _unitOfWork.SaveAsync(cancellationToken);
+        await _unitOfWork.CommitAsync(cancellationToken);
         LogHelper.Info($"✅ Team has been deleted successfully.", _log);
     }
 }

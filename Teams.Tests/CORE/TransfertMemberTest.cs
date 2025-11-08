@@ -1,5 +1,5 @@
 using System;
-using Teams.CORE.Layer.Entities.GeneralValueObjects;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Xunit;
 
 namespace Teams.Tests.CORE;

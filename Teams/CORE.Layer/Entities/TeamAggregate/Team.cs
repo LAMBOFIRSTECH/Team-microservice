@@ -2,7 +2,7 @@ using Teams.CORE.Layer.Exceptions;
 using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
-using Teams.CORE.Layer.CommonExtensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using Teams.APP.Layer.Helpers;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
@@ -96,7 +96,7 @@ public class Team : AggregateEntity, IAggregateRoot
     /// Sur la date de création et la période de validité standard.
     /// La validation des données de l'équipe est effectuée via la méthode ValidateTeamData.
     /// </remarks>
-    private Team(Guid id, string name, Guid teamManagerId, IEnumerable<Guid> members, DateTimeOffset createAt)
+    public Team(Guid id, string name, Guid teamManagerId, IEnumerable<Guid> members, DateTimeOffset createAt)
     {
         Id = id;
         _name = TeamName.Create(name);
@@ -160,7 +160,6 @@ public class Team : AggregateEntity, IAggregateRoot
         RecalculateStates();
     }
     #endregion
-
 
     #region State Computation
     /// <summary>
@@ -250,11 +249,8 @@ public class Team : AggregateEntity, IAggregateRoot
         if (!IsTeamExpired())
             throw new BusinessRuleException("Team has not yet exceeded the validity period.");
         State = TeamState.Archived;
-        AddDomainEvent(
-            new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid())
-        );
+        AddDomainEvent(new TeamArchiveEvent(Id, Name.Value, TeamExpirationDate, Guid.NewGuid()));
     }
-
 
     #region Business Logic
     #region Team Methods

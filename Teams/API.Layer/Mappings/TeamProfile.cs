@@ -1,9 +1,8 @@
 using AutoMapper;
 using Teams.API.Layer.DTOs;
 using Teams.CORE.Layer.Entities.TeamAggregate;
-using Teams.CORE.Layer.CommonExtensions;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 namespace Teams.API.Layer.Mappings;
-
 public class TeamProfile : Profile
 {
   public TeamProfile()

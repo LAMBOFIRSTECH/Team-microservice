@@ -116,7 +116,7 @@ public partial class RabbitListenerService(
     private void ProcessMessage(string message, BasicDeliverEventArgs ea)
     {
         using var scope = scopeFactory.CreateScope();
-        var _project = scope.ServiceProvider.GetRequiredService<IProjectService>();
+        var teamProjectLife = scope.ServiceProvider.GetRequiredService<ITeamProjectLifeCycle>();
         var match = GuidAndTeamRegex().Match(message);
 
         try
@@ -124,12 +124,12 @@ public partial class RabbitListenerService(
             switch (ea.RoutingKey)
             {
                 case "Project.affected":
-                Console.WriteLine("depuis le listener");
-                    _project.ProjectAssociationDataAsync(message);
+                    Console.WriteLine("depuis le listener");
+                    teamProjectLife.AddProjectToTeamAsync(message);
                     break;
 
                 case "Project.suspended":
-                    _project.SuspendProjectAsync(message);
+                    teamProjectLife.SuspendProjectAsync(message);
                     break;
 
                 // case "Member.add":
