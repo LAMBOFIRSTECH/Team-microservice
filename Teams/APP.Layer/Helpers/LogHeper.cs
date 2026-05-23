@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Teams.APP.Layer.Helpers;
 
 public static class LogHelper
@@ -33,10 +35,3 @@ public static class LogHelper
     ) => logger.LogError(ex, "Rule Violated in {Context} => [{Message}]", context, message);
 }
 
-// 🚫 (interdiction)
-
-// ⚠️ (avertissement)
-
-// ❌ (erreur)
-
-// 🛑 (arrêt)

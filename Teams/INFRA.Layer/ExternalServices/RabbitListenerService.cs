@@ -1,9 +1,13 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Teams.APP.Layer.Helpers;
-using Teams.APP.Layer.Interfaces;
+using Teams.INFRA.Layer.Helperss;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.INFRA.Layer.ExternalServices;
 
@@ -101,10 +105,11 @@ public partial class RabbitListenerService(
 
             _channel.BasicConsume(queue: QueueName, autoAck: false, consumer: consumer);
             LogHelper.Info($"📡 RabbitMQ consumer started successfully for queue: {QueueName}", log);
-            while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
-            {
-                await Task.Delay(1000, stoppingToken);
-            }
+                // while (!stoppingToken.IsCancellationRequested && _connection?.IsOpen == true)
+                // {
+                //     await Task.Delay(1000, stoppingToken);
+                // }
+                await Task.Delay(Timeout.Infinite, stoppingToken);
         }
         catch (Exception ex)
         {

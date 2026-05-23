@@ -1,21 +1,17 @@
-using AutoMapper;
-using Teams.API.Layer.DTOs;
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.INFRA.Layer.Dispatchers;
-using Teams.INFRA.Layer.Interfaces;
 using NodaTime;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Teams.APP.Layer.Services.Scheldulers;
 
 /// <summary>
-/// Scheduler to manage team lifecycle events such as maturity and expiration.
-/// 1. Checks for team maturity and expiration at scheduled intervals.
-///     - Maturity is determined by a predefined duration since team creation.
-///     - Expiration is based on the team's expiration date.
-/// 2. Archives teams that have expired and have no active dependencies.
-/// 3. Reschedules the next check based on the nearest upcoming maturity or expiration date.
+/// Scheduler to manage team lifecycle events such as expiration.
+/// 1. Archives teams that have expired and have no active dependencies.
+/// 2. Reschedules the next check based on the nearest upcoming maturity or expiration date.
 ///    Uses a Timer to trigger checks and ensures thread safety with locking.
 ///    Logs key actions and errors for monitoring and debugging.
 ///    Designed to be started and stopped as a hosted service within the application.
@@ -25,14 +21,12 @@ namespace Teams.APP.Layer.Services.Scheldulers;
 public class TeamExpiryScheduler(
     IServiceScopeFactory _scopeFactory,
     IDomainEventDispatcher _dispatcher,
-    IMapper _mapper,
     ILogger<TeamExpiryScheduler> _log
 ) : IHostedService, IDisposable, ITeamExpiryScheduler
 {
     private Timer? _timer;
     private readonly object _lock = new();
     private DateTimeOffset? _nextCheckDate;
-
 
     public async Task StartAsync(CancellationToken ct)
     {
@@ -66,7 +60,7 @@ public class TeamExpiryScheduler(
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var teams = unitOfWork.TeamRepository.GetAll(ct);
+        var teams = await unitOfWork.TeamRepository.GetAllAsync(ct);
         var expiredTeams = teams.GetExpiredTeams().ArchiveTeams();
         expiredTeams.ToList().ForEach(team => unitOfWork.TeamRepository.Update(team));
         await unitOfWork.CommitAsync(ct);
@@ -83,7 +77,7 @@ public class TeamExpiryScheduler(
     {
         using var scope = _scopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var teams = unitOfWork.TeamRepository.GetAll(ct);
+        var teams = await unitOfWork.TeamRepository.GetAllAsync(ct);
         var futureExpirations = teams.GetfutureExpirations();
         var nextEvents = futureExpirations.ToList();
         if (!nextEvents.Any())

@@ -1,0 +1,13 @@
+/home/snow/APIS/Team-management/Teams/CORE.Layer/bin/Debug/net8.0/CORE.Layer.deps.json
+/home/snow/APIS/Team-management/Teams/CORE.Layer/bin/Debug/net8.0/CORE.Layer.dll
+/home/snow/APIS/Team-management/Teams/CORE.Layer/bin/Debug/net8.0/CORE.Layer.pdb
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.csproj.AssemblyReference.cache
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.GeneratedMSBuildEditorConfig.editorconfig
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.AssemblyInfoInputs.cache
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.AssemblyInfo.cs
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.csproj.CoreCompileInputs.cache
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.sourcelink.json
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.dll
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/refint/CORE.Layer.dll
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/CORE.Layer.pdb
+/home/snow/APIS/Team-management/Teams/CORE.Layer/obj/Debug/net8.0/ref/CORE.Layer.dll

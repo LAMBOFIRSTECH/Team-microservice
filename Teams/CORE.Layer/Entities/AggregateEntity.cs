@@ -4,6 +4,7 @@ namespace Teams.CORE.Layer.Entities;
 public abstract class AggregateEntity : IHasDomainEvents
 {
    public Guid Id { get; protected set; }
+   public byte[]? Version { get; private set; } // Ajoute le '?' pour autoriser le null la logique de concurence n'a pas encore été implémenté et cela facilite les tests unitaires
    private readonly List<IDomainEvent> _domainEvents = new();
    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
    public void AddDomainEvent(IDomainEvent @event) => _domainEvents.Add(@event);

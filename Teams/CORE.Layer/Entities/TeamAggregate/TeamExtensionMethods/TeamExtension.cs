@@ -1,4 +1,3 @@
-using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Exceptions;
 namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 

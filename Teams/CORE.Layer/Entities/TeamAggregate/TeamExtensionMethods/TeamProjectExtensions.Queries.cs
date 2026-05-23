@@ -1,4 +1,3 @@
-using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
 using NodatimePackage.Classes;

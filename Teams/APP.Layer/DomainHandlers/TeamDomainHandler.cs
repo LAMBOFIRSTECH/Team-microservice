@@ -15,7 +15,7 @@ public class TeamDomainHandler(
 
     public async Task Handle(DomainEventNotification<TeamCreatedEvent> notification, CancellationToken ct = default)
     {
-        _log.LogWarning("🔥 TeamCreatedEvent handler triggered for TeamId {Id}", notification.DomainEvent.teamId);
+        _log.LogWarning("🔥 TeamCreatedEvent handler triggered for TeamId {Id}", notification.DomainEvent.TeamId);
         await _teamExpiryScheduler.RescheduleAsync(ct);
         _log.LogInformation("🔄 TeamCreatedEvent received, rescheduling...");
     }

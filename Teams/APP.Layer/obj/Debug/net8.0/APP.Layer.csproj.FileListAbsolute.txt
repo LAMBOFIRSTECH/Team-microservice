@@ -1,0 +1,6 @@
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.csproj.AssemblyReference.cache
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.GeneratedMSBuildEditorConfig.editorconfig
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.AssemblyInfoInputs.cache
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.AssemblyInfo.cs
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.csproj.CoreCompileInputs.cache
+/home/snow/APIS/Team-management/Teams/APP.Layer/obj/Debug/net8.0/APP.Layer.sourcelink.json

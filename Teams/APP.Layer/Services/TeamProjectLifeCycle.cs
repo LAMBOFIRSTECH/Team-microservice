@@ -1,19 +1,18 @@
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.APP.Layer.Helpers;
-using Teams.APP.Layer.Interfaces;
-using Teams.INFRA.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Microsoft.EntityFrameworkCore;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
 using NodatimePackage.Classes;
-using Teams.API.Layer.DTOs;
+using Teams.APP.Layer.DTOs.Output;
 using AutoMapper;
-using Teams.INFRA.Layer.ExternalServicesDtos;
 using FluentValidation;
 using Teams.CORE.Layer.Exceptions;
+using Teams.CORE.Layer.CoreInterfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Teams.APP.Layer.Services;
-
 public class TeamProjectLifeCycle(
  IUnitOfWork _unitOfWork,
  ITeamRepository _teamRepository,
@@ -60,7 +59,8 @@ public class TeamProjectLifeCycle(
         var team = existingTeam.AddProjectToTeamExtension(teamProject);
         team.ApplyProjectAttachmentGracePeriod(_configuration.GetValue<int>("ProjectSettings:ExtraDaysBeforeExpiration"));
         await _unitOfWork.CommitAsync(CancellationToken.None);
-        BuildDto(team);
+        _mapper.Map<TeamDtoModels.TeamDetailsDto>(team.GetTeamDataForDto());
+        //BuildDto(team);
         LogHelper.Info($"🔗 Team '{teamProject.TeamName}' successfully attached to [{teamProject.Details.Count}] project(s)", _log);
     }
     public async Task SuspendProjectAsync(string message)
@@ -78,7 +78,7 @@ public class TeamProjectLifeCycle(
     }
     public async Task RemoveProjects(CancellationToken ct)
     {
-        var teams =  GetTeamsWithExpiredProject(ct);
+        var teams = await GetTeamsWithExpiredProject(ct);
         foreach (var team in teams)
         {
             team.RemoveExpiredProjects();
@@ -89,7 +89,7 @@ public class TeamProjectLifeCycle(
     }
     public async Task DeleteTeamProjectAsync(CancellationToken cancellationToken, Guid teamId)
     {
-        var team = await _unitOfWork.TeamRepository.GetById(cancellationToken, teamId) ?? throw new InvalidOperationException("No matching team found");
+        var team = await _unitOfWork.TeamRepository.GetByIdAsync(teamId, cancellationToken) ?? throw new InvalidOperationException("No matching team found");
         team.MarkAsDeleted();
         _unitOfWork.TeamRepository.Delete(team);
     }
@@ -108,33 +108,35 @@ public class TeamProjectLifeCycle(
             ? nextDateUtc.Value
             : null;
     }
-    public List<Team> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
+    public async Task<List<Team>> GetTeamsWithExpiredProject(CancellationToken cancellationToken = default)
     {
-        var existingTeams = _unitOfWork.TeamRepository.GetAll(cancellationToken);
-        var teams = existingTeams.GetTeamsWithExpiredProject();
+        var existingTeams = await _unitOfWork.TeamRepository.GetAllAsync(cancellationToken);
+        var teams = existingTeams.AsQueryable().GetTeamsWithExpiredProject();
         return teams;
     }
-    public TeamDetailsDto BuildDto(Team team)
-    {
-        var teamDto = _mapper.Map<TeamDetailsDto>(team);
-        if (team.Project == null || team.Project.Details.Count == 0)
-        {
-            teamDto.HasAnyProject = false;
-            teamDto.ProjectNames = null;
-        }
-        else
-        {
-            var teamExpiration = team.TeamExpirationDate;
-            var projetMaxEndDate = team.Project?.GetprojectMaxEndDate() ?? teamExpiration;
-            DateTimeOffset maxDateUtc = projetMaxEndDate > teamExpiration ? projetMaxEndDate : teamExpiration;
-            var localMaxDate = maxDateUtc.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
-            teamDto.TeamExpirationDate = localMaxDate;
-            teamDto.HasAnyProject = true;
-            teamDto.TeamManagerId = team.Project!.TeamManagerId;
-            teamDto.Name = team.Project.TeamName;
-            teamDto.ProjectNames = team.Project.Details.Select(d => d.ProjectName).ToList();
-        }
-        teamDto.State = team.MatureTeam();
-        return teamDto;
-    }
+    // public TeamDtoModels.TeamDetailsDto BuildDto(Team team)
+    // {
+    //    //_mapper.Map<TeamDtoModels.TeamDetailsDto>(team.GetTeamDataForDto());
+    //    var toto = team.GetTeamDataForDto();
+    //     var teamDto = _mapper.Map<TeamDtoModels.TeamDetailsDto>(team);
+    //     if (team.Project == null || team.Project.Details.Count == 0)
+    //     {
+    //         teamDto.HasAnyProject = false;
+    //         teamDto.ProjectNames = null;
+    //     }
+    //     else
+    //     {
+    //         var teamExpiration = team.TeamExpirationDate;
+    //         var projetMaxEndDate = team.Project?.GetprojectMaxEndDate() ?? teamExpiration;
+    //         DateTimeOffset maxDateUtc = projetMaxEndDate > teamExpiration ? projetMaxEndDate : teamExpiration;
+    //         var localMaxDate = maxDateUtc.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+    //         teamDto.TeamExpirationDate = localMaxDate;
+    //         teamDto.HasAnyProject = true;
+    //         teamDto.TeamManagerId = team.Project!.TeamManagerId;
+    //         teamDto.Name = team.Project.TeamName;
+    //         teamDto.ProjectNames = team.Project.Details.Select(d => d.ProjectName).ToList();
+    //     }
+    //     teamDto.State = team.MatureTeam();
+    //     return teamDto;
+    // }
 }

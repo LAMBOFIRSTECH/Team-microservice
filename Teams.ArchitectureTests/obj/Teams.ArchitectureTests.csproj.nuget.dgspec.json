@@ -1,0 +1,91 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/snow/APIS/Team-management/Teams.ArchitectureTests/Teams.ArchitectureTests.csproj": {}
+  },
+  "projects": {
+    "/home/snow/APIS/Team-management/Teams.ArchitectureTests/Teams.ArchitectureTests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/snow/APIS/Team-management/Teams.ArchitectureTests/Teams.ArchitectureTests.csproj",
+        "projectName": "Teams.ArchitectureTests",
+        "projectPath": "/home/snow/APIS/Team-management/Teams.ArchitectureTests/Teams.ArchitectureTests.csproj",
+        "packagesPath": "/home/snow/.nuget/packages/",
+        "outputPath": "/home/snow/APIS/Team-management/Teams.ArchitectureTests/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/snow/APIS/Team-management/NuGet.Config",
+          "/home/snow/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {},
+          "https://gitlab.com/api/v4/projects/75607829/packages/nuget/index.json": {},
+          "https://gitlab.com/api/v4/projects/75607901/packages/nuget/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.8.0, )"
+            },
+            "NetArchTest.Rules": {
+              "target": "Package",
+              "version": "[1.3.2, )"
+            },
+            "coverlet.collector": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.5.3, )"
+            },
+            "xunit.runner.visualstudio": {
+              "target": "Package",
+              "version": "[2.5.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/home/snow/.dotnet/sdk/8.0.410/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

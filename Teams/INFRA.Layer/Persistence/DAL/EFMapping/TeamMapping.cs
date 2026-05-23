@@ -22,6 +22,7 @@ public class TeamMapping : IEntityTypeConfiguration<Team>
                 v => v.Value,
                 v => new MemberId(v)
             ).IsRequired();
+        builder.Property(t => t.Version).IsRowVersion(); // Concurrency token
 
         builder.Property(t => t.State).IsRequired();
         builder.Property(t => t.TeamCreationDate)

@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Teams.API.Layer.Middlewares;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 

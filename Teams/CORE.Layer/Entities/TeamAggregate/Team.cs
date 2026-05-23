@@ -1,9 +1,8 @@
 using Teams.CORE.Layer.Exceptions;
-using Teams.CORE.Layer.CoreEvents;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamValueObjects;
 using Teams.CORE.Layer.Entities.TeamAggregate.InternalEntities;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
-using Teams.APP.Layer.Helpers;
+using Teams.CORE.Layer.Entities.TeamAggregate.TeamDtos;
 using Teams.CORE.Layer.CoreEvents.TeamEvents;
 
 namespace Teams.CORE.Layer.Entities.TeamAggregate;
@@ -55,20 +54,20 @@ public class Team : AggregateEntity, IAggregateRoot
       => DateTimeOffset.Now >= TeamExpirationDate.UtcDateTime && State != TeamState.Archived;
 
     /// <summary>
-    /// 
+    /// Gets the expiration date of the team in the specified time zone.
     /// </summary>
     /// <param name="timeZoneId"></param>
     /// <returns></returns>
-    public DateTimeOffset GetExpirationDateInTimeZone(string timeZoneId)
-            => timeZoneId.ParseToLocal(TeamExpirationDate);
+    // public DateTimeOffset GetExpirationDateInTimeZone(string timeZoneId)
+    //         => timeZoneId.ParseToLocal(TeamExpirationDate);
 
     /// <summary>
     /// 
     /// </summary>
     /// <param name="timeZoneId"></param>
     /// <returns></returns>
-    public DateTimeOffset GetLastActivityInTimeZone(string timeZoneId)
-            => timeZoneId.ParseToLocal(LastActivityDate);
+    // public DateTimeOffset GetLastActivityInTimeZone(string timeZoneId)
+    //         => timeZoneId.ParseToLocal(LastActivityDate);
 
 
     #region Constructors
@@ -118,7 +117,6 @@ public class Team : AggregateEntity, IAggregateRoot
     /// <param name="memberIds">The collection of member identifiers to include in the team.</param>
     /// <returns>A newly created and valid <see cref="Team"/> instance.</returns>
     /// <list type="bullet">
-    /// <item><description> A team with the same name already exists. </description></item>
     /// <item><description> The manager already manages more than 3 teams. </description></item>
     /// <item><description> A team with the exact same members and manager already exists. </description></item>
     /// <item><description> The new team shares more than 50% of its members with an existing team. </description></item>
@@ -128,7 +126,7 @@ public class Team : AggregateEntity, IAggregateRoot
         var team = new Team(Guid.NewGuid(), name, teamManagerId, memberIds.ToHashSet(), DateTimeOffset.Now);
         team.ValidateTeamInvariants();
         team.RecalculateStates();
-        team.AddDomainEvent(new TeamCreatedEvent(team.Id));
+        team.AddDomainEvent(new TeamCreatedEvent(team.Id, team.Name.Value, team.TeamCreationDate, Guid.NewGuid()));
         return team;
     }
 
@@ -269,9 +267,6 @@ public class Team : AggregateEntity, IAggregateRoot
     /// </remarks>
     private void ValidateTeamInvariants()
     {
-        if (_members.Count < 3)
-            throw new BusinessRuleException("A team must have at least 3 members including team manager.");
-
         if (_members.Count > 10)
             throw new BusinessRuleException("A team cannot have more than 10 members.");
 
@@ -410,9 +405,30 @@ public class Team : AggregateEntity, IAggregateRoot
     {
         if (Project == null)
             return;
-        Project.TobeSuspended(projectName);
+        Project.SuspendProject(projectName);
         AddDomainEvent(new ProjectDateChangedEvent(Id));
         RecalculateStates();
+    }
+    #endregion
+
+    #region  Domain dto 
+    public TeamDataForDto GetTeamDataForDto()
+    {
+        return new TeamDataForDto
+        {
+            Id = Id,
+            Name = Name.Value,
+            TeamManagerId = TeamManagerId.Value,
+            MembersIds = MembersIds.Select(m => m.Value).ToList(),
+            HasActiveProject = Project?.HasActiveProject() ?? false,
+            State = this.MatureTeam(),
+            Project = Project,
+            TeamCreationDate = TeamCreationDate,
+            TeamExpirationDate = TeamExpirationDate,
+            TauxTurnOver = TauxTurnover,
+            AverageProductivity = AverageProductivity,
+            LastActivityDate = LastActivityDate
+        };
     }
     #endregion
     #endregion

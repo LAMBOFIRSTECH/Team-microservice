@@ -1,24 +1,28 @@
 using MediatR;
-using Teams.APP.Layer.Interfaces;
+using Teams.INFRA.Layer.Interfaces;
 using Teams.CORE.Layer.CoreInterfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Teams.INFRA.Layer.Dispatchers;
 
 public interface IDomainEventDispatcher
 {
-    Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken ct = default);
+    Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken cancellationToken = default);
 }
-public class DomainEventDispatcher(IMediator _mediator, ILogger<DomainEventDispatcher> _log) : IDomainEventDispatcher
+public class DomainEventDispatcher(IMediator _mediator) : IDomainEventDispatcher
 {
-    public async Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken ct = default)
+    public async Task DispatchAsync(IEnumerable<IDomainEvent> events, CancellationToken cancellationToken = default)
     {
         foreach (var @event in events)
         {
-            var notifType = typeof(IDomainEventHandler<>).MakeGenericType(@event.GetType());
-            var notification = (INotification)Activator.CreateInstance(notifType, @event)!;
-            await _mediator.Publish(notification, ct);
-        }
-        _log.LogInformation("Dispatching {Count} domain events...", events.Count());
+            // On emballe l'événement du Core dans le wrapper de l'Infra
+            var genericType = typeof(DomainEventNotification<>).MakeGenericType(@event.GetType());
+            var notification = Activator.CreateInstance(genericType, @event) as INotification;
 
+            if (notification != null)
+            {
+                await _mediator.Publish(notification, cancellationToken);
+            }
+        }
     }
 }

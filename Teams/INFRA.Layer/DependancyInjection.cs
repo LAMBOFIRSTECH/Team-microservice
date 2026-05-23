@@ -5,23 +5,23 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
-using Teams.APP.Layer.Interfaces;
 using Teams.CORE.Layer.Entities.TeamAggregate;
 using Teams.INFRA.Layer.Dispatchers;
 using Teams.INFRA.Layer.ExternalServices;
 using Teams.INFRA.Layer.Interfaces;
 using Teams.INFRA.Layer.Persistence.DAL;
 using Teams.INFRA.Layer.Persistence.DAL.Repositories;
-using Teams.INFRA.Layer.OtherUOW;
 using Teams.INFRA.Layer.Notifications;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Teams.CORE.Layer.CoreInterfaces;
 
 namespace Teams.INFRA.Layer;
+
 public static class DependancyInjection
 {
-    public static IServiceCollection AddInfrastructureDI(
-        this IServiceCollection services,
-        IConfiguration configuration
-    )
+    public static IServiceCollection AddInfrastructureDI(this IServiceCollection services, IConfiguration configuration)
     {
         var conStrings = configuration.GetSection("ConnectionStrings")["DefaultConnection"];
         if (string.IsNullOrEmpty(conStrings) || conStrings == "TeamMemoryDb")
@@ -29,21 +29,21 @@ public static class DependancyInjection
         else
             services.AddDbContext<ApiContext>(opt => opt.UseInMemoryDatabase(conStrings));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        // Dans ton projet Infra
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<ITeamRepository, TeamRepository>();
         services.AddScoped<IRedisCacheService, RedisCacheService>();
-        services.AddScoped<TeamExternalService>();
-        services.AddScoped<ITeamStateUnitOfWork, TeamStateUnitOfWork>();
+        services.AddScoped<TeamMemberProvider>();
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddSingleton<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddHostedService<RabbitListenerService>();
         services.AddHangfire(config => config.UseMemoryStorage());
-        services.AddHangfireServer();
         services.AddHangfireServer(options =>
         {
             options.WorkerCount = 1;
             options.Queues = HangfireQueues;
         });
-        ManageRedisCacheMemory(services, configuration);
+        //ManageRedisCacheMemory(services, configuration);
+       
         return services;
     }
     private static readonly string[] HangfireQueues =
@@ -55,10 +55,10 @@ public static class DependancyInjection
         "runner_operation_remove_project",
     };
 
-private static IServiceCollection ManageRedisCacheMemory(
-   this IServiceCollection services,
-   IConfiguration configuration
-)
+    private static IServiceCollection ManageRedisCacheMemory(
+       this IServiceCollection services,
+       IConfiguration configuration
+    )
     {
         var Config = configuration.GetSection("CacheSettings");
         var certPath = Config["Redis:ConfigurationOptions:Certificate:File-pfx"];
@@ -104,8 +104,6 @@ private static IServiceCollection ManageRedisCacheMemory(
             }
             catch (RedisConnectionException ex)
             {
-                var logger = provider.GetRequiredService<ILogger<Program>>();
-                logger.LogCritical(ex, "Error connecting to Redis:");
                 throw;
             }
         });

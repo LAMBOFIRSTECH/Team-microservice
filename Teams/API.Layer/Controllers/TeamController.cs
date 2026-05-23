@@ -2,22 +2,27 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Teams.API.Layer.DTOs;
-using Teams.API.Layer.Mappings;
-using Teams.APP.Layer.CQRS.Commands;
-using Teams.APP.Layer.CQRS.Queries;
 using Teams.APP.Layer.Interfaces;
-
+using Teams.APP.Layer.DTOs;
+using Teams.APP.Layer.DTOs.Output;
+using Teams.APP.Layer.FeatureTeam.CreateTeam;
+using Teams.APP.Layer.FeatureTeam.UpdateTeam;
+using Teams.APP.Layer.FeatureTeam.UpdateTeamByManager;
+using Teams.APP.Layer.FeatureTeam.GetTeam;
+using Teams.APP.Layer.FeatureTeam.GetTeamByMember;
+using Teams.APP.Layer.FeatureTeam.DeleteTeam;
+using AutoMapper;
 namespace Teams.API.Layer.Controllers;
 
 [ApiController]
 [Route("teams")]
 public class TeamController(
     IMediator _mediator,
-    IValidator<CreateTeamCommand> _createTeamValidator,
+    IValidator<CreateTeamRequest> _createTeamValidator,
     IValidator<UpdateTeamCommand> _updateTeamValidator,
-    IValidator<UpdateTeamManagerCommand> _updateTeamManagerValidator,
-    IEmployeeService _employeeService
+    IValidator<UpdateTeamByManagerCommand> _updateTeamManagerValidator,
+    IEmployeeService _employeeService,
+    IMapper _mapper
 ) : ControllerBase
 {
     /// <summary>
@@ -42,12 +47,12 @@ public class TeamController(
     /// <param name="onlyMature">Filter to return only mature teams (optional)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of teams as `TeamDto`</returns>
-    // [Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
+    // [Authorize(Roles = "Admin,Manager(team manager)")]
     [AllowAnonymous]
     [HttpGet]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<TeamDto>>> GetAllTeams(
+    [ProducesResponseType(typeof(List<TeamDtoModels.TeamDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<TeamDtoModels.TeamDto>>> GetAllTeams(
         [FromQuery] bool onlyMature = false,
         CancellationToken cancellationToken = default
     )
@@ -84,9 +89,9 @@ public class TeamController(
     [AllowAnonymous]
     [HttpGet("{teamId:guid}")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(TeamDetailsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TeamDtoModels.TeamDetailsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TeamDetailsDto>> GetTeam(
+    public async Task<ActionResult<TeamDtoModels.TeamDetailsDto>> GetTeam(
         Guid teamId,
         CancellationToken cancellationToken = default
     )
@@ -121,7 +126,7 @@ public class TeamController(
     [Consumes("application/json")]
     [ProducesResponseType(typeof(TeamStatsDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TeamDetailsDto>> GetTeamStats(
+    public async Task<ActionResult<TeamDtoModels.TeamDetailsDto>> GetTeamStats(
         [FromQuery] Guid teamId,
         CancellationToken cancellationToken = default
     )
@@ -158,9 +163,9 @@ public class TeamController(
     [AllowAnonymous]
     [HttpGet("manager")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<TeamDtoModels.TeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<TeamDto>>> GetTeamsByManagerId(
+    public async Task<ActionResult<List<TeamDtoModels.TeamDto>>> GetTeamsByManagerId(
         [FromQuery] Guid managerId,
         [FromQuery] bool includeMembers = false,
         CancellationToken cancellationToken = default
@@ -208,10 +213,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPatch("manager")]
-    public async Task<IActionResult> ChangeTeamManager(
-        [FromBody] UpdateTeamManagerCommand command,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<IActionResult> ChangeTeamManager([FromBody] UpdateTeamByManagerCommand command, CancellationToken cancellationToken = default)
     {
         var validationResult = await _updateTeamManagerValidator.ValidateAsync(
             command,
@@ -251,13 +253,9 @@ public class TeamController(
     [AllowAnonymous]
     [HttpGet("member")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(List<TeamDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<TeamDtoModels.TeamDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<List<TeamDto>>> GetTeamsByMemberId(
-        [FromQuery] Guid memberId,
-        [FromQuery] bool includeMembers = false,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<ActionResult<List<TeamDtoModels.TeamDto>>> GetTeamsByMemberId([FromQuery] Guid memberId, [FromQuery] bool includeMembers = false, CancellationToken cancellationToken = default)
     {
         var teamsDto = await _mediator.Send(
             new GetTeamsByMemberQuery(memberId, includeMembers),
@@ -297,10 +295,7 @@ public class TeamController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [AllowAnonymous]
     [HttpPatch("member")]
-    public async Task<IActionResult> AddTeamMember(
-        [FromQuery] Guid memberId,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<IActionResult> AddTeamMember([FromQuery] Guid memberId, CancellationToken cancellationToken = default)
     {
         if (memberId == Guid.Empty)
             return BadRequest("Member ID cannot be empty.");
@@ -344,21 +339,24 @@ public class TeamController(
     /// **Example usage:**
     /// POST /teams
     /// </remarks>
-    /// <param name="cmd">The details of the team to create</param>
-    /// <param name="ct">Cancellation token</param>
+    /// <param name="request">The details of the team to create</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The created team</returns>
     //[Authorize(Roles = "Admin,Manager(responsable d'équipe)")]
     [AllowAnonymous]
     [HttpPost]
     [Consumes("application/json")]
-    [ProducesResponseType<CreateTeamCommand>(StatusCodes.Status201Created)]
+    [ProducesResponseType<CreateTeamResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<TeamDto>> CreateTeam([FromBody] CreateTeamCommand cmd, CancellationToken ct = default)
+    public async Task<ActionResult<CreateTeamResponse>> CreateTeam([FromBody] CreateTeamRequest request,CancellationToken cancellationToken)
     {
-        var validationResult = await _createTeamValidator.ValidateAsync(cmd, ct);
-        if (!validationResult.IsValid) return BadRequest();
-        var createdTeam = await _mediator.Send(cmd, ct);
-        return CreatedAtAction(nameof(GetTeam), new { teamId = createdTeam.Id }, createdTeam);
+        var validationResult = await _createTeamValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+            return BadRequest();
+
+        var command = _mapper.Map<CreateTeamCommand>(request);
+        var createdTeam = await _mediator.Send(command, cancellationToken);
+        return CreatedAtAction(nameof(GetTeam), new { createdTeam.Id }, createdTeam);
     }
 
     /// <summary>
@@ -398,14 +396,10 @@ public class TeamController(
     [AllowAnonymous]
     [HttpPut("{teamId}")]
     [Consumes("application/json")]
-    [ProducesResponseType(typeof(TeamDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TeamDtoModels.TeamDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<TeamRequestDto>> UpdateTeamById(
-        Guid teamId,
-        [FromBody] UpdateTeamCommand command,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<ActionResult<TeamRequestDto>> UpdateTeamById(Guid teamId, [FromBody] UpdateTeamCommand command, CancellationToken cancellationToken = default)
     {
         if (teamId != command.Id)
             return BadRequest("Team ID in the URL does not match the ID in the request body.");
@@ -448,10 +442,7 @@ public class TeamController(
     [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteTeamMemberById(
-        [FromBody] DeleteTeamMemberDto deleteTeamMemberDto,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<IActionResult> DeleteTeamMemberById([FromBody] DeleteTeamMemberDto deleteTeamMemberDto, CancellationToken cancellationToken = default)
     {
         if (deleteTeamMemberDto == null)
             return BadRequest("Request data cannot be null.");
@@ -481,7 +472,7 @@ public class TeamController(
     /// DELETE /teams/{teamId}
     /// where `{teamId}` is the unique identifier of the team to be deleted.
     /// </remarks>
-    /// <param name="teamId">Unique identifier of the team to delete</param>
+    /// <param name="teamRequest">Request containing team details</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content</returns>
     //[Authorize(Policy = "AdminPolicy")]
@@ -490,12 +481,9 @@ public class TeamController(
     [Consumes("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteTeam(
-        Guid teamId,
-        CancellationToken cancellationToken = default
-    )
+    public async Task<IActionResult> DeleteTeam(DeleteTeamRequest teamRequest, CancellationToken cancellationToken = default)
     {
-        await _mediator.Send(new DeleteTeamCommand(teamId, null!), cancellationToken);
+        await _mediator.Send(new DeleteTeamCommand(teamRequest.Id, teamRequest.Name), cancellationToken);
         return NoContent();
     }
 }

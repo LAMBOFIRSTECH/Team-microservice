@@ -1,9 +1,10 @@
 using Teams.APP.Layer.Helpers;
 using Teams.APP.Layer.Interfaces;
-using Teams.INFRA.Layer.Dispatchers;
-using Teams.INFRA.Layer.Interfaces;
 using NodaTime;
 using Teams.CORE.Layer.Entities.TeamAggregate.TeamExtensionMethods;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 
 namespace Teams.APP.Layer.Services.Scheldulers;
@@ -65,7 +66,7 @@ public class TeamMaturityScheduler(
         using var scope = _scopeFactory.CreateScope();
         var redisCacheService = scope.ServiceProvider.GetRequiredService<IRedisCacheService>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var teams = unitOfWork.TeamRepository.GetAll(ct);
+        var teams = await unitOfWork.TeamRepository.GetAllAsync(ct);
         var matureTeams = teams.GetMatureTeams();
         foreach (var team in matureTeams)
         {
@@ -80,7 +81,7 @@ public class TeamMaturityScheduler(
     {
         using var scope = _scopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var teams = unitOfWork.TeamRepository.GetAll(ct);
+        var teams = await unitOfWork.TeamRepository.GetAllAsync(ct);
         // Calcul des prochaines dates (maturité + expiration)
         var futureMaturities = teams.GetfutureMaturities();
         var nextEvents = futureMaturities.ToList();

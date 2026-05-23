@@ -10,19 +10,15 @@ using Teams.INFRA.Layer;
 
 
 var builder = WebApplication.CreateBuilder(args);
-builder
-    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "INFRA.Layer/Persistence/Configurations"))
-    .AddJsonFile(
-        $"appsettings.{builder.Environment.EnvironmentName}.json",
-        optional: false,
-        reloadOnChange: false
-    )
+    builder
+    .Configuration.SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "API.Layer/Configurations"))
+    .AddJsonFile(  $"appsettings.{builder.Environment.EnvironmentName}.json", optional: false, reloadOnChange: false)
     .AddEnvironmentVariables();
 
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .CreateLogger();
+                .ReadFrom.Configuration(builder.Configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
 
 builder.Host.UseSerilog();
 builder.Services.AddApiDI(builder.Configuration);
@@ -38,23 +34,13 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.ConfigureHttpsDefaults(httpsOptions =>
     {
-        if (
-            string.IsNullOrEmpty(certificateFile)
-            || string.IsNullOrEmpty(certificatePassword)
-            || !File.Exists(certificateFile)
-        )
-        {
-            throw new InvalidOperationException("Le certificat serveur est requis pour HTTPS.");
-        }
+        if (string.IsNullOrEmpty(certificateFile) || string.IsNullOrEmpty(certificatePassword) || !File.Exists(certificateFile))
+            throw new InvalidOperationException("The server certificate is required for HTTPS.");
+        
 
         var serverCertificate = new X509Certificate2(certificateFile, certificatePassword);
         httpsOptions.ServerCertificate = serverCertificate;
-
-        httpsOptions.ClientCertificateMode = Enum.Parse<ClientCertificateMode>(
-            kestrelSection["ClientCertificateMode"] ?? "RequireCertificate",
-            ignoreCase: true
-        );
-
+        httpsOptions.ClientCertificateMode = Enum.Parse<ClientCertificateMode>( kestrelSection["ClientCertificateMode"] ?? "AllowCertificate", ignoreCase: true);
         httpsOptions.ClientCertificateValidation = (cert, chain, errors) =>
         {
             if (string.IsNullOrEmpty(caCertFile) || !File.Exists(caCertFile))
@@ -86,9 +72,49 @@ builder.Services.AddDataProtection();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+// Middleware global pour gérer les exceptions non gérées et formater les réponses d'erreur de manière cohérente 
+// Note : placé avant tout autre middleware pour capturer toutes les exceptions
+app.UseMiddleware<GlobalExceptionMiddleware>();
+// Validation JSON uniquement sur POST/PUT/PATCH
+app.UseMiddleware<JsonValidationMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseRouting();
 try
 {
     Log.Information("🟢 Application starting up");
+    void MapCommonEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapHealthChecks("/health");
+        endpoints.MapGet("/version", async context =>
+        {
+            var version = app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
+            await context.Response.WriteAsync(version);
+        });
+    }
+    // Hangfire Dashboard sécurisé
+    var HangFireConfig = app.Configuration.GetSection("HangfireCredentials");
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions()
+    {
+        DashboardTitle = "Hangfire Dashboard for Lamboft Inc ",
+        Authorization = new[]
+                        {
+                            new BasicAuthAuthorizationFilter(
+                                new BasicAuthAuthorizationFilterOptions
+                                {
+                                    Users = new[]
+                                    {
+                                        new BasicAuthAuthorizationUser
+                                        {
+                                            Login = HangFireConfig["UserName"],
+                                            PasswordClear = HangFireConfig["HANGFIRE_PASSWORD"],
+                                        },
+                                    },
+                                }
+                            ),
+                        },
+    }
+                );
+
     app.Map(
         "/team-management",
         teamApp =>
@@ -102,50 +128,15 @@ try
                 c.SwaggerEndpoint($"/team-management/swagger/{app.Configuration["ApiVersion"]}/swagger.json", "Team Management API");
                 c.RoutePrefix = "swagger";
             });
-            teamApp.UseMiddleware<ExceptionMiddleware>();
             teamApp.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHealthChecks("/health");
-                endpoints.MapGet(
-                    "/version",
-                    async context =>
-                    {
-                        var version =
-                            app.Configuration.GetValue<string>("ApiVersion") ?? "Version not set";
-                        await context.Response.WriteAsync(version);
-                    }
-                );
+                MapCommonEndpoints(endpoints);
             });
-
-            // Hangfire Dashboard sécurisé
-            var HangFireConfig = app.Configuration.GetSection("HangfireCredentials");
-            teamApp.UseHangfireDashboard(
-                "/hangfire",
-                new DashboardOptions()
-                {
-                    DashboardTitle = "Hangfire Dashboard for Lamboft Inc ",
-                    Authorization = new[]
-                    {
-                        new BasicAuthAuthorizationFilter(
-                            new BasicAuthAuthorizationFilterOptions
-                            {
-                                Users = new[]
-                                {
-                                    new BasicAuthAuthorizationUser
-                                    {
-                                        Login = HangFireConfig["UserName"],
-                                        PasswordClear = HangFireConfig["HANGFIRE_PASSWORD"],
-                                    },
-                                },
-                            }
-                        ),
-                    },
-                }
-            );
-            teamApp.UseMiddleware<RequestLoggingMiddleware>();
         }
     );
+    // Autres endpoints globaux (non liés à team-management) peuvent être ajoutés ici
     await app.RunAsync();
 }
-catch (Exception ex) { Log.Fatal(ex, "❌ Application failed to start"); } finally { Log.CloseAndFlush(); }
+catch (Exception ex) { Log.Fatal(ex, "❌ Application failed to start"); }
+finally { Log.CloseAndFlush(); }
