@@ -24,7 +24,7 @@ colors() {
 # 1. Pré-requis
 # =============================
 colors "CYAN" "1- Vérification des fichiers essentiels..."
-CONFIG_FILE=$(basename $(find . -maxdepth 1 -name "appsettings.json"))
+CONFIG_FILE=$(basename $(find . -type f -iname "appsettings.json" -print -quit))
 [[ ! -f $CONFIG_FILE ]] && { colors "RED" "appsettings.json manquant"; exit 1; }
 
 SOLUTION_FILE=$(ls *.sln | head -n1)
@@ -51,7 +51,7 @@ colors "GREEN" "SonarQube accessible (code $status)"
 # 3. Installation outils
 # =============================
 colors "YELLOW" "3- Vérification dotnet-sonarscanner..."
-command -v dotnet-sonarscanner >/dev/null 2>&1 || { 
+command -v dotnet-sonarscanner >/dev/null 2>&1 || {
     colors "CYAN" "Installation dotnet-sonarscanner..."
     dotnet tool install --global dotnet-sonarscanner --version 10.3.0
     export PATH="$PATH:$HOME/.dotnet/tools"
@@ -72,10 +72,10 @@ colors "YELLOW" "5- Exécution tests unitaires et génération coverage..."
 TEST_PROJECT=$(find . -name "*.Tests.csproj" | head -n1)
 colors "CYAN" "Exécution des tests sur $TEST_PROJECT ..."
 dotnet test "$TEST_PROJECT" \
-    --configuration "$BUILD_CONFIGURATION" \
-    /p:CollectCoverage=true \
-    /p:CoverletOutputFormat=opencover \
-    /p:CoverletOutput="$COVERAGE_REPORT_PATH"
+--configuration "$BUILD_CONFIGURATION" \
+/p:CollectCoverage=true \
+/p:CoverletOutputFormat=opencover \
+/p:CoverletOutput="$COVERAGE_REPORT_PATH"
 
 [[ ! -f "$COVERAGE_REPORT_PATH" ]] && { colors "RED" "coverage.opencover.xml introuvable"; exit 1; }
 colors "GREEN" "Fichier coverage.opencover.xml généré avec succès : $COVERAGE_REPORT_PATH"
@@ -88,11 +88,11 @@ BRANCH_NAME=${CI_COMMIT_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}
 SONAR_BRANCH_ARGS="/d:sonar.branch.name=main"
 colors "CYAN" "Analyse sur la branche : $BRANCH_NAME"
 dotnet sonarscanner begin \
-    /k:"$SONAR_PROJECT_KEY" \
-    /d:sonar.host.url="$SONAR_HOST_URL" \
-    /d:sonar.login="$SONAR_USER_TOKEN" \
-    /d:sonar.cs.opencover.reportsPaths="$COVERAGE_REPORT_PATH" \
-    /v:"$SONAR_PROJECT_VERSION"
+/k:"$SONAR_PROJECT_KEY" \
+/d:sonar.host.url="$SONAR_HOST_URL" \
+/d:sonar.login="$SONAR_USER_TOKEN" \
+/d:sonar.cs.opencover.reportsPaths="$COVERAGE_REPORT_PATH" \
+/v:"$SONAR_PROJECT_VERSION"
 
 # =============================
 # 7. Build solution (C'est obligatoire pour MSBuild scanner)

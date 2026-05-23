@@ -1,0 +1,28 @@
+*.env
+
+# Build results
+**/bin/
+**/obj/
+
+# User-specific files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Logs
+*.log
+
+# .NET artifacts
+*.dll
+*.exe
+*.pdb
+
+# EF Core migrations backups (optional)
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
+Thumbs.db

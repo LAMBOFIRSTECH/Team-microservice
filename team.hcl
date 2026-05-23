@@ -40,7 +40,7 @@ job "api-team" {
         image = "${env.CI_REGISTRY}/${env.CI_PROJECT_NAMESPACE}/${env.CI_PROJECT_NAME}:${env.DOCKER_TAG}"
         ports = ["http"]
         volumes = [
-          "./appsettings.json:/app/Teams/API.Layer/appsettings.Development.json:ro"
+          "./appsettings.json:/app/Teams/INFRA.Layer/appsettings.Development.json:ro"
         ]
         cpu_hard_limit = true
       }

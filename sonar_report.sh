@@ -43,6 +43,3 @@ fi
 
 colors "GREEN" "✅ Couverture OK : ${coverage}%"
 exit 0
-
-
-
