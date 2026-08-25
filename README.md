@@ -1,10 +1,167 @@
-### Couverture de code
-![Couverture code](./coverlet.png)
 
-# Présentation du projet  
-Ce projet utilise les patterns suivants et une stack technique moderne pour assurer modularité, testabilité et scalabilité.
+# 🗄️ Stratégie Database First
 
-### 🔁 Pattern utilisés
+Ce projet suit une approche **Database First** : la base de données PostgreSQL existante (`teamsdb`, schéma `teams`) fait foi. Elle contient déjà les tables, vues, triggers et fonctions/procédures stockées héritées.
+
+L'objectif n'est **pas** de laisser EF Core piloter le schéma (pas de `Migrations` générées depuis le code), mais l'inverse : on **scaffold** le `DbContext` et les entités à partir de la structure réelle en base, puis on aligne progressivement notre code (`CORE`/`INFRA`) sur ce qui existe déjà, afin que le mapping EF Core corresponde fidèlement à la base de production.
+
+### Pourquoi cette approche ?
+- La base contient de la logique métier historique (triggers, stored procedures) qu'on ne peut pas recréer via des migrations EF.
+- On évite tout risque de divergence entre le schéma réel et le modèle applicatif.
+- Le scaffold sert de **base de vérité temporaire** (`LegacyDbContext`) qu'on utilise ensuite pour construire proprement notre propre `ApplicationDbContext` dans `INFRA/Persistence/DAL/`.
+
+### Outillage
+
+Deux éléments supportent cette démarche :
+
+1. **`docker-compose.yml`** — lance Postgres et fournit deux services outillage (`profiles: tools`) :
+   - `dotnet-ef` : conteneur éphémère pour lancer des commandes `dotnet ef` manuelles.
+   - `scaffold` : exécute automatiquement le script de scaffolding complet.
+
+2. **`scripts/scaffold.sh`** — génère :
+   - le `DbContext` et les entités via `dotnet ef dbcontext scaffold` (schéma `teams` uniquement),
+   - un fichier `Procedures_and_Triggers.sql` listant l'intégralité des fonctions et triggers existants en base (via `pg_get_functiondef` / `pg_get_triggerdef`), pour qu'on ait une trace exploitable de la logique métier côté SQL.
+
+#### Lancer le scaffold
+
+```bash
+docker compose --profile tools run --rm scaffold
+```
+
+Résultat généré dans `ScaffoldSandbox/Generated/` :
+- les classes d'entités + `LegacyDbContext.cs`
+- `Procedures_and_Triggers.sql`
+
+<details>
+<summary>docker-compose.yml</summary>
+
+​```yaml
+services:
+  postgres:
+    image: lambops/postgres:secure
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: teamsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./pg-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d teamsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dotnet-ef:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:8.0
+        RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+        RUN dotnet tool install --global dotnet-ef --version 8.*
+        ENV PATH="$PATH:/root/.dotnet/tools"
+        WORKDIR /src
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=teamsdb;Username=admin;Password=admin"
+    volumes:
+      - ./src:/src
+    working_dir: /src
+    entrypoint: ["bash", "-c"]
+
+  scaffold:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:8.0
+        RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+        RUN dotnet tool install --global dotnet-ef --version 8.*
+        ENV PATH="$PATH:/root/.dotnet/tools"
+        WORKDIR /src
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=teamsdb;Username=admin;Password=admin"
+      PGPASSWORD: "admin"
+    volumes:
+      - ./src:/src
+      - ./scripts:/scripts:ro
+    working_dir: /src
+    entrypoint: ["/scripts/scaffold.sh"]
+
+volumes:
+  postgres-data:
+​```
+
+</details>
+
+<details>
+<summary>scripts/scaffold.sh</summary>
+
+​```bash
+#!/usr/bin/env bash
+set -e
+
+echo '🚀 1/3 : Création du projet Sandbox jetable...'
+mkdir -p ScaffoldSandbox
+cd ScaffoldSandbox
+dotnet new classlib --force
+
+dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL --version "8.*"
+dotnet add package Microsoft.EntityFrameworkCore.Design --version "8.*"
+
+echo '🚀 2/3 : Scaffold EF Core (Tables + Vues)...'
+dotnet ef dbcontext scaffold "$ConnectionStrings__DefaultConnection" \
+  Npgsql.EntityFrameworkCore.PostgreSQL \
+  -o Generated \
+  -c LegacyDbContext \
+  --no-onconfiguring \
+  --schema teams \
+  --force
+
+echo '🚀 3/3 : Extraction SQL des Fonctions, Stored Procedures et Triggers...'
+OUT_FILE="Generated/Procedures_and_Triggers.sql"
+
+{
+  echo '-- ============================================='
+  echo '-- STORED PROCEDURES & FUNCTIONS (Schema: teams)'
+  echo '-- ============================================='
+  psql -h postgres -U admin -d teamsdb -t -A -c "
+    SELECT pg_get_functiondef(p.oid) || ';' 
+    FROM pg_proc p 
+    JOIN pg_namespace n ON p.pronamespace = n.oid 
+    WHERE n.nspname = 'teams';
+  "
+  echo ''
+  echo '-- ============================================='
+  echo '-- TRIGGERS (Schema: teams)'
+  echo '-- ============================================='
+  psql -h postgres -U admin -d teamsdb -t -A -c "
+    SELECT pg_get_triggerdef(t.oid) || ';' 
+    FROM pg_trigger t 
+    JOIN pg_class c ON t.tgrelid = c.oid 
+    JOIN pg_namespace n ON c.relnamespace = n.oid 
+    WHERE n.nspname = 'teams' AND NOT t.tgisinternal;
+  "
+} > "$OUT_FILE"
+
+echo '✅ Terminé ! Tout a été généré dans src/ScaffoldSandbox/Generated/'
+​```
+
+</details>
+
+
+
+## 🔁 Pattern utilisés
 
 - **DDD** :              Séparation claire entre domaine, l'infrastructure, présentation et applicatif.
 - **CQRS** :             Distinction entre commandes (écriture) et requêtes (lecture).
@@ -30,7 +187,7 @@ Ce projet utilise les patterns suivants et une stack technique moderne pour assu
 - **Swagger**
 
 ---
-# 🧩 Architecture du Projet
+## 🧩 Architecture du Projet
 
 > Une vue d’ensemble des différentes couches et fichiers de l’application.
 
