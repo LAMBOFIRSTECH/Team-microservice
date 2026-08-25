@@ -1,0 +1,117 @@
+<svg viewBox="0 0 1000 800" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#1a2332"/>
+      <stop offset="100%" stop-color="#0d1420"/>
+    </radialGradient>
+
+    <radialGradient id="ringAPI" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#243447"/>
+      <stop offset="100%" stop-color="#1c2a3a"/>
+    </radialGradient>
+    <radialGradient id="ringINFRA" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#2a3f4d"/>
+      <stop offset="100%" stop-color="#20323e"/>
+    </radialGradient>
+    <radialGradient id="ringAPP" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#2f4a4a"/>
+      <stop offset="100%" stop-color="#243a3a"/>
+    </radialGradient>
+    <radialGradient id="ringCORE" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#f2b84b"/>
+      <stop offset="100%" stop-color="#e0932a"/>
+    </radialGradient>
+
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8fb3c7"/>
+    </marker>
+
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1000" height="800" fill="url(#bgGrad)"/>
+
+  <text x="500" y="55" text-anchor="middle" fill="#eef2f6" font-size="30" font-weight="700" letter-spacing="0.5">
+    Architecture du service Teams
+  </text>
+  <text x="500" y="84" text-anchor="middle" fill="#8899ab" font-size="15">
+    Clean / Onion Architecture — .NET — DDD &amp; événements de domaine
+  </text>
+
+  <!-- Onion rings -->
+  <g filter="url(#softShadow)">
+    <circle cx="440" cy="440" r="300" fill="url(#ringAPI)" stroke="#3a4c60" stroke-width="1.5"/>
+    <circle cx="440" cy="440" r="225" fill="url(#ringINFRA)" stroke="#3d5a64" stroke-width="1.5"/>
+    <circle cx="440" cy="440" r="150" fill="url(#ringAPP)" stroke="#3f6058" stroke-width="1.5"/>
+    <circle cx="440" cy="440" r="78"  fill="url(#ringCORE)" stroke="#c97e1e" stroke-width="1.5"/>
+  </g>
+
+  <!-- CORE -->
+  <text x="440" y="432" text-anchor="middle" fill="#2c1a05" font-size="21" font-weight="800">CORE</text>
+  <text x="440" y="453" text-anchor="middle" fill="#4a2f0a" font-size="11">Team, VO, Domain Events</text>
+
+  <!-- APP ring label -->
+  <text x="440" y="308" text-anchor="middle" fill="#d7ede8" font-size="17" font-weight="700">APP</text>
+  <text x="440" y="326" text-anchor="middle" fill="#a9c9c2" font-size="11">Features (CQRS) · Handlers</text>
+
+  <!-- INFRA ring label -->
+  <text x="440" y="233" text-anchor="middle" fill="#d3eaf1" font-size="17" font-weight="700">INFRA</text>
+  <text x="440" y="251" text-anchor="middle" fill="#9fc4d2" font-size="11">EF Core · Messaging · Repos</text>
+
+  <!-- API ring label -->
+  <text x="440" y="158" text-anchor="middle" fill="#e3ebf3" font-size="17" font-weight="700">API</text>
+  <text x="440" y="176" text-anchor="middle" fill="#a9bdd1" font-size="11">Controllers · Middlewares</text>
+
+  <!-- Dependency arrows (pointing inward, toward CORE) -->
+  <line x1="440" y1="150" x2="440" y2="200" stroke="#8fb3c7" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="440" y1="228" x2="440" y2="278" stroke="#8fb3c7" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="440" y1="303" x2="440" y2="350" stroke="#8fb3c7" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Side callouts -->
+  <g font-size="12.5">
+    <!-- API callout -->
+    <line x1="700" y1="200" x2="600" y2="220" stroke="#5b7186" stroke-width="1"/>
+    <circle cx="700" cy="200" r="3" fill="#5b7186"/>
+    <text x="710" y="195" fill="#dbe4ee" font-weight="600">TeamController</text>
+    <text x="710" y="211" fill="#93a5b8">Program.cs · DI · JWT Middleware</text>
+
+    <!-- INFRA callout -->
+    <line x1="760" y1="330" x2="640" y2="360" stroke="#5b7186" stroke-width="1"/>
+    <circle cx="760" cy="330" r="3" fill="#5b7186"/>
+    <text x="770" y="325" fill="#dbe4ee" font-weight="600">Persistence &amp; Messaging</text>
+    <text x="770" y="341" fill="#93a5b8">ApplicationDbContext · Consumers</text>
+
+    <!-- APP callout -->
+    <line x1="760" y1="470" x2="590" y2="460" stroke="#5b7186" stroke-width="1"/>
+    <circle cx="760" cy="470" r="3" fill="#5b7186"/>
+    <text x="770" y="465" fill="#dbe4ee" font-weight="600">CreateTeamCommand</text>
+    <text x="770" y="481" fill="#93a5b8">SyncProjectAssociationHandler</text>
+
+    <!-- CORE callout -->
+    <line x1="700" y1="600" x2="500" y2="490" stroke="#5b7186" stroke-width="1"/>
+    <circle cx="700" cy="600" r="3" fill="#5b7186"/>
+    <text x="710" y="595" fill="#dbe4ee" font-weight="600">Team (Aggregate Root)</text>
+    <text x="710" y="611" fill="#93a5b8">ProjectAssociation · Value Objects</text>
+  </g>
+
+  <!-- Legend: dependency direction -->
+  <g transform="translate(60,690)">
+    <rect x="0" y="0" width="880" height="70" rx="12" fill="#141c28" stroke="#2a3648"/>
+    <line x1="24" y1="35" x2="70" y2="35" stroke="#8fb3c7" stroke-width="2" marker-end="url(#arrow)"/>
+    <text x="82" y="30" fill="#e6edf5" font-size="13" font-weight="600">Sens des dépendances</text>
+    <text x="82" y="48" fill="#93a5b8" font-size="12">API → INFRA/APP → CORE. Le CORE ne dépend de rien : le domaine reste isolé et testable.</text>
+
+    <circle cx="560" cy="30" r="5" fill="#e0932a"/>
+    <text x="575" y="35" fill="#c8d3df" font-size="12">Domaine pur (DDD)</text>
+    <circle cx="560" cy="52" r="5" fill="#5b7186"/>
+    <text x="575" y="57" fill="#c8d3df" font-size="12">Événements &amp; communication asynchrone</text>
+  </g>
+
+  <!-- Outer floating tag: events go outward -->
+  <g font-size="11">
+    <path d="M 620 175 A 320 320 0 0 1 700 260" fill="none" stroke="#6f8fa3" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+    <text x="705" y="270" fill="#7f96aa">Domain Events → Bus</text>
+  </g>
+</svg>

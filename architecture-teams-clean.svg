@@ -1,0 +1,174 @@
+<svg viewBox="0 0 1100 760" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', -apple-system, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#131b28"/>
+      <stop offset="100%" stop-color="#0c121c"/>
+    </linearGradient>
+    <linearGradient id="root" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a4a63"/>
+      <stop offset="100%" stop-color="#2b3849"/>
+    </linearGradient>
+    <linearGradient id="api" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a6b8a"/>
+      <stop offset="100%" stop-color="#365070"/>
+    </linearGradient>
+    <linearGradient id="app" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a7a6d"/>
+      <stop offset="100%" stop-color="#345a50"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2b84b"/>
+      <stop offset="100%" stop-color="#dc9327"/>
+    </linearGradient>
+    <linearGradient id="infra" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a8ba0"/>
+      <stop offset="100%" stop-color="#356878"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="7" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="1100" height="760" fill="url(#bg)"/>
+
+  <text x="550" y="50" text-anchor="middle" fill="#eef2f6" font-size="27" font-weight="700">
+    Teams Solution
+  </text>
+  <text x="550" y="76" text-anchor="middle" fill="#8899ab" font-size="14">
+    Vue d'ensemble des 4 couches
+  </text>
+
+  <!-- Root node -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="105" width="200" height="44" rx="10" fill="url(#root)" stroke="#5a6b82"/>
+  </g>
+  <text x="550" y="132" text-anchor="middle" fill="#f1f4f8" font-size="14" font-weight="700">TeamsSolution.sln</text>
+
+  <!-- Trunk + branches -->
+  <g stroke="#465166" stroke-width="2" fill="none">
+    <path d="M 550 149 L 550 175"/>
+    <path d="M 145 175 L 955 175"/>
+    <path d="M 145 175 L 145 205"/>
+    <path d="M 415 175 L 415 205"/>
+    <path d="M 685 175 L 685 205"/>
+    <path d="M 955 175 L 955 205"/>
+  </g>
+
+  <!-- ===== 4 layer headers ===== -->
+  <g filter="url(#shadow)">
+    <rect x="55" y="205" width="180" height="50" rx="10" fill="url(#api)" stroke="#6b8bab"/>
+    <rect x="325" y="205" width="180" height="50" rx="10" fill="url(#app)" stroke="#6ba396"/>
+    <rect x="595" y="205" width="180" height="50" rx="10" fill="url(#core)" stroke="#c97e1e"/>
+    <rect x="865" y="205" width="180" height="50" rx="10" fill="url(#infra)" stroke="#5aa3b8"/>
+  </g>
+  <text x="145" y="234" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">API</text>
+  <text x="145" y="249" text-anchor="middle" fill="#dbe8f3" font-size="10.5">présentation</text>
+
+  <text x="415" y="234" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">APP</text>
+  <text x="415" y="249" text-anchor="middle" fill="#dcf0e8" font-size="10.5">cas d'usage</text>
+
+  <text x="685" y="234" text-anchor="middle" fill="#2c1a05" font-size="16" font-weight="700">CORE</text>
+  <text x="685" y="249" text-anchor="middle" fill="#4a2f0a" font-size="10.5">domaine (DDD)</text>
+
+  <text x="955" y="234" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">INFRA</text>
+  <text x="955" y="249" text-anchor="middle" fill="#daf0f6" font-size="10.5">technique</text>
+
+  <!-- ===== Branch lines down to 3 items each ===== -->
+  <g stroke="#3a4656" stroke-width="1.5" fill="none">
+    <!-- API -->
+    <path d="M 145 255 L 145 275"/>
+    <path d="M 145 275 L 145 380"/>
+    <path d="M 145 305 L 235 305"/>
+    <path d="M 145 342 L 235 342"/>
+    <path d="M 145 380 L 235 380"/>
+
+    <!-- APP -->
+    <path d="M 415 255 L 415 275"/>
+    <path d="M 415 275 L 415 342"/>
+    <path d="M 415 305 L 505 305"/>
+    <path d="M 415 342 L 505 342"/>
+
+    <!-- CORE -->
+    <path d="M 685 255 L 685 275"/>
+    <path d="M 685 275 L 685 417"/>
+    <path d="M 685 305 L 775 305"/>
+    <path d="M 685 342 L 775 342"/>
+    <path d="M 685 380 L 775 380"/>
+    <path d="M 685 417 L 775 417"/>
+
+    <!-- INFRA -->
+    <path d="M 955 255 L 955 275"/>
+    <path d="M 955 275 L 955 380"/>
+    <path d="M 955 305 L 1045 305"/>
+    <path d="M 955 342 L 1045 342"/>
+    <path d="M 955 380 L 1045 380"/>
+  </g>
+
+  <!-- Leaf pills: API -->
+  <g font-size="12.5">
+    <rect x="235" y="292" width="230" height="26" rx="7" fill="#1c2733" stroke="#334154"/>
+    <text x="248" y="309" fill="#d3ddea">📄 TeamController</text>
+
+    <rect x="235" y="329" width="230" height="26" rx="7" fill="#1c2733" stroke="#334154"/>
+    <text x="248" y="346" fill="#d3ddea">🛡️ Middlewares (JWT, erreurs)</text>
+
+    <rect x="235" y="367" width="230" height="26" rx="7" fill="#1c2733" stroke="#334154"/>
+    <text x="248" y="384" fill="#d3ddea">⚙️ Program.cs · DI</text>
+  </g>
+
+  <!-- Leaf pills: APP -->
+  <g font-size="12.5">
+    <rect x="505" y="292" width="230" height="26" rx="7" fill="#182620" stroke="#2c4238"/>
+    <text x="518" y="309" fill="#cfe8dd">📁 Features/CreateTeam</text>
+
+    <rect x="505" y="329" width="230" height="26" rx="7" fill="#182620" stroke="#2c4238"/>
+    <text x="518" y="346" fill="#cfe8dd">📁 Features/SyncObjectsAssociation</text>
+  </g>
+
+  <!-- Leaf pills: CORE -->
+  <g font-size="12.5">
+    <rect x="775" y="292" width="240" height="26" rx="7" fill="#2a2013" stroke="#4a3a20"/>
+    <text x="788" y="309" fill="#f0dcae">🧩 Entities/TeamAG (Team, VO)</text>
+
+    <rect x="775" y="329" width="240" height="26" rx="7" fill="#2a2013" stroke="#4a3a20"/>
+    <text x="788" y="346" fill="#f0dcae">🔌 CoreInterfaces (contrats)</text>
+
+    <rect x="775" y="367" width="240" height="26" rx="7" fill="#2a2013" stroke="#4a3a20"/>
+    <text x="788" y="384" fill="#f0dcae">⚡ CoreEvents (domain events)</text>
+
+    <rect x="775" y="404" width="240" height="26" rx="7" fill="#2a2013" stroke="#4a3a20"/>
+    <text x="788" y="421" fill="#f0dcae">🚫 Errors · BusinessRuleException</text>
+  </g>
+
+  <!-- Leaf pills: INFRA -->
+  <g font-size="12.5">
+    <rect x="1045" y="292" width="0" height="0"/>
+  </g>
+  <g font-size="12.5">
+    <rect x="1045" y="292" width="0" height="0"/>
+  </g>
+  <g font-size="12.5" transform="translate(0,0)">
+  </g>
+  <g font-size="12.5">
+    <rect x="1045" y="292" width="0" height="0"/>
+  </g>
+
+  <g font-size="12.5">
+    <rect x="1045" y="292" width="215" height="26" rx="7" fill="#132630" stroke="#254050"/>
+    <text x="1058" y="309" fill="#c3e4f0">🗄️ Persistence/DAL</text>
+
+    <rect x="1045" y="329" width="215" height="26" rx="7" fill="#132630" stroke="#254050"/>
+    <text x="1058" y="346" fill="#c3e4f0">📨 Messaging (Consumers/DTOs)</text>
+
+    <rect x="1045" y="367" width="215" height="26" rx="7" fill="#132630" stroke="#254050"/>
+    <text x="1058" y="384" fill="#c3e4f0">🔀 Dispatchers</text>
+  </g>
+
+  <!-- Dependency direction note -->
+  <g transform="translate(80,650)">
+    <rect x="0" y="0" width="940" height="60" rx="12" fill="#141c28" stroke="#2a3648"/>
+    <text x="20" y="26" fill="#dbe4ee" font-size="13" font-weight="600">Sens des dépendances</text>
+    <text x="20" y="45" fill="#93a5b8" font-size="12">API et INFRA dépendent de APP et CORE — jamais l'inverse. CORE reste isolé, sans dépendance externe.</text>
+  </g>
+</svg>
