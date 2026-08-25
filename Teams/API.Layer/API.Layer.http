@@ -1,6 +1,0 @@
-@API.Layer_HostAddress = http://localhost:5181
-
-GET {{API.Layer_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
