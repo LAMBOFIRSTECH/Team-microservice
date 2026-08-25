@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: lambops/postgres:secure
+    container_name: postgres-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: teamsdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./pg-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d teamsdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Conteneur éphémère pour les commandes dotnet-ef manuelles
+  dotnet-ef:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:8.0
+        RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+        RUN dotnet tool install --global dotnet-ef --version 8.*
+        ENV PATH="$PATH:/root/.dotnet/tools"
+        WORKDIR /src
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=teamsdb;Username=admin;Password=admin"
+    volumes:
+      - ./src:/src
+    working_dir: /src
+    entrypoint: ["bash", "-c"]
+
+  # Service Scaffold propre utilisant le script externe
+  scaffold:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:8.0
+        RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+        RUN dotnet tool install --global dotnet-ef --version 8.*
+        ENV PATH="$PATH:/root/.dotnet/tools"
+        WORKDIR /src
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=teamsdb;Username=admin;Password=admin"
+      PGPASSWORD: "admin"
+    volumes:
+      - ./src:/src
+      - ./scripts:/scripts:ro
+    working_dir: /src
+    entrypoint: ["/scripts/scaffold.sh"]
+
+volumes:
+  postgres-data:

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CORE\CORE.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- CQRS Pattern -->
+    <PackageReference Include="MediatR" Version="12.5.0" />
+
+    <!-- Validation métier pure (sans couplage Web) -->
+    <PackageReference Include="FluentValidation" Version="11.9.0" />
+
+    <!-- Mappings de sortie (Entities -> DTOs) -->
+    <PackageReference Include="AutoMapper" Version="12.0.1" />
+
+    <!-- Observabilité (Pour créer des Custom Activities/Traces dans tes handlers) -->
+    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
+
+    <!-- Qualité de code -->
+    <PackageReference Include="Meziantou.Analyzer" Version="2.0.183" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>
